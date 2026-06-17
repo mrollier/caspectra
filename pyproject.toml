@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "caspectra"
+version = "0.1.0"
+description = "Self-supervised behavioural taxonomy of cellular-automaton spacetime diagrams"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+# Versions pinned to a known-good Apple-Silicon (arm64) set. If hdbscan or
+# umap-learn fail to build via pip on arm64, install them from conda-forge
+# (see README).
+dependencies = [
+    "numpy==2.2.5",
+    "torch==2.12.0",
+    "torchvision==0.27.0",
+    "lightly==1.5.24",
+    "scikit-learn>=1.4",
+    "umap-learn>=0.5.5",
+    "hdbscan>=0.8.33",
+    "matplotlib==3.10.0",
+    "pyyaml==6.0.3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "black>=24", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+include = ["caspectra*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Silence a DeprecationWarning emitted by pydantic v1 (pulled in via lightly)
+# under Python 3.13 — third-party, not our code.
+filterwarnings = [
+    "ignore:Failing to pass a value to the 'type_params':DeprecationWarning",
+    # UMAP notes that random_state forces single-threaded mode — intended here.
+    "ignore:n_jobs value 1 overridden to 1 by setting random_state:UserWarning",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]

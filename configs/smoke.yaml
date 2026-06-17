@@ -1,0 +1,53 @@
+# Fast smoke config (BUILD_BRIEF.md §5): a handful of rules, few ICs,
+# grid_size=64, a couple of epochs. Use to catch integration errors before
+# committing to a full 128x128 run.
+seed: 0
+data:
+  rules: [0, 30, 90, 110, 184, 204]
+  n_ic_per_rule: 16
+  grid_size: 64
+  discard_transient: 0
+  cache_dir: cache_smoke
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: true
+    horizontal_flip: false
+    invert: false
+    random_resized_crop: false
+    coarse_grain_kernel: 2
+    coarse_grain_prob: 0.5   # stochastic: some views keep fine detail
+    crop_scale: [0.6, 1.0]
+    flip_prob: 0.5
+    invert_prob: 0.5
+    mode: symmetric
+model:
+  method: simsiam        # small-batch native; good for a quick smoke
+  encoder: anticheat     # 2x2 kernels + small signed bottleneck (SELF_CRITICISM #1)
+  width_multiplier: 1.0
+  small_input: true      # 64px smoke -> 3x3/stride-1 stem (resnet18 only)
+  norm_layer: group
+  num_groups: 8
+  embedding_dim: 64      # small bottleneck resists rule memorisation
+  projection_hidden: 2048
+  projection_out: 2048
+  prediction_hidden: 512
+train:
+  epochs: 3
+  batch_size: 32
+  lr: 0.001
+  weight_decay: 0.000001
+  optimizer: adamw
+  tau_base: 0.996
+  checkpoint_every: 1
+  num_workers: 0
+  output_dir: runs/smoke
+eval:
+  checkpoint: runs/smoke/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 128
+  umap_components: 10
+  umap_metric: cosine
+  hdbscan_min_cluster_size: 5
+  hdbscan_min_samples: 3
+  output_dir: runs/smoke/eval
