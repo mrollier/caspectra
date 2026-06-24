@@ -1,11 +1,11 @@
 # Fast smoke config (BUILD_BRIEF.md §5): a handful of rules, few ICs,
-# grid_size=64, a couple of epochs. Use to catch integration errors before
-# committing to a full 128x128 run.
+# grid_size=63, a couple of epochs. Use to catch integration errors before
+# committing to a full 127x127 run.
 seed: 0
 data:
   rules: [0, 30, 90, 110, 184, 204]
   n_ic_per_rule: 16
-  grid_size: 64
+  grid_size: 63           # odd on purpose (smoke analogue of 127); keeps small_input <= 64
   discard_transient: 0
   cache_dir: cache_smoke
   seed: 0
@@ -25,7 +25,7 @@ model:
   method: simsiam        # small-batch native; good for a quick smoke
   encoder: anticheat     # 2x2 kernels + small signed bottleneck (SELF_CRITICISM #1)
   width_multiplier: 1.0
-  small_input: true      # 64px smoke -> 3x3/stride-1 stem (resnet18 only)
+  small_input: true      # 63px smoke -> 3x3/stride-1 stem (resnet18 only)
   norm_layer: group
   num_groups: 8
   embedding_dim: 64      # small bottleneck resists rule memorisation

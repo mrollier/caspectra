@@ -9,7 +9,7 @@ Two encoders are provided:
 
 Both expose ``.embedding_dim`` and ``forward(x) -> (B, embedding_dim)``.
 
-**Normalisation (M4-specific):** at 128x128 on unified memory the batch may be
+**Normalisation (M4-specific):** at 127x127 on unified memory the batch may be
 forced below 256, where BatchNorm degrades and can destabilise BYOL. The
 default is therefore **GroupNorm**; BatchNorm is selectable and the choice is
 recorded in the config.
@@ -59,9 +59,10 @@ class ResNet18Encoder(nn.Module):
         Scales all channel widths (default 1.0 -> 512-d output; 0.5 gives a
         lighter, less rule-memorising 256-d variant).
     small_input:
-        When True (use only for grid_size <= 64 smoke tests) the 7x7/stride-2
-        stem is replaced by a 3x3/stride-1 conv and the initial max-pool is
-        dropped. At the default grid_size 128 keep this False (ImageNet stem).
+        When True (use only for grid_size <= 64 smoke tests, e.g. 63) the
+        7x7/stride-2 stem is replaced by a 3x3/stride-1 conv and the initial
+        max-pool is dropped. At the default grid_size 127 keep this False
+        (ImageNet stem).
     norm_layer:
         ``"group"`` (default) or ``"batch"``.
     in_channels:

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import warnings
+
+import pytest
 import torch
 
 from caspectra.data.augmentations import AugmentationConfig, TwoViewTransform
@@ -12,7 +15,7 @@ def _small_dataset(tmp_path, transform=None, **kwargs):
     defaults = dict(
         rules=[0, 90, 110],
         n_ic_per_rule=2,
-        grid_size=16,
+        grid_size=15,  # odd: avoid the power-of-two additive-collapse warning
         cache_dir=str(tmp_path),
         seed=7,
         transform=transform,
@@ -29,7 +32,7 @@ def test_length_is_rules_times_ic(tmp_path) -> None:
 def test_single_view_item_shape_and_range(tmp_path) -> None:
     ds = _small_dataset(tmp_path)
     image, metadata = ds[0]
-    assert image.shape == (1, 16, 16)
+    assert image.shape == (1, 15, 15)
     assert image.dtype == torch.float32
     assert float(image.min()) >= 0.0 and float(image.max()) <= 1.0
 
@@ -50,14 +53,14 @@ def test_two_view_item_returns_pair(tmp_path) -> None:
     item = ds[0]
     assert len(item) == 3  # (view1, view2, metadata)
     v1, v2, metadata = item
-    assert v1.shape == (1, 16, 16)
-    assert v2.shape == (1, 16, 16)
+    assert v1.shape == (1, 15, 15)
+    assert v2.shape == (1, 15, 15)
     assert "rule" in metadata
 
 
 def test_default_rules_are_the_88_independent(tmp_path) -> None:
     ds = SpacetimeDataset(
-        rules=None, n_ic_per_rule=1, grid_size=16, cache_dir=str(tmp_path), seed=1
+        rules=None, n_ic_per_rule=1, grid_size=15, cache_dir=str(tmp_path), seed=1
     )
     assert len(ds) == 88
 
@@ -85,3 +88,15 @@ def test_discard_transient_changes_diagram(tmp_path) -> None:
     skipped = _small_dataset(tmp_path / "skip", discard_transient=4)
     # Skipping the transient should change the resulting image for rule 110.
     assert not torch.equal(base[4][0], skipped[4][0])
+
+
+def test_power_of_two_grid_size_warns(tmp_path) -> None:
+    """A 2^k grid collapses additive rules under periodic BCs — warn the user."""
+    with pytest.warns(UserWarning, match="power of two"):
+        _small_dataset(tmp_path, grid_size=16)
+
+
+def test_odd_grid_size_does_not_warn(tmp_path) -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _small_dataset(tmp_path, grid_size=15)

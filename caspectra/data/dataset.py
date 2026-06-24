@@ -18,6 +18,7 @@ import torch
 from torch.utils.data import Dataset
 
 from caspectra.ca.eca import ECASimulator, equivalence_class, independent_rules
+from caspectra.utils import warn_if_pathological_grid
 
 # A transform maps a (1, H, W) image to either a single tensor or a two-view
 # pair. ``None`` means "return the raw image" (used for embedding extraction).
@@ -41,7 +42,10 @@ class SpacetimeDataset(Dataset):
     n_ic_per_rule:
         Number of random initial conditions per rule.
     grid_size:
-        Side length of the square diagram (default 128; use 64 for smoke tests).
+        Side length of the square diagram (default 127; use 63 for smoke tests).
+        Avoid powers of two: under periodic boundaries a ``2**k`` side makes
+        additive rules such as rule 90 collapse to a homogeneous state — a warning
+        is emitted (see :func:`caspectra.utils.warn_if_pathological_grid`).
     transform:
         A :class:`~caspectra.data.augmentations.TwoViewTransform` for training,
         or ``None`` for raw-image extraction.
@@ -58,12 +62,13 @@ class SpacetimeDataset(Dataset):
         self,
         rules: list[int] | None = None,
         n_ic_per_rule: int = 256,
-        grid_size: int = 128,
+        grid_size: int = 127,
         transform: Transform | None = None,
         discard_transient: int = 0,
         cache_dir: str = "cache",
         seed: int = 0,
     ) -> None:
+        warn_if_pathological_grid(grid_size)
         self.rules: list[int] = list(rules) if rules is not None else independent_rules()
         self.n_ic_per_rule = n_ic_per_rule
         self.grid_size = grid_size

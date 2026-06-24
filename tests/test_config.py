@@ -13,7 +13,7 @@ from caspectra.config import (
 
 def test_defaults_match_brief() -> None:
     cfg = ExperimentConfig()
-    assert cfg.data.grid_size == 128
+    assert cfg.data.grid_size == 127  # odd on purpose; powers of two collapse additive rules
     assert cfg.data.n_ic_per_rule == 256
     assert cfg.model.method == "byol"
     assert cfg.model.norm_layer == "group"

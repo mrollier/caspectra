@@ -1,11 +1,11 @@
-# Default full-scale config (BUILD_BRIEF.md defaults): 88 rules, grid_size=128,
+# Default full-scale config (BUILD_BRIEF.md defaults): 88 rules, grid_size=127,
 # BYOL + ResNet18 + GroupNorm. Switch model.method to "simsiam" if M4 memory
 # forces batch < ~256. Set data.rules to null for all 88 representatives.
 seed: 0
 data:
   rules: null            # null -> the 88 independent equivalence-class reps
   n_ic_per_rule: 256
-  grid_size: 128
+  grid_size: 127          # odd on purpose: a power of two collapses additive rules such as rule 90
   discard_transient: 0
   cache_dir: cache
   seed: 0
@@ -28,7 +28,7 @@ model:
   method: byol
   encoder: anticheat
   width_multiplier: 1.0
-  small_input: false     # 128px -> keep the ImageNet-style stem (resnet18 only)
+  small_input: false     # 127px -> keep the ImageNet-style stem (resnet18 only)
   norm_layer: group      # GroupNorm default (batch < 256 on M4)
   num_groups: 8
   embedding_dim: 64      # small bottleneck (anticheat/smallcnn); ignored for resnet18

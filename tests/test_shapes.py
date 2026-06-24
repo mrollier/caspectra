@@ -9,7 +9,7 @@ from caspectra.data.dataset import SpacetimeDataset
 from caspectra.models.encoder import AntiCheatCNN, ResNet18Encoder, SmallCNNEncoder
 
 
-@pytest.mark.parametrize("grid", [64, 128])
+@pytest.mark.parametrize("grid", [63, 127])
 def test_dataset_item_shape(tmp_path, grid: int) -> None:
     ds = SpacetimeDataset(
         rules=[90], n_ic_per_rule=1, grid_size=grid, cache_dir=str(tmp_path), seed=0
@@ -18,7 +18,7 @@ def test_dataset_item_shape(tmp_path, grid: int) -> None:
     assert image.shape == (1, grid, grid)
 
 
-@pytest.mark.parametrize("grid", [64, 128])
+@pytest.mark.parametrize("grid", [63, 127])
 def test_resnet_encoder_output_shape(grid: int) -> None:
     enc = ResNet18Encoder(small_input=(grid <= 64))
     out = enc(torch.randn(2, 1, grid, grid))
@@ -26,7 +26,7 @@ def test_resnet_encoder_output_shape(grid: int) -> None:
     assert enc.embedding_dim == 512
 
 
-@pytest.mark.parametrize("grid", [64, 128])
+@pytest.mark.parametrize("grid", [63, 127])
 def test_smallcnn_encoder_output_shape(grid: int) -> None:
     enc = SmallCNNEncoder()
     out = enc(torch.randn(2, 1, grid, grid))
@@ -59,7 +59,7 @@ def test_smallcnn_param_count_is_modest() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("grid", [64, 128])
+@pytest.mark.parametrize("grid", [63, 127])
 def test_anticheat_encoder_output_shape(grid: int) -> None:
     enc = AntiCheatCNN(embedding_dim=64)
     out = enc(torch.randn(2, 1, grid, grid))

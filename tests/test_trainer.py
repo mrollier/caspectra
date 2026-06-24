@@ -24,7 +24,7 @@ def test_collapse_std_is_positive_for_varied_embeddings() -> None:
     assert collapse_std(torch.randn(8, 16)) > 0.05
 
 
-def _loader(tmp_path, n_ic: int = 8, grid: int = 32) -> DataLoader:
+def _loader(tmp_path, n_ic: int = 8, grid: int = 31) -> DataLoader:
     ds = SpacetimeDataset(
         rules=[90, 110, 30],
         n_ic_per_rule=n_ic,

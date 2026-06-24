@@ -85,7 +85,7 @@ pyproject.toml
   - Each item returns `(view1, view2, metadata)` when a two-view transform is set, else `(image, metadata)`. `metadata` is a dict: `rule`, `equiv_class_rep`. (LP/Wolfram labels are attached later at eval time from the external table, keyed by `rule`.)
   - Images returned as float tensors shape `(1, grid_size, grid_size)`, values in [0,1].
   - Cache generated tensors to disk (`.npz` or `.pt`) keyed by a hash of the generation config, so regeneration is skipped.
-- **Defaults:** `grid_size = 128` (chosen so the full complex behaviour is visible; 64 is available only for fast smoke tests). `n_ic_per_rule = 256` for development (scalable to 1024). `discard_transient` config (default 0; expose it).
+- **Defaults:** `grid_size = 127` (odd, non-power-of-two on purpose: a `2^k` side makes additive rules such as rule 90 collapse to a homogeneous state under periodic boundaries — see README "the power-of-two trap" and `caspectra.utils.warn_if_pathological_grid`; 63 is available only for fast smoke tests). `n_ic_per_rule = 256` for development (scalable to 1024). `discard_transient` config (default 0; expose it).
 
 ### 3.3 `data/augmentations.py` — augmentations (the scientifically load-bearing part)
 
@@ -106,10 +106,10 @@ Implement each as a small callable class operating on a `(1,H,W)` float tensor:
 
 - `class ResNet18Encoder(nn.Module)`: a torchvision ResNet-18 adapted to **1 input channel** (replace `conv1`), output = the 512-d global-average-pooled feature (drop the classification head). Config:
   - `width_multiplier` (default 1.0; allow 0.5 for a lighter, less rule-memorising variant).
-  - `small_input` flag (default False): when grid_size <= 64 (smoke tests only) replace the 7x7/stride-2 stem with a 3x3/stride-1 conv and drop the initial max-pool. **At the default 128, keep the standard ImageNet-style stem.**
+  - `small_input` flag (default False): when grid_size <= 64 (smoke tests only, e.g. 63) replace the 7x7/stride-2 stem with a 3x3/stride-1 conv and drop the initial max-pool. **At the default 127, keep the standard ImageNet-style stem.**
   - `norm_layer`: default **GroupNorm** (see below); BatchNorm selectable.
 - `class SmallCNNEncoder(nn.Module)`: a 5-6 layer custom CNN (~0.5-2M params) as a lighter ablation alternative. Both encoders expose `.embedding_dim` and `forward(x) -> (B, embedding_dim)`.
-- **Normalisation guidance (M4-specific):** at 128x128 on unified memory you may not fit batch >= 256. BatchNorm degrades and can destabilise BYOL at small batch, so **default to GroupNorm when batch < 256**; expose both and record the choice in the config.
+- **Normalisation guidance (M4-specific):** at 127x127 on unified memory you may not fit batch >= 256. BatchNorm degrades and can destabilise BYOL at small batch, so **default to GroupNorm when batch < 256**; expose both and record the choice in the config.
 
 ### 3.5 `models/byol.py` — BYOL (default) and SimSiam (M4 fallback)
 
@@ -155,7 +155,7 @@ Implement each as a small callable class operating on a `(1,H,W)` float tensor:
 
 - `test_eca.py`: (1) `independent_rules()` returns exactly **88**; (2) reproduce known diagrams — rule 0 -> all zeros after one step, rule 255 -> all ones, rule 204 (identity) -> IC repeated down every row; (3) periodic BC wraps correctly on a tiny width.
 - `test_augment.py`: `CyclicShift` preserves the multiset of column sums; `CoarseGrain` preserves tensor shape; excluded augmentations are not registered in the default stack.
-- `test_shapes.py`: dataset item and both encoders produce expected shapes for `grid_size in {64, 128}`.
+- `test_shapes.py`: dataset item and both encoders produce expected shapes for `grid_size in {63, 127}` (odd sizes also lock in that the size-agnostic pipeline handles non-power-of-two grids).
 
 ---
 
@@ -168,7 +168,7 @@ Implement each as a small callable class operating on a `(1,H,W)` float tensor:
 5. `eval/` + `scripts/evaluate.py`.
 6. `README.md` with quickstart, the MPS notes (incl. `PYTORCH_ENABLE_MPS_FALLBACK=1`), and where to place `rule_labels.csv`.
 
-After each step, run the relevant tests and a **fast smoke run** (a handful of rules, few ICs, `grid_size=64`, 1-2 epochs) to catch integration errors before committing to a full 128x128 run.
+After each step, run the relevant tests and a **fast smoke run** (a handful of rules, few ICs, `grid_size=63`, 1-2 epochs) to catch integration errors before committing to a full 127x127 run.
 
 ---
 
@@ -186,5 +186,5 @@ nuCA generation/training (stub only); experiment-tracking frameworks; distribute
 ## 8. Notes to surface back to the user
 
 - `rule_labels.csv` (rule -> LP class, Wolfram class, from Li-Packard) is required for the LP/Wolfram parts of evaluation; the README must say where it goes. Everything else runs without it.
-- Defaults: `grid_size=128`, method=BYOL (switch to SimSiam if batch < ~256), augmentations = cyclic-shift + coarse-grain (flip/inversion OFF, experimental).
+- Defaults: `grid_size=127` (odd; avoid powers of two — additive-rule collapse), method=BYOL (switch to SimSiam if batch < ~256), augmentations = cyclic-shift + coarse-grain (flip/inversion OFF, experimental).
 - If an op fails on MPS even with the fallback flag, print a clear message and continue on CPU where possible.

@@ -30,7 +30,10 @@ class DataConfig:
 
     rules: list[int] | None = None  # None -> the 88 independent representatives
     n_ic_per_rule: int = 256
-    grid_size: int = 128
+    # Odd (non-power-of-two) on purpose: a power-of-two side length makes additive
+    # rules such as rule 90 collapse to a homogeneous state under periodic
+    # boundaries (see caspectra.utils.warn_if_pathological_grid). 127 is a Mersenne prime.
+    grid_size: int = 127
     discard_transient: int = 0
     cache_dir: str = "cache"
     seed: int = 0

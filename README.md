@@ -71,11 +71,11 @@ export PYTORCH_ENABLE_MPS_FALLBACK=1
 # 1. (optional) pre-generate + cache the dataset
 python scripts/generate_data.py --config configs/default.yaml
 
-# 2. fast smoke run first (6 rules, 16 ICs, 64px, SimSiam, 3 epochs)
+# 2. fast smoke run first (6 rules, 16 ICs, 63px, SimSiam, 3 epochs)
 python scripts/train.py    --config configs/smoke.yaml
 python scripts/evaluate.py --config configs/smoke.yaml
 
-# 3. the real run (88 rules, 128px, BYOL + ResNet18)
+# 3. the real run (88 rules, 127px, BYOL + ResNet18)
 python scripts/train.py    --config configs/default.yaml
 python scripts/evaluate.py --config configs/default.yaml
 ```
@@ -86,7 +86,7 @@ evaluation produces `probes.csv`, `cluster_summary.txt`, `umap_scatter.png`,
 per-cluster sample grids, `embeddings.npz` and `summary.json`.
 
 > Always run the **smoke config first** to catch integration errors before
-> committing to a full 128×128 run.
+> committing to a full 127×127 run.
 
 ## Where to put `rule_labels.csv`
 
@@ -114,7 +114,7 @@ Rows with a blank class cell are simply omitted from that mapping.
 
 | Setting | Default | Note |
 |---|---|---|
-| `grid_size` | **128** | 64 is for smoke tests only |
+| `grid_size` | **127** | odd on purpose (see below); 63 is for smoke tests only |
 | `encoder` | **anticheat** | 2×2 kernels + small signed bottleneck; resist rule memorisation. `resnet18`/`smallcnn` also available |
 | method | **BYOL** | switch to **SimSiam** if M4 memory forces batch < ~256 |
 | `norm_layer` | **GroupNorm** | BatchNorm degrades BYOL at small batch |
@@ -122,6 +122,28 @@ Rows with a blank class cell are simply omitted from that mapping.
 
 Excluded as positive-pair augmentations (by design): time/vertical flips,
 rotations/transposes, salt-and-pepper noise — see `data/augmentations.py`.
+
+### Why `grid_size` is odd (the power-of-two trap)
+
+Reference ECA classifications (Li–Packard, Wolfram) assume an **infinite**
+lattice, but we simulate a **finite ring** (periodic boundaries). The canonical
+victim is **rule 90** (`xᵢ' = xᵢ₋₁ ⊕ xᵢ₊₁`), linear over GF(2):
+`T = S + S⁻¹ = S⁻¹(S + I)²`. When the ring length is a power of two,
+`xᴺ − 1 = (x + 1)ᴺ` over GF(2), so `(S + I)` is **nilpotent** and *every* initial
+condition collapses to the all-zero homogeneous state within ≤ N steps. So at
+`grid_size = 128` (or 64) rule 90 — a canonical class-3 chaotic rule — renders as
+a **blank diagram**, contradicting its label and silently corrupting the gap /
+`MI(cluster; rule | LP)` diagnostics. (The effect is specific, not generic to
+additive rules: rule **150**, symbol `1 + x + x²`, stays invertible on a `2ᵏ`
+ring and does *not* collapse.) An odd, ideally prime side length (**127**, or
+**63** for smoke) breaks the nilpotency and restores the expected dynamics.
+`SpacetimeDataset` emits a warning if you pass a power-of-two `grid_size`
+(`caspectra.utils.warn_if_pathological_grid`).
+
+This is about the **spatial grid only**. Keep **batch size, channel counts and
+embedding dim** as powers of two — that is where hardware (SIMD/warp/tensor-core
+tiling and memory alignment) actually benefits; the convolution's spatial extent
+does not.
 
 ## Diagnostics (how to tell success from the failure mode)
 

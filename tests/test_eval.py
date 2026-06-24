@@ -31,7 +31,7 @@ from caspectra.models.encoder import SmallCNNEncoder
 
 def test_extract_embeddings_shapes(tmp_path) -> None:
     ds = SpacetimeDataset(
-        rules=[90, 110], n_ic_per_rule=4, grid_size=32, cache_dir=str(tmp_path), seed=0
+        rules=[90, 110], n_ic_per_rule=4, grid_size=31, cache_dir=str(tmp_path), seed=0
     )
     loader = DataLoader(ds, batch_size=4)
     model = SimSiam(SmallCNNEncoder(embedding_dim=32))

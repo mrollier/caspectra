@@ -21,7 +21,11 @@ MI(cluster; rule) low but MI(cluster; LP class) high.
 - Logging: CSV + matplotlib only. No W&B / TensorBoard / Lightning / DALI.
 
 ## Defaults
-- `grid_size = 128` (use 64 only for smoke tests).
+- `grid_size = 127` (use 63 for smoke tests). **Avoid powers of two** — under
+  periodic boundaries a `2^k` side makes additive rules such as rule 90 collapse
+  to a homogeneous state, diverging from the infinite-lattice reference classes
+  (`caspectra.utils.warn_if_pathological_grid` warns). Powers of two still belong
+  on batch size / channels / embedding dim, not the spatial grid.
 - Method: **BYOL** default; **SimSiam** if batch < ~256.
 - `norm_layer`: GroupNorm when batch < 256.
 - Augmentations: cyclic-shift + coarse-grain ON; flip + inversion are an
@@ -29,6 +33,6 @@ MI(cluster; rule) low but MI(cluster; LP class) high.
 
 ## Workflow rules
 - Follow the build order in `BUILD_BRIEF.md` §5; **pause after each step for review.**
-- Always run tests + a 64px smoke run before any long 128px run.
+- Always run tests + a 63px smoke run before any long 127px run.
 - **Ask before launching long training runs.**
 - Type hints + docstrings (explain WHY); Black + Ruff; small single-purpose classes.
