@@ -27,6 +27,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "black>=24", "ruff>=0.4"]
+# Tooling to run the explanatory notebooks under notebooks/ (not needed for the
+# library or the train/evaluate scripts).
+notebook = ["nbconvert>=7", "ipykernel>=6"]
 
 [tool.setuptools.packages.find]
 include = ["caspectra*"]

@@ -11,6 +11,9 @@ detect this: the rule-identity linear probe must be well below 100%, and we want
 MI(cluster; rule) low but MI(cluster; LP class) high.
 
 ## Stack & environment
+- **Dedicated env only** — work in the `ssl-ecas` conda env (`conda activate
+  ssl-ecas`), never `base`. Create with `conda create -n ssl-ecas python=3.11`
+  then `pip install -e ".[dev]"`. See README "Install".
 - Python 3.11+ (arm64), PyTorch. Device: **MPS → CPU only** (Apple Silicon M4).
 - AMP off (fp32). Set `PYTORCH_ENABLE_MPS_FALLBACK=1`. Keep device selection
   behind one util so CUDA can be added later.

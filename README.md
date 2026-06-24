@@ -38,13 +38,26 @@ clustering accuracy**. Evaluation exists primarily to detect this:
 
 ## Install
 
+**Always install into a dedicated environment** — never your conda `base`. The
+deps are version-pinned (`torch==2.12.0`, `numpy==2.2.5`, …) and installing them
+into a shared env risks breaking other projects (and being broken by them).
+
 ```bash
-pip install -e .            # core deps are pinned in pyproject.toml
-pip install -e ".[dev]"     # + pytest / black / ruff
+# 1. create + activate an isolated env (Python 3.11, arm64)
+conda create -n ssl-ecas python=3.11 -y
+conda activate ssl-ecas
+
+# 2. install the package (editable) and its pinned deps
+pip install -e .             # core deps are pinned in pyproject.toml
+pip install -e ".[dev]"      # + pytest / black / ruff
+pip install -e ".[notebook]" # + nbconvert / ipykernel (to run notebooks/)
 ```
 
+Re-run `conda activate ssl-ecas` in every new shell before using the project.
+(`venv` works too: `python3.11 -m venv .venv && source .venv/bin/activate`.)
+
 If `hdbscan` or `umap-learn` fail to build via pip on arm64, install them from
-**conda-forge** instead:
+**conda-forge** into the same env instead:
 
 ```bash
 conda install -c conda-forge hdbscan umap-learn
