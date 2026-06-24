@@ -219,14 +219,24 @@ class AugmentationStack:
 class AugmentationConfig:
     """Which augmentations are enabled and how views are paired.
 
-    Defaults match BUILD_BRIEF.md §3.3: cyclic-shift + coarse-grain ON; flip,
-    invert and crop OFF (experimental).
+    Defaults: cyclic-shift + coarse-grain ON, plus horizontal-flip + invert ON.
+    Flip (left-right reflection) and invert (0<->1 complementation) are the two
+    *exact* symmetries that generate the 256 -> 88 ECA equivalence classes
+    (``caspectra.ca.eca.reflect`` / ``complement``): a flipped/inverted view is a
+    genuine diagram of the orbit partner, so enforcing invariance to them is the
+    most principled prior available. Set both False (see
+    ``configs/no_symmetry.yaml``) for the no-symmetry ablation. Crop stays OFF
+    (a crop still exposes the full local rule table, so it does not suppress the
+    genotype). NOTE: these invariances do not by themselves suppress the genotype
+    cheat -- coarse-grain + the anti-cheat kernels + small bottleneck do; they
+    only stop the encoder using chirality/polarity as cheap discriminators and
+    make "genotype" mean the equivalence class (orbit).
     """
 
     cyclic_shift: bool = True
     coarse_grain: bool = True
-    horizontal_flip: bool = False
-    invert: bool = False
+    horizontal_flip: bool = True
+    invert: bool = True
     random_resized_crop: bool = False
     coarse_grain_kernel: int = 2
     coarse_grain_prob: float = 0.5  # stochastic: some views keep fine detail
@@ -257,7 +267,11 @@ def build_augmentation_stack(config: AugmentationConfig) -> AugmentationStack:
 
 
 def default_augmentation_stack() -> AugmentationStack:
-    """The default stack: cyclic-shift then coarse-grain."""
+    """The default stack: cyclic-shift, coarse-grain, horizontal-flip, invert.
+
+    The last two are the reflection/complement symmetries that define the 88
+    equivalence classes (see :class:`AugmentationConfig`).
+    """
     return build_augmentation_stack(AugmentationConfig())
 
 

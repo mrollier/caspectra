@@ -1,6 +1,8 @@
-# Default full-scale config (BUILD_BRIEF.md defaults): 88 rules, grid_size=127,
-# BYOL + ResNet18 + GroupNorm. Switch model.method to "simsiam" if M4 memory
-# forces batch < ~256. Set data.rules to null for all 88 representatives.
+# Ablation arm: identical to default.yaml EXCEPT the two equivalence-class
+# symmetries (horizontal_flip + invert) are OFF. Run this alongside default.yaml
+# to measure with/without the reflection+complement invariances: compare the
+# rule-vs-LP gap and MI(cluster; equiv-class) between runs/default/eval and
+# runs/no_symmetry/eval. Everything else (grid, encoder, schedule) is held fixed.
 seed: 0
 data:
   rules: null            # null -> the 88 independent equivalence-class reps
@@ -12,8 +14,8 @@ data:
   augmentation:
     cyclic_shift: true
     coarse_grain: true
-    horizontal_flip: true    # left-right reflection: one of the two generators of the 88-class symmetry
-    invert: true             # 0<->1 complementation: the other generator (see configs/no_symmetry.yaml to ablate)
+    horizontal_flip: false   # ablated: no left-right reflection invariance
+    invert: false            # ablated: no 0<->1 complementation invariance
     random_resized_crop: false
     coarse_grain_kernel: 2
     coarse_grain_prob: 0.5   # stochastic: encoder also sees fine detail (SELF_CRITICISM #4)
@@ -44,13 +46,13 @@ train:
   tau_base: 0.996
   checkpoint_every: 10
   num_workers: 2
-  output_dir: runs/default
+  output_dir: runs/no_symmetry
 eval:
-  checkpoint: runs/default/checkpoint_final.pt
+  checkpoint: runs/no_symmetry/checkpoint_final.pt
   rule_labels_csv: rule_labels.csv
   batch_size: 256
   umap_components: 10
   umap_metric: cosine
   hdbscan_min_cluster_size: 15
   hdbscan_min_samples: 5
-  output_dir: runs/default/eval
+  output_dir: runs/no_symmetry/eval

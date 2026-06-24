@@ -118,10 +118,38 @@ Rows with a blank class cell are simply omitted from that mapping.
 | `encoder` | **anticheat** | 2×2 kernels + small signed bottleneck; resist rule memorisation. `resnet18`/`smallcnn` also available |
 | method | **BYOL** | switch to **SimSiam** if M4 memory forces batch < ~256 |
 | `norm_layer` | **GroupNorm** | BatchNorm degrades BYOL at small batch |
-| augmentations | **cyclic-shift + stochastic coarse-grain** (`coarse_grain_prob=0.5`) | flip / inversion are experimental toggles (OFF) |
+| augmentations | **cyclic-shift + stochastic coarse-grain + flip + inversion** | flip/inversion are the class-defining symmetries (see below); ablate via `configs/no_symmetry.yaml` |
 
 Excluded as positive-pair augmentations (by design): time/vertical flips,
 rotations/transposes, salt-and-pepper noise — see `data/augmentations.py`.
+
+### Why flip + inversion are ON (the symmetry that defines the classes)
+
+The 256 ECAs reduce to 88 classes under exactly two operations: **left↔right
+reflection** and **0↔1 complementation** (`caspectra.ca.eca.reflect` /
+`complement`). Diagrams related by these are *the same automaton* — they share a
+behaviour class by construction. So `horizontal_flip` and `invert` are not
+arbitrary augmentations: they are the **group action whose orbits *are* the
+equivalence classes**, and a flipped/inverted view is an *exact*, valid diagram of
+the orbit partner (unlike lossy coarse-grain). Enforcing SSL invariance to them is
+the most principled prior we have.
+
+**Honest caveat:** because we only simulate the 88 representatives, these
+invariances do **not** by themselves suppress the genotype cheat — that is the job
+of coarse-grain + the 2×2 anti-cheat kernels + the small bottleneck. They impose a
+*correct prior* (the encoder stops using chirality/polarity as cheap
+discriminators) and they redefine "genotype" as the **orbit**. Accordingly:
+
+- the genotype linear probe and `MI(cluster; ·)` diagnostics use the
+  **equivalence-class representative** (e.g. `{0, 255}` → rep `0`), not the
+  individual rule — success is clusters mapping to the *coarser* LP behaviour
+  classes, not collapsing onto the 88 orbits;
+- the `mean_density` hand-crafted baseline is **polarity-folded** (`min(d, 1−d)`)
+  so it doesn't get an absolute-density feature the invert-invariant encoder is
+  denied, keeping the gap comparison apples-to-apples.
+
+Run `configs/no_symmetry.yaml` (identical but with both OFF) alongside the default
+to measure the effect.
 
 ### Why `grid_size` is odd (the power-of-two trap)
 

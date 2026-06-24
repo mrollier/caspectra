@@ -2,9 +2,13 @@
 
 We freeze the encoder, extract embeddings, and fit logistic-regression probes:
 
-* **embedding -> rule identity**: we *want this clearly below 100%*. Near-perfect
-  accuracy means the encoder learned the update rule (the genotype) — the known
-  failure mode — so this is reported prominently.
+* **embedding -> genotype identity**: we *want this clearly below 100%*. The
+  genotype label is the *equivalence-class (orbit) representative*, e.g. {0, 255}
+  -> rep 0 (the caller passes ``equiv_reps``), because once the encoder is trained
+  to be reflection/complement-invariant the orbit is the finest genotype it can
+  express. Near-perfect accuracy means the encoder learned the update rule (the
+  genotype) — the known failure mode — so this is reported prominently. (Kept under
+  the field name ``rule`` for CSV/JSON-key stability.)
 * **embedding -> Li-Packard class** and **embedding -> Wolfram class**: we want
   these *well above* the majority-class baseline.
 
@@ -77,12 +81,15 @@ class ProbeReport:
         return [r for r in (self.rule, self.lp, self.wolfram) if r is not None]
 
     def summary(self) -> str:
-        header = "Linear probes (rule identity should be WELL BELOW 1.0):"
+        # "rule" here is the genotype = equivalence-class (orbit) representative,
+        # e.g. {0, 255} -> rep 0 (see scripts/evaluate.py); its probe accuracy
+        # should be WELL BELOW 1.0.
+        header = "Linear probes (genotype = equiv-class identity should be WELL BELOW 1.0):"
         lines = [header, *(str(r) for r in self._results())]
         if self.gap is not None:
             lines.append(
-                f"    gap = LP_acc − rule_acc = {self.gap:+.3f} "
-                "(want large & positive: behaviour learned, rule suppressed)"
+                f"    gap = LP_acc − genotype(equiv-class)_acc = {self.gap:+.3f} "
+                "(want large & positive: behaviour learned, orbit suppressed)"
             )
         return "\n".join(lines)
 

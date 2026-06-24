@@ -77,8 +77,15 @@ def main() -> None:
     state = torch.load(checkpoint, map_location="cpu", weights_only=False)
     model.load_state_dict(state["model_state"])
 
-    embeddings, rules, _reps = extract_embeddings(model, loader, device)
-    np.savez_compressed(output_dir / "embeddings.npz", embeddings=embeddings, rules=rules)
+    embeddings, rules, equiv_reps = extract_embeddings(model, loader, device)
+    # The genotype side of every diagnostic uses the equivalence-class representative
+    # (the orbit, e.g. {0, 255} -> rep 0), not the individual rule: once the encoder is
+    # trained to be reflection/complement-invariant, the orbit is the finest genotype it
+    # can express. LP class is constant within an orbit, so `equiv_reps` is also a valid
+    # key for the LP/Wolfram lookups. The raw `rules` are kept only for reference.
+    np.savez_compressed(
+        output_dir / "embeddings.npz", embeddings=embeddings, rules=rules, equiv_reps=equiv_reps
+    )
     print(f"[eval] extracted {embeddings.shape[0]} embeddings of dim {embeddings.shape[1]}")
 
     labels = load_rule_labels(cfg.eval.rule_labels_csv)
@@ -89,13 +96,13 @@ def main() -> None:
         )
 
     # --- Linear probes (lead evaluation) ---
-    probe_report = run_probes(embeddings, rules, labels, seed=cfg.seed)
+    probe_report = run_probes(embeddings, equiv_reps, labels, seed=cfg.seed)
     probe_report.to_csv(output_dir / "probes.csv")
     print(probe_report.summary())
 
     # --- Hand-crafted baseline: the embedding must beat cheap descriptors ---
     baseline_features = compute_baseline_features(dataset.images)
-    baseline_report = run_probes(baseline_features, rules, labels, seed=cfg.seed)
+    baseline_report = run_probes(baseline_features, equiv_reps, labels, seed=cfg.seed)
     baseline_report.to_csv(output_dir / "probes_baseline.csv")
     print("[eval] hand-crafted baseline (" + ", ".join(FEATURE_NAMES) + "):")
     print(baseline_report.summary())
@@ -114,7 +121,7 @@ def main() -> None:
         min_cluster_size=cfg.eval.hdbscan_min_cluster_size,
         min_samples=cfg.eval.hdbscan_min_samples,
         seed=cfg.seed,
-        rules=rules,
+        rules=equiv_reps,
         labels=labels,
     )
     print(cluster_report.summary())
@@ -134,16 +141,16 @@ def main() -> None:
 
     # Contingency tables (when labels available).
     if labels is not None and labels.has_lp:
-        lp = labels.lp_array(rules)
+        lp = labels.lp_array(equiv_reps)
         mask = lp >= 0
         table, crows, ccols = contingency_table(cluster_report.umap_labels[mask], lp[mask])
         _write_contingency(output_dir / "contingency_lp.csv", table, crows, ccols, "cluster")
 
     # --- Visualisation ---
     coords2d = umap_project(embeddings, n_components=2, metric=cfg.eval.umap_metric, seed=cfg.seed)
-    lp_array = labels.lp_array(rules) if (labels and labels.has_lp) else None
+    lp_array = labels.lp_array(equiv_reps) if (labels and labels.has_lp) else None
     scatter_three_panel(
-        coords2d, rules, lp_array, cluster_report.umap_labels, output_dir / "umap_scatter.png"
+        coords2d, equiv_reps, lp_array, cluster_report.umap_labels, output_dir / "umap_scatter.png"
     )
     grid_paths = save_per_cluster_samples(
         dataset.images,

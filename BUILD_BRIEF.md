@@ -93,8 +93,8 @@ Implement each as a small callable class operating on a `(1,H,W)` float tensor:
 
 - `CyclicShift` — roll along the **horizontal (space) axis** by a random offset. Exact symmetry under periodic BC; preserves all information. **Default-on, primary augmentation.**
 - `CoarseGrain` — 2x2 average-pool then nearest-neighbour upsample back to original size (shape preserved; values become multi-level). Destroys microscopic/rule detail while keeping mesoscopic structure. **Default-on, primary augmentation — this is the key invariance for genotype-suppression.**
-- `HorizontalFlip` — left-right mirror. **Toggleable, OFF by default** (experimental condition: maps a rule to its equivalence-class partner).
-- `Invert` — `x -> 1 - x`. **Toggleable, OFF by default** (experimental condition; also an equivalence map).
+- `HorizontalFlip` — left-right mirror. **Default-on.** Together with `Invert` these are the *exact* reflection + complementation generators of the 88-class symmetry (`reflect`/`complement`), so a flipped/inverted view is a genuine orbit-partner diagram — the most principled invariance available. (Caveat: these don't suppress the genotype cheat by themselves — coarse-grain does that; they make "genotype" mean the orbit.) Ablate both via `configs/no_symmetry.yaml`.
+- `Invert` — `x -> 1 - x`. **Default-on** (the 0↔1 complementation generator; see `HorizontalFlip`).
 - `RandomResizedCropConservative` — optional, scale range default `(0.6, 1.0)`. **OFF by default.** Docstring note: unlike natural images, a crop here still contains the full rule table, so it does *not* suppress genotype; conservative scale only.
 - **Do not implement** vertical/time flips, 90-degree rotations/transposes, or salt-and-pepper noise as positive-pair augmentations (time is not reversible; rotation mixes the space/time axes; noise was found to hurt without helping). Leave clearly-commented stubs marked `# intentionally excluded — see brief §3.3`.
 
@@ -135,7 +135,7 @@ Implement each as a small callable class operating on a `(1,H,W)` float tensor:
 
 - Pipeline: extract embeddings -> L2-normalise -> **UMAP** (cosine metric, `n_components` ~10-50) -> **HDBSCAN** (`min_cluster_size`, `min_samples` configurable; cluster count **emerges**, outliers labelled noise). Also run HDBSCAN directly on the L2-normalised embeddings as a cross-check (UMAP can distort densities).
 - Metrics vs supplied labels (when available): Adjusted Rand Index, Normalised Mutual Information, cluster **purity** against LP and Wolfram classes.
-- **Genotype/phenotype scalar diagnostic:** `MI(cluster; exact_rule)` vs `MI(cluster; LP_class)`. Desired: low former, high latter. Report both; complements the rule-identity probe.
+- **Genotype/phenotype scalar diagnostic:** `MI(cluster; equiv_class)` vs `MI(cluster; LP_class)`. Desired: low former, high latter. The genotype label is the equivalence-class (orbit) representative, e.g. {0,255}→0 — the finest genotype a reflection/complement-invariant encoder can express — not the individual rule. Report both; complements the (orbit-level) rule-identity probe.
 - Report discovered cluster count vs known class counts (5 LP, 4 Wolfram); contingency tables.
 
 ### 3.8 `eval/visualize.py`
@@ -154,7 +154,7 @@ Implement each as a small callable class operating on a `(1,H,W)` float tensor:
 ## 4. Tests (minimal but include these)
 
 - `test_eca.py`: (1) `independent_rules()` returns exactly **88**; (2) reproduce known diagrams — rule 0 -> all zeros after one step, rule 255 -> all ones, rule 204 (identity) -> IC repeated down every row; (3) periodic BC wraps correctly on a tiny width.
-- `test_augment.py`: `CyclicShift` preserves the multiset of column sums; `CoarseGrain` preserves tensor shape; excluded augmentations are not registered in the default stack.
+- `test_augment.py`: `CyclicShift` preserves the multiset of column sums; `CoarseGrain` preserves tensor shape; the default stack includes shift + coarse-grain + flip + invert; *excluded* augmentations (time-flip, rotation, crop, noise) are not registered.
 - `test_shapes.py`: dataset item and both encoders produce expected shapes for `grid_size in {63, 127}` (odd sizes also lock in that the size-agnostic pipeline handles non-power-of-two grids).
 
 ---
@@ -186,5 +186,5 @@ nuCA generation/training (stub only); experiment-tracking frameworks; distribute
 ## 8. Notes to surface back to the user
 
 - `rule_labels.csv` (rule -> LP class, Wolfram class, from Li-Packard) is required for the LP/Wolfram parts of evaluation; the README must say where it goes. Everything else runs without it.
-- Defaults: `grid_size=127` (odd; avoid powers of two — additive-rule collapse), method=BYOL (switch to SimSiam if batch < ~256), augmentations = cyclic-shift + coarse-grain (flip/inversion OFF, experimental).
+- Defaults: `grid_size=127` (odd; avoid powers of two — additive-rule collapse), method=BYOL (switch to SimSiam if batch < ~256), augmentations = cyclic-shift + coarse-grain + flip + inversion (the latter two are the class-defining reflection/complement symmetries; ablate via `configs/no_symmetry.yaml`).
 - If an op fails on MPS even with the fallback flag, print a clear message and continue on CPU where possible.

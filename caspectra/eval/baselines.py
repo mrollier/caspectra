@@ -9,13 +9,23 @@ the embedding for a fair comparison.
 
 Features (all label-free, computed from the image alone):
 
-* ``mean_density``      — fraction of live cells (a famous strong baseline).
+* ``mean_density``      — *polarity-folded* live fraction ``min(d, 1-d)`` (a famous
+  strong baseline). Folded so it is invariant under 0↔1 complementation, matching
+  the encoder's invert-invariance; otherwise the baseline would get an absolute
+  density signal we deliberately deny the encoder, breaking the gap comparison.
 * ``temporal_activity`` — fraction of cells that change between consecutive rows
   (≈ dynamism; near 0 for fixed/periodic, high for chaotic).
 * ``compression_ratio`` — zlib-compressed size / raw size (texture complexity;
   low for ordered, high for chaotic/random).
 * ``block_entropy``     — Shannon entropy (bits) of the 16 possible 2×2 block
   patterns (an "input-entropy"-style texture descriptor).
+
+Symmetry note: ``temporal_activity`` and ``block_entropy`` are *exactly* invariant
+under both reflection (left-right flip) and complementation (the two 88-class
+generators) — complement/flip only permute the 2×2 pattern histogram, and row-wise
+change counts are preserved — so they need no folding. ``compression_ratio`` is
+approximately invariant. Only ``mean_density`` needed folding; do not "fix" the
+others.
 """
 
 from __future__ import annotations
@@ -35,7 +45,11 @@ FEATURE_NAMES = [
 
 
 def _mean_density(img: np.ndarray) -> float:
-    return float(img.mean())
+    # Polarity-folded: min(d, 1-d) so the feature is invariant under 0<->1
+    # complementation (one of the two 88-class symmetries the encoder is now
+    # trained to ignore). Reflection already leaves density unchanged.
+    d = float(img.mean())
+    return min(d, 1.0 - d)
 
 
 def _temporal_activity(img: np.ndarray) -> float:

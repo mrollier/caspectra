@@ -12,8 +12,8 @@ data:
   augmentation:
     cyclic_shift: true
     coarse_grain: true
-    horizontal_flip: false
-    invert: false
+    horizontal_flip: true    # left-right reflection: one of the two generators of the 88-class symmetry
+    invert: true             # 0<->1 complementation: the other generator (see configs/no_symmetry.yaml to ablate)
     random_resized_crop: false
     coarse_grain_kernel: 2
     coarse_grain_prob: 0.5   # stochastic: some views keep fine detail

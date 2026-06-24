@@ -124,11 +124,16 @@ def genotype_phenotype_diagnostic(
     rules: np.ndarray,
     lp_labels: np.ndarray | None,
 ) -> dict:
-    """Excess rule information carried by the clusters beyond the LP class.
+    """Excess genotype information carried by the clusters beyond the LP class.
+
+    ``rules`` here is the genotype = equivalence-class (orbit) representative, not
+    the individual rule (the caller passes ``equiv_reps``; orbit is the finest
+    genotype a reflection/complement-invariant encoder can express).
 
     The headline number is ``mi_rule_given_lp`` = the conditional mutual
-    information ``MI(cluster; rule | LP)``. Because the LP class is a deterministic
-    function of the rule, this equals ``MI(cluster; rule) - MI(cluster; LP)`` and is
+    information ``MI(cluster; equiv-class | LP)``. Because the LP class is a
+    deterministic function of the equivalence class, this equals
+    ``MI(cluster; equiv-class) - MI(cluster; LP)`` and is
     **always >= 0** by the data-processing inequality. **We want it near zero:** that
     means the clustering carries no information about the *exact rule* beyond what the
     coarse behavioural class already implies (phenotype, not genotype). A large value
@@ -185,14 +190,14 @@ class ClusterReport:
             )
         if self.mi_rule_given_lp is not None:
             lines.append(
-                "Genotype leakage: excess rule info MI(cluster;rule|LP)="
+                "Genotype leakage: excess equiv-class info MI(cluster;equiv-class|LP)="
                 f"{self.mi_rule_given_lp:.3f} nats (want ~0; large = leakage). "
-                f"[MI rule={self.mi_rule:.3f}, LP={self.mi_lp:.3f}]"
+                f"[MI equiv-class={self.mi_rule:.3f}, LP={self.mi_lp:.3f}]"
             )
         elif self.mi_rule is not None:
             lines.append(
-                f"MI(cluster;rule)={self.mi_rule:.3f} nats "
-                "(no LP labels -> excess-rule-info diagnostic unavailable)"
+                f"MI(cluster;equiv-class)={self.mi_rule:.3f} nats "
+                "(no LP labels -> excess-genotype-info diagnostic unavailable)"
             )
         return "\n".join(lines)
 

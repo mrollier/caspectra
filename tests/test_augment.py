@@ -121,18 +121,23 @@ def test_invert_maps_x_to_one_minus_x() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_default_stack_is_exactly_shift_then_coarse_grain() -> None:
+def test_default_stack_includes_the_two_symmetry_augmentations() -> None:
+    """Default stack = shift, coarse-grain, flip, invert.
+
+    Flip (reflection) and invert (complementation) are the two generators of the
+    88-class symmetry and are ON by default; crop stays OFF (it does not suppress
+    the genotype). See AugmentationConfig.
+    """
     stack = default_augmentation_stack()
     types = [type(t) for t in stack.transforms]
-    assert types == [CyclicShift, CoarseGrain]
+    assert types == [CyclicShift, CoarseGrain, HorizontalFlip, Invert]
 
 
-def test_excluded_augmentations_not_in_default_stack() -> None:
-    """Flip / invert / crop are experimental toggles, OFF by default
-    (BUILD_BRIEF.md §3.3)."""
+def test_crop_not_in_default_stack() -> None:
+    """RandomResizedCrop stays OFF by default (a crop still exposes the full rule
+    table, so it does not suppress the genotype)."""
     stack = default_augmentation_stack()
-    excluded = {HorizontalFlip, Invert}
-    assert not any(type(t) in excluded for t in stack.transforms)
+    assert all(type(t).__name__ != "RandomResizedCropConservative" for t in stack.transforms)
 
 
 def test_toggles_add_optional_augmentations() -> None:

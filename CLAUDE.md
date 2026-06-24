@@ -28,8 +28,16 @@ MI(cluster; rule) low but MI(cluster; LP class) high.
   on batch size / channels / embedding dim, not the spatial grid.
 - Method: **BYOL** default; **SimSiam** if batch < ~256.
 - `norm_layer`: GroupNorm when batch < 256.
-- Augmentations: cyclic-shift + coarse-grain ON; flip + inversion are an
-  experimental toggle (OFF). No time-flip, no rotation, no salt-and-pepper.
+- Augmentations: cyclic-shift + coarse-grain ON; **flip + inversion also ON** —
+  they are the *exact* reflection + complementation symmetries that define the 88
+  equivalence classes, so a flipped/inverted view is a genuine orbit-partner
+  diagram (the most principled invariance available). Ablate via
+  `configs/no_symmetry.yaml`. Caveat: these do NOT suppress the genotype cheat by
+  themselves (coarse-grain + anti-cheat kernels + bottleneck do); they only stop
+  chirality/polarity shortcuts and make "genotype" mean the orbit. Consequently
+  the genotype probe / MI use the equivalence-class representative (e.g. {0,255}→0),
+  and the density baseline is polarity-folded. No time-flip, no rotation, no
+  salt-and-pepper.
 
 ## Workflow rules
 - Follow the build order in `BUILD_BRIEF.md` §5; **pause after each step for review.**
