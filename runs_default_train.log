@@ -1,0 +1,5 @@
+[train] device=mps output_dir=runs/default
+[train] dataset: 22528 diagrams, 176 batches/epoch
+[train] done. loss -0.7962 -> -0.9876
+[train] artifacts in /Users/michielrollier/Documents/GitHub/ssl-ecas/runs/default
+
