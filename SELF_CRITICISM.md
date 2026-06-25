@@ -23,6 +23,14 @@ genotype/phenotype distinction and several **empirically grounded design
 principles that this repo does not yet honour.** Per the user's note, the paper
 is treated as *framing*, not as ground truth.
 
+> **Empirical update (2026-06-25).** The first full-scale run now exists
+> (`runs/default/`). It confirms the predicted failure mode *and* sharpens the
+> diagnosis in a way that was not obvious before the run: the model recovers the
+> genotype, and the only behaviour it surfaces unsupervised is **homogeneous vs.
+> non-homogeneous**. Crucially, the complexity signal is *present but not salient*.
+> See **Level 5** for the numbers and a complexity-targeted roadmap — read it
+> alongside the conceptual cautions in Levels 1–4, which it makes concrete.
+
 ---
 
 ## Context inherited from the prior supervised work (read this first)
@@ -328,7 +336,145 @@ buys structural extensibility only.
 
 ---
 
-## Cross-cutting / process risks
+## Level 5 — Empirical update: what the first full run actually showed (2026-06-25)
+
+The full `default.yaml` run (88 reps × 256 ICs, 127px, 100 epochs, BYOL +
+`AntiCheatCNN`, symmetry augmentations ON) was executed and evaluated. The results
+move several Level 1–4 *predictions* into the column of *measured facts*, and add one
+diagnosis that changes the v2 direction.
+
+### 5.1 The measured facts
+
+- **The genotype cheat survived the anti-cheat architecture.** Rule-identity probe
+  (88 orbits) **acc = 0.967** (baseline 0.011). The 2×2 kernels + 64-d signed
+  bottleneck dropped the *smoke* probe from 1.000 → ~0.97 but did **not** suppress
+  rule-readability at full scale. The encoder is still essentially a rule lookup.
+- **The deep embedding is a *better* rule-reader than cheap texture stats.** The
+  4-scalar hand-crafted baseline scores 0.721 on the same rule probe; the encoder
+  scores 0.967. On the dimension we wanted suppressed, the deep model is worse than
+  the baseline — the opposite of "earning its keep."
+- **Clusters ≈ rules.** HDBSCAN finds ~95 clusters for 88 rules (sweep 66–131);
+  cluster→rule purity median ≈ 1.0; ~half the clusters are a single rule. The
+  unsupervised taxonomy is the rule table at fine scale.
+- **The only emergent *behavioural* axis is trivial.** Coarsening the 95 clusters
+  into super-groups cleanly isolates the **class-1 "dies to uniform"** rules
+  (0,8,32,40,128,136,160,168) into their own region, but collapses **all** of
+  periodic + chaotic + complex into one ~89% blob. The macro-structure is
+  *homogeneous vs. non-homogeneous* — not order vs. chaos, and certainly not an
+  isolated class-IV cluster.
+
+### 5.2 The diagnosis that matters: the signal is present, just not salient
+
+This is the non-obvious part. The complexity information **is in the embedding** —
+it is simply not the axis the unsupervised geometry is built on:
+
+- **complex-vs-chaotic linear probe** (rules {54,110} vs the 12 chaotic reps):
+  **balanced acc 0.968.** A linear readout separates class-IV from class-III almost
+  perfectly. (This is unsurprising given rule acc 0.967 — if you can name the rule
+  you can name its class — but it is the decisive point: *detectability is not the
+  bottleneck.*)
+- **embedding → density R² = 0.947; embedding → temporal-activity R² = 0.955.** The
+  embedding encodes the global density/activity nuisance almost perfectly.
+- **The geometry is density-dominated.** The top principal component is 24% of the
+  embedding variance and correlates **0.61** with mean density (top-10 PCs = 85%).
+  So the largest direction the clustering "sees" is essentially *how much stuff is on
+  the diagram*. UMAP+HDBSCAN coarsen along that axis; the low-variance,
+  behaviourally-meaningful complexity coordinate is swamped.
+
+**Conclusion:** "filter out complex behaviour with SSL" is currently failing not
+because the model *can't tell* complex from chaotic, but because nothing in the
+pipeline makes complexity a **high-variance, metric-aligned** direction. Removing the
+genotype cheat (Levels 2–3) is necessary but **not sufficient** — even a perfectly
+genotype-blind encoder would still cluster by density unless complexity is made
+salient.
+
+### 5.3 Weaknesses in the theoretical assumptions (made concrete by the run)
+
+- **[Critical] "Suppress the genotype → behaviour emerges" is a non-sequitur.** The
+  project's load-bearing assumption is that the interesting taxonomy is what remains
+  after the rule cheat is removed. The run shows the residual structure is dominated
+  by a *different* trivial shortcut (density/activity), which Level 2 already flagged
+  as surviving the augmentations. Suppression creates room for behaviour; it does not
+  *point at* complexity. A salience/aligning mechanism is missing from the theory.
+- **[Critical] "Complexity" is not expressible as invariance to any augmentation.**
+  SSL learns to be invariant to its augmentations and to discriminate on everything
+  else. Shift/coarse-grain/flip/invert define the *equivalence* we impose; none of
+  them has "all edge-of-chaos diagrams" as an orbit. There is therefore **no
+  inductive bias toward the order/chaos axis** anywhere in the objective. The hope
+  that the algorithm will "decide which phenomenologies group together" is
+  under-determined: it groups by whatever maximises view-agreement-minus-collapse,
+  which here is rule-texture + density.
+- **[Important] A static 2-D image model has no notion of *computation*.** Class-IV
+  behaviour is *dynamical* — long transients, propagating localized structures,
+  particle collisions, long-range space-time correlation. A 2-D CNN reads the
+  spacetime diagram as a **texture**; the time axis carries no special causal status.
+  We encode a dynamical process as a still image and hope a texture model recovers
+  "computation." This is a representational mismatch, not a tuning problem.
+- **[Important] The measurement under-expresses complexity.** One random density-0.5
+  IC, `discard_transient=0`, fixed 127×127. From a random IC, rule 110 looks like a
+  busy soup, not clean gliders; class-IV structure is often clearest from *structured*
+  ICs and *longer* evolution. The early rows are dominated by IC noise we never
+  discard. So even the data may not show the model what we want it to find.
+- **[Important] The target class is rare and ill-defined.** Class IV is ~2 of 88
+  reps; HDBSCAN (density-based) structurally cannot carve a rare, subtle class out of
+  a dominant texture axis (Level 1 rare-class point, now realized). And "edge of
+  chaos" has no crisp per-diagram definition or ground truth — we are asking an
+  unsupervised method to find a category we cannot ourselves label per-instance.
+- **[Minor] Evaluation circularity.** Every behaviour reference (LP/Wolfram) is
+  constant within a rule, so "behaviour clustering" is still graded against a
+  rule-derived target. We have no per-diagram complexity label to validate against.
+
+### 5.4 How to proceed — making complexity *salient* (prioritised)
+
+Ordered by leverage-per-effort. Tiers 1–2 are the realistic near-term path.
+
+1. **[Cheap, do first] Project out the density/activity axis, then re-cluster.**
+   Since density is ~95% linearly recoverable and PC1 is density-aligned, regress
+   density+activity out of the embedding (or whiten and drop the density-correlated
+   components) and re-run UMAP/HDBSCAN. This *directly tests* the salience diagnosis:
+   if behavioural sub-structure (incl. a class-IV island) appears once density is
+   removed, the problem was geometry, not content. *Honest caveat:* complexity is one
+   of many residual axes — it may sharpen without fully separating.
+
+2. **[The main lever] Inject a physics-based complexity prior (no human labels
+   needed).** The order/chaos axis has well-studied, *label-free* estimators; use one
+   to shape the representation rather than hoping it emerges:
+   - **Damage / difference-pattern spreading** — the canonical edge-of-chaos probe:
+     flip one IC cell, evolve both copies, measure how the damage cone grows. Dies
+     (class 1/2), space-fills ballistically (class 3), propagates along localized
+     structures sub-ballistically (class 4). This is the single most discriminating
+     signal for class IV and is purely dynamical.
+   - Also: input-entropy / Langton's λ trajectory, spatial mutual-information decay,
+     multi-scale block entropy, compressibility across coarse-grainings.
+   Use it two ways: (a) **directly** — cluster on a handful of these scalars and check
+   whether they already separate class IV *better than the SSL embedding does* (if so,
+   the deep pipeline is not justified for this task — an honest possible outcome); or
+   (b) as an **auxiliary self-supervised target / metric** — add a head that regresses
+   the proxy, or do metric learning so "similar" means "similar complexity," shaping
+   the embedding toward the axis we care about.
+
+3. **[Principled redesign] Predictive / world-model SSL along the time axis.** Replace
+   instance discrimination with *forecasting*: predict future rows from past rows
+   (masked space-time / next-block prediction). The **predictability profile** — how
+   residual error or residual entropy scales with horizon — is itself an order/chaos
+   coordinate (trivially predictable → periodic → irreducibly unpredictable, with
+   class IV intermediate / long-memory). This makes the encoder dynamics-aware and
+   aligns the learned axis with computation instead of texture.
+
+4. **[Supporting] Fix the measurement.** `discard_transient` > 0; evolve longer; add
+   structured/single-seed ICs alongside random ones; represent a *rule* by the
+   distribution/average of its per-IC embeddings (denoises IC nuisance); oversample
+   the class-IV neighbourhood of rule space (and consider sampling beyond the 88 reps
+   there). These help any of 1–3.
+
+5. **[Honesty / scope] Re-state the deliverable.** A *fully* unsupervised "complexity
+   detector" may be ill-posed without injecting any complexity signal; the realistic
+   product is **SSL + a physics-grounded complexity prior**, scored by **per-class
+   recall of class IV against the damage-spreading baseline**, not aggregate ARI. If
+   the baseline wins, that is a publishable, honest result about the limits of texture
+   SSL for computation-detection.
+
+
 
 - **No pre-registered success criterion.** Define, in advance and per behavioural
   class: what rule-vs-LP probe gap, what stability, and what baseline margin count
@@ -394,6 +540,20 @@ hypothesis is reasonable.
    `lp_split="rules"` leave-rules-out, `cluster_count_stability`. The
    *interpretive* stance (treat LP as a reference, investigate disagreement) is a
    research-conduct choice that remains with the experimenter.
+
+7. **Make complexity *salient*, not just present (NEW — Level 5).** The first full
+   run shows class-IV is linearly decodable (0.968) but density-dominated geometry
+   hides it. First experiment: **project out density/activity and re-cluster**
+   (cheap). Then **inject a label-free complexity prior** — damage/difference-pattern
+   spreading is the canonical edge-of-chaos estimator — either as a direct clustering
+   feature or as an auxiliary SSL target/metric. *(Critical; Level 5.)*
+8. **Add a dynamics-aware objective (NEW — Level 5).** Trial a predictive/world-model
+   SSL head (forecast future rows from past) so the learned axis tracks
+   *predictability/computation* rather than static texture. *(Important; Level 5.)*
+9. **Score class IV explicitly against a physics baseline (NEW — Level 5).** Headline
+   metric = per-class recall of class IV vs. a damage-spreading/entropy baseline; if
+   the baseline wins, report that honestly as a limit of texture SSL. *(Important;
+   Levels 1, 5.)*
 
 **Bottom line.** With the prior paper in view, the augmentation strategy is the
 project's strongest, best-justified component — but the repo imported the paper's
