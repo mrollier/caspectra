@@ -1,0 +1,42 @@
+# Lever A smoke test: 10 rules spanning the Wolfram classes, 63px, 3 epochs.
+# Always run this before the full lever_a.yaml run (CLAUDE.md workflow rule).
+data:
+  rules: [0, 18, 26, 30, 54, 90, 110, 178, 204, 232]
+  n_ic_per_rule: 16
+  grid_size: 63
+  discard_transient: 0
+  cache_dir: cache_smoke
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: false
+    horizontal_flip: true
+    invert: true
+model:
+  method: regressor
+  encoder: anticheat
+  embedding_dim: 64
+  n_targets: 4
+train:
+  epochs: 3
+  batch_size: 32
+  lr: 0.001
+  weight_decay: 1.0e-06
+  optimizer: adamw
+  checkpoint_every: 2
+  num_workers: 0
+  output_dir: runs/lever_a_smoke
+  holdout_fraction: 0.2
+  holdout_seed: 0
+  force_holdout_rules: [110]
+  force_train_rules: [54]
+targets:
+  n_pairs: 64            # smoke: cheaper targets are fine
+  ic_density: 0.5
+  seed: 0
+eval:
+  checkpoint: runs/lever_a_smoke/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 64
+  output_dir: runs/lever_a_smoke/eval
+seed: 0

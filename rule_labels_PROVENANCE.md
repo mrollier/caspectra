@@ -1,7 +1,28 @@
 # Provenance of `rule_labels.csv`
 
-**Status: awaiting user spot-check** (generated 2026-07-01; metrics computed from it
-should be treated as provisional until this line is removed).
+**Status: accepted (2026-07-02).** The user closed the manual spot-check by decision,
+relying on the automated verification: (1) the 88 transcribed rules map **one-to-one**
+onto the repo's 88 orbit representatives; (2) expanding orbits to all 256 rules
+reproduces the published class sizes **24 / 97 / 89 / 10 / 36** exactly; (3) LP *null*
+coincides exactly with Wolfram class 1. The only error these checks cannot catch is a
+**count-preserving swap** of rules between classes (both misreads must collide with no
+existing entry *and* preserve every per-class orbit-size tally) — judged negligible.
+If anything downstream ever looks label-suspicious, re-verify in five minutes by
+comparing the transcription below against **Table 2, p. 288** of the
+[open-access PDF](https://www.complex-systems.com/pdf/04-3-3.pdf).
+
+### The transcription used (Li & Packard 1990, Table 2 — their representatives)
+
+| class (code) | rules as listed in the paper |
+|---|---|
+| null (1) | 0, 8, 32, 40, 128, 136, 160, 168 |
+| fixed point (2) | 2, 4, 10, 12, 13, 24, 34, 36, 42, 44, 46, 56, 57, 58, 72, 76, 77, 78, 104, 130, 132, 138, 140, 152, 162, 164, 170, 172, 184, 200, 204, 232 |
+| periodic (3) | 1, 3, 5, 6, 7, 9, 11, 14, 15, 19, 23, 25, 27, 28, 29, 33, 35, 37, 38, 41, 43, 50, 51, 74, 108, 131, 133, 134, 142, 156, 178 |
+| locally chaotic (4) | 26, 73, 154 |
+| chaotic (5) | 18, 22, 30, 45, 54, 60, 90, 105, 106, 129, 137, 146, 150, 161 |
+
+(Each listed rule was mapped to the repo's minimum-of-orbit representative via
+`caspectra.ca.eca.equivalence_class`; e.g. LP's 137 → repo rep 110.)
 
 ## `lp_class` — Li–Packard (authoritative)
 

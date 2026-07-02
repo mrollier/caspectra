@@ -49,6 +49,7 @@ __all__ = [
     "build_augmentation_stack",
     "default_augmentation_stack",
     "TwoViewTransform",
+    "SingleViewTransform",
 ]
 
 
@@ -306,3 +307,23 @@ class TwoViewTransform:
 
     def __call__(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return self._view_a(x), self._view_b(x)
+
+
+class SingleViewTransform:
+    """Apply the configured augmentation stack once (no positive pair).
+
+    Used by the Lever A invariant regressor: supervised regression wants one
+    augmented view per sample, not a two-view pair. The targets are per-orbit
+    invariants, exactly preserved by cyclic shift, reflection and
+    complementation — so those remain valid augmentations — while coarse-grain
+    should be OFF for this use (it has no suppression role in a regression
+    against physics targets; it only destroys usable information — see
+    ``configs/lever_a.yaml``).
+    """
+
+    def __init__(self, config: AugmentationConfig | None = None) -> None:
+        self.config = config or AugmentationConfig()
+        self._stack = build_augmentation_stack(self.config)
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return self._stack(x)

@@ -129,6 +129,26 @@ per-cluster sample grids, `embeddings.npz` and `summary.json`.
 > Always run the **smoke config first** to catch integration errors before
 > committing to a full 127×127 run.
 
+### Lever A — the invariant-regression amortizer (FOUNDATIONS.md §4)
+
+Trains an encoder to predict the damage-spreading invariants from a single
+diagram, leave-rules-out (criterion 6; rule 110 held out by default):
+
+```bash
+# smoke first (10 rules, 63px, 3 epochs), then the real run
+python scripts/train_regressor.py    --config configs/lever_a_smoke.yaml
+python scripts/evaluate_regressor.py --config configs/lever_a_smoke.yaml
+
+python scripts/train_regressor.py    --config configs/lever_a.yaml
+python scripts/evaluate_regressor.py --config configs/lever_a.yaml
+```
+
+Evaluation reports the criterion-6 gate (per-feature held-out-rule R²), the
+amortized-vs-direct invariant taxonomy, diagnostic probes, and a per-patch
+phenotype-map PNG (the qualitative nuCA-payoff preview). For the robustness
+check, swap `train.force_holdout_rules` / `force_train_rules` ([110] ↔ [54])
+and train a second run into a different `output_dir`.
+
 ## Where to put `rule_labels.csv`
 
 The LP/Wolfram parts of evaluation need an external `rule_labels.csv`. The

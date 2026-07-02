@@ -1,0 +1,43 @@
+# Lever A robustness check: the class-IV split swapped (54 held out, 110 trained
+# on). Identical recipe to lever_a.yaml otherwise — see FOUNDATIONS.md §4 and the
+# 2026-07-02 decision record. Compare both runs' criterion-6 numbers in RESULTS.md.
+data:
+  rules: null
+  n_ic_per_rule: 256
+  grid_size: 127
+  discard_transient: 0
+  cache_dir: cache
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: false
+    horizontal_flip: true
+    invert: true
+model:
+  method: regressor
+  encoder: anticheat
+  embedding_dim: 64
+  n_targets: 4
+train:
+  epochs: 60
+  batch_size: 128
+  lr: 0.001
+  weight_decay: 1.0e-06
+  optimizer: adamw
+  checkpoint_every: 10
+  num_workers: 2
+  output_dir: runs/lever_a_swap
+  holdout_fraction: 0.2
+  holdout_seed: 0
+  force_holdout_rules: [54]
+  force_train_rules: [110]
+targets:
+  n_pairs: 256
+  ic_density: 0.5
+  seed: 0
+eval:
+  checkpoint: runs/lever_a_swap/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 256
+  output_dir: runs/lever_a_swap/eval
+seed: 0

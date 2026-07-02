@@ -1,0 +1,44 @@
+# Lever A — invariant-regression amortizer (FOUNDATIONS.md §4; criterion 6 gate).
+# Predicts the per-rule damage-spreading invariants from single diagrams,
+# leave-rules-out: rule 110 held out / 54 trained on (2026-07-02 decision; run
+# the swapped variant afterwards as the robustness check).
+data:
+  rules: null            # the 88 orbit representatives
+  n_ic_per_rule: 256
+  grid_size: 127
+  discard_transient: 0
+  cache_dir: cache       # reuses the existing v1 diagram cache
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: false  # no suppression role in regression; only destroys signal
+    horizontal_flip: true   # exact orbit symmetries; targets are per-orbit
+    invert: true
+model:
+  method: regressor
+  encoder: anticheat
+  embedding_dim: 64
+  n_targets: 4
+train:
+  epochs: 60
+  batch_size: 128
+  lr: 0.001
+  weight_decay: 1.0e-06
+  optimizer: adamw
+  checkpoint_every: 10
+  num_workers: 2
+  output_dir: runs/lever_a
+  holdout_fraction: 0.2
+  holdout_seed: 0
+  force_holdout_rules: [110]
+  force_train_rules: [54]
+targets:
+  n_pairs: 256           # matches the measured bootstrap precision (RESULTS.md)
+  ic_density: 0.5        # the protocol tuple's IC measure
+  seed: 0
+eval:
+  checkpoint: runs/lever_a/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 256
+  output_dir: runs/lever_a/eval
+seed: 0

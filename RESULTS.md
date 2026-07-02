@@ -164,3 +164,57 @@ groups, and specific co-memberships — never as a fine partition.
   from random ICs (transient-dominated; supports `discard_transient > 0` for
   Lever-A targets) and rule 0's high variance is a pure transient artifact —
   the feature is only meaningful jointly with the others.
+
+---
+
+## 2026-07-02 — Lever A: criterion 6 measured (both split variants)
+
+First training of the invariant-regression amortizer (`configs/lever_a.yaml` +
+swapped variant; AntiCheatCNN 64-d + linear head, 60 epochs, 127px, coarse-grain
+OFF; targets = damage features at n_pairs = 256; 18 rules held out,
+Wolfram-stratified).
+
+### Criterion 6 — **PASS in both variants** (gate: median rule-level R² ≥ 0.5)
+
+| feature (rule-level R², 18 unseen rules) | main (110 out) | swap (54 out) |
+|---|---|---|
+| damage_survival | 0.694 | 0.700 |
+| damage_fraction | 0.797 | 0.808 |
+| spreading_rate | **0.970** | **0.956** |
+| cone_fill | 0.929 | 0.863 |
+| **median** | **0.863 → PASS** | **0.836 → PASS** |
+
+The invariants are amortizable from single diagrams, and robustly so across the
+class-IV split. Signal appeared essentially immediately (epoch-1 median R²
+0.875), so the diagram texture encodes the damage response far more directly
+than it encodes the reference class labels. Diagnostics: participation ratio
+4.1–4.2/64 (the embedding organizes along ≈ the 4 targets); rule probe 0.94
+(reported, not gated); LP/Wolfram probes ≈ 1.0.
+
+### The class-IV corner: a mirror-image failure, and the honest caveat
+
+Both variants misplace the **unseen** complex rule, in opposite directions:
+
+- main: rule 110 predicted spreading_rate 0.536 (true 0.372) — pulled **up
+  toward chaotic**; amortized taxonomy breaks the class-IV island
+  ({54, 106} only; class-IV recall 0.0 vs 1.0 for direct invariants).
+- swap: rule 54 predicted 0.185 (true 0.436) — pulled **down toward locally
+  chaotic**; its amortized cluster is {26, 37, 54, 73}.
+
+Interpretation: the intermediate damage regime is underdetermined from **one**
+training exemplar — the amortizer interpolates unseen complex rules toward
+whichever neighbouring regime it knows. Criterion 6 passes (amortization
+works), but a class-IV *detector* for genuinely unseen complex rules needs more
+complex training exemplars than ECAs can provide — direct, quantitative
+strengthening of Milestone 4 (larger rule space, where glider rules are
+plentiful per Wuensche).
+
+### Per-patch phenotype maps (qualitative preview)
+
+`runs/lever_a/eval/phenotype_maps.png`: rule 0's predicted spreading-rate map is
+≈ 0 everywhere **except the IC-transient top row** (correct spatial
+localization of activity); rule 204 reads ≈ 0 with stripes tracking its frozen
+columns; rule 30's patches read systematically hotter than 110's, matching the
+true rates. Resolution is coarse (≈ 8×8 patches at 127px — set by the encoder's
+four pooling stages); a shallower-head variant is the known next step before
+quantitative nuCA validation.

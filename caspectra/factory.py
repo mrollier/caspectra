@@ -11,10 +11,11 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from caspectra.config import DataConfig, ModelConfig, TrainConfig
-from caspectra.data.augmentations import TwoViewTransform
+from caspectra.data.augmentations import SingleViewTransform, TwoViewTransform
 from caspectra.data.dataset import SpacetimeDataset
 from caspectra.models.byol import BYOL, SimSiam
 from caspectra.models.encoder import AntiCheatCNN, ResNet18Encoder, SmallCNNEncoder
+from caspectra.models.regressor import InvariantRegressor
 
 __all__ = [
     "build_encoder",
@@ -52,7 +53,7 @@ def build_encoder(cfg: ModelConfig) -> nn.Module:
 
 
 def build_model(cfg: ModelConfig) -> nn.Module:
-    """Construct the SSL wrapper (BYOL or SimSiam) around the encoder."""
+    """Construct the method wrapper (BYOL / SimSiam / InvariantRegressor)."""
     encoder = build_encoder(cfg)
     if cfg.method == "byol":
         return BYOL(
@@ -63,7 +64,9 @@ def build_model(cfg: ModelConfig) -> nn.Module:
         )
     if cfg.method == "simsiam":
         return SimSiam(encoder)
-    raise ValueError(f"Unknown method {cfg.method!r}; expected 'byol' or 'simsiam'.")
+    if cfg.method == "regressor":
+        return InvariantRegressor(encoder, n_targets=cfg.n_targets)
+    raise ValueError(f"Unknown method {cfg.method!r}; expected 'byol', 'simsiam' or 'regressor'.")
 
 
 def build_optimizer(model: nn.Module, cfg: TrainConfig) -> torch.optim.Optimizer:
@@ -80,14 +83,22 @@ def build_optimizer(model: nn.Module, cfg: TrainConfig) -> torch.optim.Optimizer
     raise ValueError(f"Unknown optimizer {cfg.optimizer!r}; expected 'adamw' or 'sgd'.")
 
 
-def build_dataset(cfg: DataConfig, training: bool) -> SpacetimeDataset:
-    """Build a dataset; ``training`` toggles the two-view transform.
+def build_dataset(
+    cfg: DataConfig, training: bool, *, single_view: bool = False
+) -> SpacetimeDataset:
+    """Build a dataset; ``training`` toggles augmentation.
 
-    For training a :class:`TwoViewTransform` produces positive pairs; for
-    embedding extraction (evaluation) the transform is ``None`` so raw images
-    are returned.
+    For SSL training a :class:`TwoViewTransform` produces positive pairs; with
+    ``single_view=True`` (the Lever A regressor) the same stack is applied once
+    per sample instead. For embedding extraction (evaluation) the transform is
+    ``None`` so raw images are returned.
     """
-    transform = TwoViewTransform(cfg.augmentation) if training else None
+    if not training:
+        transform = None
+    elif single_view:
+        transform = SingleViewTransform(cfg.augmentation)
+    else:
+        transform = TwoViewTransform(cfg.augmentation)
     return SpacetimeDataset(
         rules=cfg.rules,
         n_ic_per_rule=cfg.n_ic_per_rule,

@@ -20,6 +20,7 @@ __all__ = [
     "ModelConfig",
     "TrainConfig",
     "EvalConfig",
+    "TargetsConfig",
     "ExperimentConfig",
 ]
 
@@ -42,10 +43,10 @@ class DataConfig:
 
 @dataclass
 class ModelConfig:
-    """Encoder and SSL-method settings."""
+    """Encoder and method settings."""
 
-    method: str = "byol"  # "byol" or "simsiam"
-    encoder: str = "resnet18"  # "resnet18" or "smallcnn"
+    method: str = "byol"  # "byol", "simsiam" or "regressor" (Lever A)
+    encoder: str = "resnet18"  # "resnet18", "smallcnn" or "anticheat"
     width_multiplier: float = 1.0
     small_input: bool = False
     norm_layer: str = "group"  # "group" (default) or "batch"
@@ -54,6 +55,22 @@ class ModelConfig:
     projection_hidden: int = 4096
     projection_out: int = 256
     prediction_hidden: int = 4096
+    n_targets: int = 4  # regressor only: number of invariant targets
+
+
+@dataclass
+class TargetsConfig:
+    """Invariant-target generation for the Lever A regressor (data/targets.py).
+
+    The targets are damage-spreading features computed under the same
+    observation protocol as the diagrams (width = ``data.grid_size``, the IC
+    density below) — FOUNDATIONS.md §1. ``n_pairs`` = 256 matches the measured
+    bootstrap precision (RESULTS.md, ± ≈ 0.01 per feature).
+    """
+
+    n_pairs: int = 256
+    ic_density: float = 0.5
+    seed: int = 0
 
 
 @dataclass
@@ -70,6 +87,13 @@ class TrainConfig:
     checkpoint_every: int = 10
     num_workers: int = 2
     output_dir: str = "runs/exp"
+    # Leave-rules-out split (regressor only; criterion 6). Class IV has two
+    # members: 110 is forced out / 54 forced in per the 2026-07-02 decision;
+    # swap the two lists for the robustness-check variant.
+    holdout_fraction: float = 0.2
+    holdout_seed: int = 0
+    force_holdout_rules: list[int] = field(default_factory=lambda: [110])
+    force_train_rules: list[int] = field(default_factory=lambda: [54])
 
 
 @dataclass
@@ -94,6 +118,7 @@ class ExperimentConfig:
     model: ModelConfig = field(default_factory=ModelConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
     eval: EvalConfig = field(default_factory=EvalConfig)
+    targets: TargetsConfig = field(default_factory=TargetsConfig)
     seed: int = 0
 
     def to_dict(self) -> dict[str, Any]:
@@ -111,6 +136,7 @@ class ExperimentConfig:
             model=ModelConfig(**d.get("model", {})),
             train=TrainConfig(**d.get("train", {})),
             eval=EvalConfig(**d.get("eval", {})),
+            targets=TargetsConfig(**d.get("targets", {})),
             seed=d.get("seed", 0),
         )
 

@@ -179,10 +179,17 @@ class SmallCNNEncoder(nn.Module):
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
+    def feature_map(self, x: torch.Tensor) -> torch.Tensor:
+        """Pre-GAP feature map ``(B, embedding_dim, h, w)``.
+
+        ``forward`` is exactly the spatial mean of this map, so a linear head
+        applied per position yields spatially-resolved predictions consistent
+        with the global one (used by ``InvariantRegressor.predict_map``).
+        """
+        return self.proj(self.features(x))
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.features(x)
-        x = self.proj(x)
-        x = self.avgpool(x)
+        x = self.avgpool(self.feature_map(x))
         return torch.flatten(x, 1)
 
 
@@ -241,8 +248,15 @@ class AntiCheatCNN(nn.Module):
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
+    def feature_map(self, x: torch.Tensor) -> torch.Tensor:
+        """Pre-GAP feature map ``(B, embedding_dim, h, w)``.
+
+        ``forward`` is exactly the spatial mean of this map, so a linear head
+        applied per position yields spatially-resolved predictions consistent
+        with the global one (used by ``InvariantRegressor.predict_map``).
+        """
+        return self.bottleneck(self.features(x))
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.features(x)
-        x = self.bottleneck(x)
-        x = self.avgpool(x)
+        x = self.avgpool(self.feature_map(x))
         return torch.flatten(x, 1)
