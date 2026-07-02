@@ -20,6 +20,7 @@ import torch  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
 
 from caspectra.config import TrainConfig  # noqa: E402
+from caspectra.eval.salience import participation_ratio  # noqa: E402
 from caspectra.utils import ensure_dir  # noqa: E402
 
 __all__ = ["Trainer", "collapse_std"]
@@ -72,6 +73,7 @@ class Trainer:
         self.output_dir = ensure_dir(config.output_dir)
         self.history: list[float] = []
         self.std_history: list[float] = []
+        self.rank_history: list[float] = []
         self._uses_ema = hasattr(model, "update_target")
         self._total_steps = max(1, config.epochs * len(dataloader))
         self._global_step = 0
@@ -102,26 +104,34 @@ class Trainer:
         return running / max(1, n_batches)
 
     @torch.no_grad()
-    def _embedding_std(self) -> float:
-        """Collapse metric on one batch of online-encoder embeddings."""
+    def _embedding_diagnostics(self) -> tuple[float, float]:
+        """Collapse std + effective rank on one batch of online-encoder embeddings.
+
+        The participation ratio catches the pathology ``collapse_std`` misses: the
+        std can stay comfortably > 0 while nearly all variance lives on a single
+        (e.g. density) axis — exactly the v1 failure. Both are logged per epoch.
+        """
         self.model.eval()
         view1, _view2, _metadata = next(iter(self.dataloader))
-        std = collapse_std(self.model.extract_embedding(view1.to(self.device)))
+        emb = self.model.extract_embedding(view1.to(self.device))
+        std = collapse_std(emb)
+        eff_rank = participation_ratio(emb.detach().cpu().numpy())
         self.model.train()
-        return std
+        return std, eff_rank
 
     def train(self) -> list[float]:
         """Run the full training loop; return the per-epoch loss history."""
         csv_path = self.output_dir / "loss_log.csv"
         with csv_path.open("w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["epoch", "loss", "embedding_std"])
+            writer.writerow(["epoch", "loss", "embedding_std", "effective_rank"])
             for epoch in range(1, self.config.epochs + 1):
                 epoch_loss = self._train_one_epoch()
-                epoch_std = self._embedding_std()
+                epoch_std, epoch_rank = self._embedding_diagnostics()
                 self.history.append(epoch_loss)
                 self.std_history.append(epoch_std)
-                writer.writerow([epoch, epoch_loss, epoch_std])
+                self.rank_history.append(epoch_rank)
+                writer.writerow([epoch, epoch_loss, epoch_std, epoch_rank])
                 f.flush()
                 if epoch % self.config.checkpoint_every == 0:
                     self.save_checkpoint(self.output_dir / f"checkpoint_epoch{epoch}.pt", epoch)

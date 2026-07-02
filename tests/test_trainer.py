@@ -71,10 +71,12 @@ def test_trainer_writes_csv_checkpoint_and_plot(tmp_path) -> None:
     assert (output_dir / "loss_curve.png").exists()
     assert (output_dir / "checkpoint_final.pt").exists()
 
-    # CSV has a header + one row per epoch, and logs the collapse metric.
+    # CSV has a header + one row per epoch, and logs both collapse diagnostics.
     lines = (output_dir / "loss_log.csv").read_text().strip().splitlines()
-    assert lines[0] == "epoch,loss,embedding_std"
+    assert lines[0] == "epoch,loss,embedding_std,effective_rank"
     assert len(lines) == 1 + 4
+    assert len(trainer.rank_history) == 4
+    assert all(r >= 1.0 for r in trainer.rank_history)
 
 
 def test_byol_training_runs_and_updates_target(tmp_path) -> None:

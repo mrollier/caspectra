@@ -53,6 +53,21 @@ def test_chaotic_has_higher_block_entropy_than_null() -> None:
     assert chaotic[ent] > null[ent]
 
 
+def test_input_entropy_variance_screens_complex_from_ordered() -> None:
+    """Wuensche's class-IV screen: glider dynamics fluctuate, ordered dynamics freeze.
+
+    Rule 204 (identity) repeats its IC forever -> the lookup-frequency entropy is
+    constant over time -> variance ~ 0. Rule 110's colliding gliders make the
+    entropy fluctuate. (110 > 30 is the *statistical* expectation of the screen,
+    tested at a fixed seed and size; the hard assertion is only ordered ~ 0 < complex.)
+    """
+    j = FEATURE_NAMES.index("input_entropy_variance")
+    ordered = compute_baseline_features(_diagram(204, w=96, h=96)[None])[0][j]
+    complex_ = compute_baseline_features(_diagram(110, w=96, h=96)[None])[0][j]
+    assert ordered < 1e-12
+    assert complex_ > ordered
+
+
 # --- Invariance under the two 88-class symmetries (so the gap stays fair once
 # the encoder is trained to be reflection/complement-invariant). ---
 
@@ -78,7 +93,7 @@ def test_symmetric_features_invariant_under_reflection() -> None:
     """
     base = compute_baseline_features(_SYM_IMGS)
     refl = compute_baseline_features(_SYM_IMGS[:, :, ::-1])
-    for name in ("mean_density", "temporal_activity", "block_entropy"):
+    for name in ("mean_density", "temporal_activity", "block_entropy", "input_entropy_variance"):
         j = FEATURE_NAMES.index(name)
         assert np.allclose(base[:, j], refl[:, j], atol=1e-9), name
 

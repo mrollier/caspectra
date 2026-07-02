@@ -19,10 +19,20 @@ Features (all label-free, computed from the image alone):
   low for ordered, high for chaotic/random).
 * ``block_entropy``     — Shannon entropy (bits) of the 16 possible 2×2 block
   patterns (an "input-entropy"-style texture descriptor).
+* ``input_entropy_variance`` — Wuensche's automated class-IV screen (Wuensche
+  1999, *Classifying Cellular Automata Automatically*): per time step, the
+  Shannon entropy (bits) of the 8 width-3 neighbourhood-pattern frequencies
+  (the rule-table lookup frequencies); the feature is the **variance over
+  time**. Ordered dynamics → low entropy, low variance; fully chaotic → high
+  entropy, *low* variance; glider/complex dynamics → high variance (entropy
+  fluctuates as localized structures collide). Published caveat: the signal can
+  shrink with lattice size when colliding and quiescent zones coexist — treat
+  it as a screen, not a definition (FOUNDATIONS.md §2).
 
-Symmetry note: ``temporal_activity`` and ``block_entropy`` are *exactly* invariant
-under both reflection (left-right flip) and complementation (the two 88-class
-generators) — complement/flip only permute the 2×2 pattern histogram, and row-wise
+Symmetry note: ``temporal_activity``, ``block_entropy`` and
+``input_entropy_variance`` are *exactly* invariant under both reflection
+(left-right flip) and complementation (the two 88-class generators) —
+complement/flip only permute the 2×2 / width-3 pattern histograms, and row-wise
 change counts are preserved — so they need no folding. ``compression_ratio`` is
 approximately invariant. Only ``mean_density`` needed folding; do not "fix" the
 others.
@@ -41,6 +51,7 @@ FEATURE_NAMES = [
     "temporal_activity",
     "compression_ratio",
     "block_entropy",
+    "input_entropy_variance",  # appended last so feats[:, :4] slices stay valid
 ]
 
 
@@ -80,6 +91,20 @@ def _block_entropy(img: np.ndarray) -> float:
     return float(-(probs * np.log2(probs)).sum())
 
 
+def _input_entropy_variance(img: np.ndarray) -> float:
+    # Neighbourhood-pattern code 0..7 per cell (periodic wrap), one row per step.
+    left = np.roll(img, 1, axis=1).astype(np.int64)
+    right = np.roll(img, -1, axis=1).astype(np.int64)
+    codes = 4 * left + 2 * img.astype(np.int64) + right
+    entropies = np.empty(img.shape[0], dtype=np.float64)
+    for t in range(img.shape[0]):
+        counts = np.bincount(codes[t], minlength=8).astype(np.float64)
+        probs = counts / counts.sum()
+        probs = probs[probs > 0]
+        entropies[t] = -(probs * np.log2(probs)).sum()
+    return float(entropies.var())
+
+
 def compute_baseline_features(images: np.ndarray) -> np.ndarray:
     """Return an ``(N, len(FEATURE_NAMES))`` matrix of per-diagram features.
 
@@ -95,6 +120,7 @@ def compute_baseline_features(images: np.ndarray) -> np.ndarray:
             _temporal_activity(img),
             _compression_ratio(img),
             _block_entropy(img),
+            _input_entropy_variance(img),
         ]
         for img in imgs
     ]

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -59,6 +61,28 @@ def test_load_rule_labels_parses_csv(tmp_path) -> None:
 
 def test_load_rule_labels_missing_returns_none(tmp_path) -> None:
     assert load_rule_labels(str(tmp_path / "nope.csv")) is None
+
+
+def test_load_rule_labels_borderline_column(tmp_path) -> None:
+    """The optional borderline column feeds the rev-2 dual class-IV reporting;
+    files without it (older fixtures) must still load with an empty set."""
+    p = tmp_path / "rule_labels.csv"
+    p.write_text("rule,lp_class,wolfram_class,borderline\n0,1,1,\n106,5,3,1\n110,5,4,\n")
+    labels = load_rule_labels(str(p))
+    assert labels is not None
+    assert labels.borderline == {106}
+    p2 = tmp_path / "old_schema.csv"
+    p2.write_text("rule,lp_class,wolfram_class\n0,1,1\n")
+    labels2 = load_rule_labels(str(p2))
+    assert labels2 is not None
+    assert labels2.borderline == set()
+
+
+def test_repo_rule_labels_have_expected_borderline_flags() -> None:
+    """The committed table flags exactly the documented unstable rules."""
+    labels = load_rule_labels(Path(__file__).resolve().parents[1] / "rule_labels.csv")
+    assert labels is not None
+    assert labels.borderline == {40, 41, 42, 106}
 
 
 # ---------------------------------------------------------------------------

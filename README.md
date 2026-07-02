@@ -1,24 +1,65 @@
-# caspectra — Self-Supervised Behavioural Taxonomy of Cellular Automata
+# caspectra — Behavioural Taxonomy of Cellular Automata via Dynamical Invariants
 
-Discover an open-ended, label-free **behavioural** taxonomy of cellular-automaton
-(CA) spacetime diagrams via self-supervised learning (SSL) + density-based
-clustering.
+Build a **behavioural (phenotype) taxonomy** of cellular-automaton spacetime
+diagrams from **label-free dynamical invariants** (damage spreading,
+input-entropy variance), and train encoders that **estimate those invariants
+from a single diagram** — amortized, and eventually *spatially resolved*, so
+that behaviour can be mapped locally in non-uniform CAs where global twin-run
+invariants do not apply.
 
-The validation target is the **elementary CAs (ECAs)** — the 256 rules, reducible
-to **88 equivalence classes** — which have known reference classifications
-(Li–Packard, Wolfram) so we can *check* that the unsupervised pipeline recovers
-behaviour rather than memorising the update rule.
+**Why not "discover the taxonomy with SSL"?** That was this project's original
+mission, and it is not defensible: there is no bias-free clustering
+(Kleinberg's impossibility theorem), formalized CA classes are undecidable
+(Culik & Yu), the observed class depends on the initial-condition measure and
+observation protocol (Gilman), and instance-discrimination SSL provably prefers
+shortcut cues — which our first full run confirmed (rule probe 0.967 through an
+anti-cheat architecture; a 4-scalar physics baseline beat the learned embedding
+at its own goal). The full argument, with sources and decision records, is in
+**`FOUNDATIONS.md`**; the measured record is in `RESULTS.md`. The texture-SSL
+result is retained as the documented **negative baseline**.
+
+The validation setting is the **elementary CAs (ECAs)** — 256 rules, 88
+equivalence classes — where reference classifications (Li–Packard, Wolfram)
+exist as *touchstones* (not ground truth: see the borderline-rule flags in
+`rule_labels.csv`).
+
+## What exactly is being classified
+
+"The behaviour class of rule R" is not a well-defined quantity — it depends on
+the observation protocol (see `FOUNDATIONS.md` §1). What this repo classifies
+is the tuple:
+
+> *(rule orbit under reflection/complement, Bernoulli(1/2) IC measure, ring of
+> 127 cells with periodic boundaries, horizon of 127 rows from t = 0)*
+
+Every metric and label is indexed by this tuple; `scripts/protocol_sensitivity.py`
+measures how sensitive the invariants and the taxonomy are to the IC density and
+lattice width (criterion 5 in `EVALUATION_CRITERIA.md`).
 
 ## The one non-negotiable constraint
 
-The encoder must learn **mesoscopic behaviour (the phenotype)**, *not* the local
-update rule (the genotype). A model that secretly classifies by reconstructing
-the rule table is the known failure mode and is a **failed run even at high
-clustering accuracy**. Evaluation exists primarily to detect this:
+The pipeline must surface **mesoscopic behaviour (the phenotype)**, *not* the
+local update rule (the genotype). Success is judged at the **geometry/cluster
+level**, against the pre-registered criteria in `EVALUATION_CRITERIA.md`
+(revision 2):
 
-- the **rule-identity linear probe** must be **well below 100%**;
-- the genotype/phenotype diagnostic wants **`MI(cluster; rule)` low** but
-  **`MI(cluster; LP class)` high**.
+- discovered clusters must **track behaviour classes** (per-class recall,
+  including Wolfram class IV = {54, 110}, with borderline rules 40/41/42/106
+  flagged and reported both ways), not the 88 rule orbits;
+- clusters must carry ≈ no rule information beyond the behaviour class
+  (**`MI(cluster; orbit | class)` ≈ 0**);
+- learned representations are compared against the **direct dynamical
+  invariants** (damage spreading; `eval/dynamics.py`) — the learning component
+  must *match them out-of-sample and add spatial resolution*, or it concludes
+  as a negative result (kill criteria in `FOUNDATIONS.md` §4);
+- the taxonomy must be **stable under the observation protocol** (criterion 5).
+
+The **rule(orbit)-identity probe** is still reported prominently, but as a
+*diagnostic*, not pass/fail: any expressive encoder identifies rules from
+texture statistics alone, so low rule decodability is not an achievable — or
+well-aimed — bar. The failure mode that matters is behavioural structure being
+present but **not salient** (v1: density dominated the geometry and clustering
+followed it).
 
 ## Requirements & environment
 
@@ -90,11 +131,13 @@ per-cluster sample grids, `embeddings.npz` and `summary.json`.
 
 ## Where to put `rule_labels.csv`
 
-The LP/Wolfram parts of evaluation need an external `rule_labels.csv` (taken from
-the Li–Packard publication). **Everything else runs without it** — the
-rule-identity probe and clustering still work; only the LP/Wolfram probes,
-metrics and the `MI(cluster; LP)` half of the diagnostic are skipped (with a
-warning).
+The LP/Wolfram parts of evaluation need an external `rule_labels.csv`. The
+committed table has **LP classes for all 88 representatives transcribed from
+Li & Packard (1990), Table 2** — see `rule_labels_PROVENANCE.md` for the source,
+the verification checks, and the corrections made to the earlier best-effort
+table. **Everything else runs without it** — the rule-identity probe and
+clustering still work; only the LP/Wolfram probes and metrics are skipped (with
+a warning).
 
 - **Default location:** the repository root (`./rule_labels.csv`), or set
   `eval.rule_labels_csv` in your config to any path.
@@ -103,12 +146,16 @@ warning).
   ```csv
   rule,lp_class,wolfram_class
   0,1,1
-  90,4,3
-  110,4,4
+  90,5,3
+  110,5,4
   ...
   ```
 
 Rows with a blank class cell are simply omitted from that mapping.
+
+> **Class-IV caveat:** Li–Packard classify the complex rules 54 and 110 as
+> *chaotic* (class 5) — LP has no "complex" class. Any class-IV metric must use
+> the `wolfram_class` column (4 = complex).
 
 ## Defaults (and when to change them)
 
@@ -175,12 +222,15 @@ does not.
 
 ## Diagnostics (how to tell success from the failure mode)
 
-These were added to make "behaviour, not rule" *measurable* (see
-`SELF_CRITICISM.md` for the reasoning):
+These make "behaviour, not rule" *measurable* (reasoning in `SELF_CRITICISM.md`;
+**pass/fail thresholds are pre-registered in `EVALUATION_CRITERIA.md`** — the
+headline criteria are cluster-level: per-class recall incl. class IV, excess
+genotype info ≈ 0, beating the physics baseline, stability):
 
-- **The gap** (the headline) — `LP_probe_acc − rule_probe_acc`, reported by
-  `evaluate.py`. Success is a *large positive* gap: behaviour is learned while the
-  exact rule is suppressed. Mirrors the prior supervised paper's metric.
+- **The gap** — `LP_probe_acc − rule_probe_acc`, reported by
+  `evaluate.py`. A *large positive* gap means behaviour is learned while the
+  exact rule is suppressed. Mirrors the prior supervised paper's metric; kept as
+  a diagnostic for continuity (no longer the pass/fail headline).
 - **Hand-crafted baseline** — the embedding is compared against cheap descriptors
   (density, temporal activity, compression ratio, 2×2 block entropy;
   `eval/baselines.py`). If the embedding doesn't beat the baseline on the gap, the
@@ -206,10 +256,15 @@ caspectra/
 ├── data/       dataset.py (+ caching) · augmentations.py (stochastic coarse-grain)
 ├── models/     encoder.py (AntiCheatCNN / ResNet18 / SmallCNN) · byol.py (BYOL / SimSiam)
 ├── train/      trainer.py (loop, EMA, checkpoints, CSV + loss PNG, collapse metric)
-├── eval/       probes.py (gap) · cluster.py · baselines.py · visualize.py · embed.py · labels.py
+├── eval/       probes.py (gap) · cluster.py · baselines.py · salience.py (criteria 1&2,
+│               effective rank, density R²) · dynamics.py (damage-spreading physics
+│               baseline) · visualize.py · embed.py · labels.py
 ├── config.py   dataclass configs (+ YAML)   utils.py  seeding / device / IO
-scripts/        generate_data.py · train.py · evaluate.py
+scripts/        generate_data.py · train.py · evaluate.py · protocol_sensitivity.py
 configs/        smoke.yaml · default.yaml
+FOUNDATIONS.md  what can and cannot be claimed (lit-review distillate + decision records)
+RESULTS.md      measured record & decision gates   EVALUATION_CRITERIA.md  pre-registered thresholds
+docs/literature/  the commissioned deep-research report (verbatim)
 tests/          test_eca · test_augment · test_dataset · test_shapes · test_models ·
                 test_trainer · test_config · test_utils · test_eval · test_baselines · test_nuca
 ```

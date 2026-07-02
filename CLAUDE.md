@@ -1,14 +1,30 @@
 # CLAUDE.md — Project memory
 
-Self-supervised behavioural taxonomy of cellular-automaton spacetime diagrams.
-**Full build spec: see `BUILD_BRIEF.md` — read it before implementing.**
+Behavioural taxonomy of cellular-automaton spacetime diagrams via **dynamical
+invariants + amortized (eventually spatially-resolved) invariant estimation**.
+The original "discover a label-free taxonomy with SSL" mission was reframed on
+2026-07-02 after a foundations literature review — **read `FOUNDATIONS.md`
+before proposing goals or criteria changes.** Texture-SSL (BYOL) is the frozen
+negative baseline, not a lever. Original build spec: `BUILD_BRIEF.md`
+(historical; superseded where it conflicts with FOUNDATIONS.md).
 
 ## Non-negotiable scientific constraint
-The encoder must learn mesoscopic *behaviour* (phenotype), NOT the local update
-rule (genotype). A model that classifies by reconstructing the rule table is a
-FAILED run, even at high clustering accuracy. The evaluation module exists to
-detect this: the rule-identity linear probe must be well below 100%, and we want
-MI(cluster; rule) low but MI(cluster; LP class) high.
+The pipeline must surface mesoscopic *behaviour* (phenotype), NOT the local
+update rule (genotype) — and every claim is about the **protocol tuple**
+*(orbit, Bernoulli(1/2) ICs, ring 127, horizon 127)*, not "the rule" in the
+abstract (undecidability + measure-dependence; FOUNDATIONS.md §1).
+**Success/failure is pre-registered in `EVALUATION_CRITERIA.md` (revision 2)
+and is judged at the geometry/cluster level** — clusters must track behaviour
+classes, carry ≈ no rule info beyond the class (`MI(cluster; orbit | class)`
+≈ 0), match the direct damage-spreading invariants out-of-sample (criterion 6),
+and be stable under the observation protocol (criterion 5). The
+rule(orbit)-identity probe is reported prominently as a *diagnostic*, but is
+not pass/fail: v1 showed any expressive encoder identifies rules from texture
+statistics alone (probe 0.967 through the anti-cheat architecture). Do NOT
+quietly relax the pre-registered thresholds. Class-IV metrics use the
+`wolfram_class` column with reference set {54, 110} and **borderline flags**
+(40, 41, 42, 106) reported both ways — Li–Packard folds complex into "chaotic"
+and no scheme is ground truth (see `rule_labels_PROVENANCE.md`).
 
 ## Stack & environment
 - **Dedicated env only** — work in the `ssl-ecas` conda env (`conda activate

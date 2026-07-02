@@ -10,7 +10,7 @@ rule-identity probe (the rule is always known).
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -20,10 +20,18 @@ __all__ = ["RuleLabels", "load_rule_labels"]
 
 @dataclass
 class RuleLabels:
-    """Mapping from ECA rule number to LP and Wolfram class labels."""
+    """Mapping from ECA rule number to LP and Wolfram class labels.
+
+    ``borderline`` flags rules whose class is unstable across published
+    schemes or sits between classes in invariant space (40, 41, 42, 106 — see
+    ``rule_labels_PROVENANCE.md``). Per EVALUATION_CRITERIA.md rev 2, class-IV
+    metrics are reported both with and without these rules, so an ambiguous
+    labelling can never silently decide pass/fail.
+    """
 
     lp: dict[int, int]
     wolfram: dict[int, int]
+    borderline: set[int] = field(default_factory=set)
 
     @property
     def has_lp(self) -> bool:
@@ -52,6 +60,7 @@ def load_rule_labels(path: str | Path) -> RuleLabels | None:
         return None
     lp: dict[int, int] = {}
     wolfram: dict[int, int] = {}
+    borderline: set[int] = set()
     with path.open(newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -60,4 +69,6 @@ def load_rule_labels(path: str | Path) -> RuleLabels | None:
                 lp[rule] = int(row["lp_class"])
             if row.get("wolfram_class", "").strip():
                 wolfram[rule] = int(row["wolfram_class"])
-    return RuleLabels(lp=lp, wolfram=wolfram)
+            if (row.get("borderline") or "").strip():
+                borderline.add(rule)
+    return RuleLabels(lp=lp, wolfram=wolfram, borderline=borderline)

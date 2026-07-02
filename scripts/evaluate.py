@@ -32,6 +32,12 @@ from caspectra.eval.cluster import (
 from caspectra.eval.embed import extract_embeddings
 from caspectra.eval.labels import load_rule_labels
 from caspectra.eval.probes import run_probes
+from caspectra.eval.salience import (
+    density_invariance_r2,
+    excess_genotype_fraction,
+    participation_ratio,
+    per_class_cluster_recall,
+)
 from caspectra.eval.visualize import save_per_cluster_samples, scatter_three_panel
 from caspectra.factory import build_dataloader, build_dataset, build_model
 from caspectra.utils import ensure_dir, save_json, select_device, set_seed
@@ -113,6 +119,16 @@ def main() -> None:
             f"{baseline_report.gap:+.3f}: embedding {verdict} the baseline."
         )
 
+    # --- Salience diagnostics (EVALUATION_CRITERIA.md; geometry-level criteria) ---
+    pr = participation_ratio(embeddings)
+    density_r2 = density_invariance_r2(embeddings, dataset.images, seed=cfg.seed)
+    print(
+        f"[eval] salience: participation ratio = {pr:.1f} / {embeddings.shape[1]} dims; "
+        f"R²(density) raw={density_r2['r2_density_raw']:.3f} "
+        f"folded={density_r2['r2_density_folded']:.3f} "
+        "(raw ≫ folded would mean the invert-invariance did not take)"
+    )
+
     # --- Clustering + diagnostic ---
     cluster_report = cluster_pipeline(
         embeddings,
@@ -126,6 +142,50 @@ def main() -> None:
     )
     print(cluster_report.summary())
     (output_dir / "cluster_summary.txt").write_text(cluster_report.summary())
+
+    # Per-class cluster recall + excess genotype fraction (criteria 1 & 2).
+    # Class IV exists only in the Wolfram scheme (LP folds complex into chaotic),
+    # so the criteria are scored against the wolfram column.
+    recall_wolfram = None
+    excess = None
+    class4_recall_excl_borderline = None
+    if labels is not None and labels.has_wolfram:
+        wolf = labels.wolfram_array(equiv_reps)
+        mask = wolf >= 0
+        recall_wolfram = {
+            int(k): v
+            for k, v in per_class_cluster_recall(
+                cluster_report.umap_labels[mask], wolf[mask]
+            ).items()
+        }
+        excess = excess_genotype_fraction(
+            cluster_report.umap_labels[mask], equiv_reps[mask], wolf[mask]
+        )
+        print(
+            "[eval] per-Wolfram-class cluster recall (criterion 1, want ≥ 0.5 each): "
+            + ", ".join(f"class {k}: {v:.3f}" for k, v in sorted(recall_wolfram.items()))
+        )
+        print(
+            "[eval] excess genotype fraction MI(cluster;orbit|wolfram)/H(orbit|wolfram) "
+            f"= {excess['excess_genotype_fraction']:.3f} "
+            "(criterion 2, success ≤ 0.25 / failure ≥ 0.5)"
+        )
+
+        # Borderline dual report (EVALUATION_CRITERIA.md rev 2): the class labels of
+        # rules 40/41/42/106 are unstable across published schemes, so class-IV
+        # recall is also computed with those rules removed entirely — a pass/fail
+        # that flips between the two variants is "ambiguous", not a pass.
+        present_borderline = sorted(labels.borderline & set(int(r) for r in equiv_reps))
+        if present_borderline:
+            bmask = mask & ~np.isin(equiv_reps, present_borderline)
+            recall_excl = per_class_cluster_recall(cluster_report.umap_labels[bmask], wolf[bmask])
+            class4_recall_excl_borderline = recall_excl.get(4)
+            if class4_recall_excl_borderline is not None:
+                print(
+                    f"[eval] class-IV recall with borderline rules {present_borderline} "
+                    f"excluded: {class4_recall_excl_borderline:.3f} "
+                    f"(vs {recall_wolfram.get(4, float('nan')):.3f} including them)"
+                )
 
     # Cluster-count stability: the count is a hyperparameter, not a constant.
     base_mcs = cfg.eval.hdbscan_min_cluster_size
@@ -176,6 +236,12 @@ def main() -> None:
             "excess_rule_info_mi_cluster_rule_given_lp": cluster_report.mi_rule_given_lp,
             "metrics_lp": cluster_report.metrics_lp,
             "metrics_wolfram": cluster_report.metrics_wolfram,
+            "participation_ratio": pr,
+            "r2_density_raw": density_r2["r2_density_raw"],
+            "r2_density_folded": density_r2["r2_density_folded"],
+            "per_wolfram_class_cluster_recall": recall_wolfram,
+            "class4_recall_excl_borderline": class4_recall_excl_borderline,
+            "excess_genotype_fraction": (excess["excess_genotype_fraction"] if excess else None),
         },
         output_dir / "summary.json",
     )

@@ -564,3 +564,26 @@ encoder principles, replace the MI scalar with the rule-vs-class gap, instrument
 for collapse, and define success per behavioural class — then a real run can be
 trusted, and the genuinely novel SSL upside (structure beyond LP) becomes
 measurable.
+
+---
+
+## Level 6 — Foundations verdict (2026-07-02)
+
+A commissioned literature review
+(`docs/literature/2026-07-02_deep_research_report.md`, distilled in
+`FOUNDATIONS.md`) settled the question Levels 1–5 kept circling: **the original
+goal was ill-posed as stated.** "The behaviour class of a rule" is not a single
+well-defined object (Wolfram-style membership is undecidable — Culik & Yu; the
+observed class depends on the IC measure and protocol — Gilman; rigorous schemes
+classify different objects and disagree on borderline rules), and no bias-free
+clustering exists (Kleinberg), so "let SSL discover the taxonomy" was never
+available. This *validates* Level 1's "taxonomy is an artifact of the lens" and
+Level 5's diagnosis, and it reframes the v1 failure and the M2 physics-baseline
+win (`RESULTS.md`) as the literature-predicted outcome rather than engineering
+accidents. Consequences (decision records in FOUNDATIONS.md §3–4 and
+EVALUATION_CRITERIA.md rev 2): the classified object is now an explicit protocol
+tuple; Wolfram/LP are touchstones with borderline flags, not ground truth; the
+mission is invariant-based taxonomy + amortized, spatially-resolved invariant
+estimation; texture-SSL is the frozen negative baseline; temporal-window
+positives are dropped; and the remaining learning levers (invariant-regression
+amortizer, predictive SSL) carry pre-registered kill criteria.
