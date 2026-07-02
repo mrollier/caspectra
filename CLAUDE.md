@@ -43,7 +43,11 @@ and no scheme is ground truth (see `rule_labels_PROVENANCE.md`).
   (`caspectra.utils.warn_if_pathological_grid` warns). Powers of two still belong
   on batch size / channels / embedding dim, not the spatial grid.
 - Method: **BYOL** default; **SimSiam** if batch < ~256.
-- `norm_layer`: GroupNorm when batch < 256.
+- `norm_layer`: GroupNorm when batch < 256 — **SSL encoders only**. Regression
+  encoders (`method: regressor`) always use **BatchNorm**: GroupNorm normalizes
+  over whole-image statistics, which leaks global context into `predict_map`
+  and destroys map locality (measured via the rule-0 partner probe; RESULTS.md
+  2026-07-03).
 - Augmentations: cyclic-shift + coarse-grain ON; **flip + inversion also ON** —
   they are the *exact* reflection + complementation symmetries that define the 88
   equivalence classes, so a flipped/inverted view is a genuine orbit-partner
