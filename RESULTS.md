@@ -218,3 +218,114 @@ columns; rule 30's patches read systematically hotter than 110's, matching the
 true rates. Resolution is coarse (≈ 8×8 patches at 127px — set by the encoder's
 four pooling stages); a shallower-head variant is the known next step before
 quantitative nuCA validation.
+
+---
+
+## 2026-07-03 — Criterion 7 measured: compositional map transfer on nuCAs (frozen `runs/lever_a`)
+
+`NonUniformCA` implemented (`caspectra/ca/nuca.py`; uniform-mask ≡ ECA exactly,
+tested); criterion 7 pre-registered in EVALUATION_CRITERIA.md **rev 3** before
+any composed diagram was evaluated (16-rule train-split panel, 120 pairs × 8
+ICs, half/half masks, ±16 px interface exclusion → map columns {1,2} / {4,5} of
+7). Harness: `scripts/validate_nuca.py`; artifacts in `runs/lever_a/nuca_eval/`.
+
+**Control:** rule_a == rule_b composed diagrams reproduce the uniform diagrams
+and maps *exactly* (max |map diff| = 0.0) — the harness is sound.
+
+### Criterion 7 — **INCONCLUSIVE** (median region-level R² 0.433; bars: ≥ 0.5 / < 0.2)
+
+| feature (region-level R²) | primary (train pairs) | secondary (held-out × anchors) |
+|---|---|---|
+| damage_survival | 0.278 | 0.294 |
+| damage_fraction | **0.619** | **0.681** |
+| spreading_rate | **0.588** | **0.728** |
+| cone_fill | 0.138 | 0.024 |
+| **median** | **0.433** | 0.488 |
+
+Spreading-rate **ordering accuracy** (which region is hotter): 0.83 primary /
+0.92 secondary — the maps usually get the *ranking* of the two regions right;
+what fails is region-level calibration, feature-dependently.
+
+### Diagnosis — the maps are not local (context leakage, mechanism isolated)
+
+The scatter (`criterion7_scatter.png`) shows the failure concentrated where a
+dead/frozen region is composed with an active partner. Decisive probe (16 ICs,
+rule 0's interface-free region, true survival = 0.0):
+
+| context | predicted damage_survival of the rule-0 region |
+|---|---|
+| uniform rule 0 | **0.011 ± 0.003** (correct) |
+| 0 \| 204 (frozen partner) | 0.642 ± 0.045 |
+| 0 \| 184 | 0.471 ± 0.015 |
+| 0 \| 26 | 0.739 ± 0.032 |
+| 0 \| 54 | 0.701 ± 0.043 |
+| 0 \| 30 (chaotic partner) | 0.755 ± 0.013 |
+
+The identical dead region, with no interface overlap by construction, is
+re-scored by up to +0.74 purely by what the *other half* of the image contains
+— even a static rule-204 partner shifts it massively. `predict_map` is exactly
+linear in the pre-GAP feature map, so the leak is *inside the encoder*: the
+prime suspect is **GroupNorm normalizing over the whole image** (every patch's
+activations are scaled by global statistics), compounded by training that only
+ever saw spatially uniform diagrams — nothing ever penalized global shortcuts.
+Interface-band means themselves are unremarkable (≈ midway between regions).
+
+### Consequences
+
+1. The nuCA payoff claim is **not yet earned**: amortized invariants compose
+   only partially (extensive-ish features and rankings survive; survival/fill
+   calibration does not). Criterion 7 stays open — no threshold change.
+2. The bottleneck is **locality, not resolution**: a shallower head (finer
+   patches) does not by itself remove per-image normalization. Candidate fixes,
+   in increasing cost: (a) local-only normalization (or norm-free encoder),
+   (b) nuCA-composed diagrams *in training* (targets = per-region invariants —
+   makes locality pay), (c) both. Any of these is a new training run.
+3. The probe protocol above (partner sweep on an interface-free dead region) is
+   the cheap regression test any future "fixed" model must pass: uniform-0 and
+   composed-0 predictions must agree.
+
+---
+
+## 2026-07-03 — Local-norm variant: criterion 7 PASS, leakage mechanism confirmed (`runs/lever_a_local`)
+
+One variable changed vs `lever_a` (user decision after the entry above):
+`norm_layer: batch` — BatchNorm's inference-time running statistics make the
+network genuinely local, whereas GroupNorm scales every patch by whole-image
+statistics. Same recipe otherwise (60 epochs, 127px, 110 held out / 54 trained;
+smoke passed first).
+
+### Both gates, side by side (same registered specs)
+
+| gate | GroupNorm (`lever_a`) | **BatchNorm (`lever_a_local`)** |
+|---|---|---|
+| criterion 6 median rule-level R² | 0.863 PASS | **0.856 PASS** |
+| criterion 7 median region R² (primary) | 0.433 INCONCLUSIVE | **0.831 PASS** |
+| criterion 7 per feature (surv/frac/rate/fill) | 0.28 / 0.62 / 0.59 / 0.14 | **0.53 / 0.88 / 0.88 / 0.79** |
+| criterion 7 secondary (held-out × anchors) | 0.488 | **0.863** |
+| spreading-rate ordering accuracy | 0.83 / 0.92 | **0.95 / 0.96** |
+| rule-0 region, uniform → composed (survival) | 0.011 → 0.47–0.76 | **−0.032 → −0.031 (partner-independent)** |
+
+The partner probe is now flat to the third decimal across all five partners —
+the context leak is *eliminated*, not merely reduced, and criterion 7 passes
+with margin. Criterion 6 is statistically unchanged (survival actually improves,
+0.694 → 0.738), so locality cost nothing on the global gate. Control exact
+(map diff 0.0); harness identical to the entry above.
+
+**Conclusion: the criterion-7 failure was entirely an architecture artifact
+(GroupNorm's per-image spatial statistics), not a limitation of invariant
+amortization.** Composed out-of-distribution diagrams — including compositions
+of *never-seen* rules with anchors (secondary median 0.863) — are now read
+region-by-region with accuracy comparable to the global criterion-6 transfer.
+The nuCA payoff claim is earned at 7×7 resolution.
+
+Bonus observation: the amortized taxonomy's class-IV island is partially
+restored ({54, 110} co-membership TRUE again, cluster {54, 60, 106, 110}),
+though class-IV recall at k = 14 remains 0.0 — the one-complex-exemplar
+limitation (M4 motivation) is unchanged.
+
+Follow-ups now unblocked, in order of value: the **shallow local-norm variant**
+(15×15 maps; `configs/lever_a_shallow.yaml` + `norm_layer: batch`) for finer
+spatial detail; striped/irregular masks *below* the current patch size as the
+stress test; M4. Default encoder guidance for regression models: **BatchNorm,
+not GroupNorm** — the batch<256 GroupNorm rule was BYOL/SimSiam advice and
+actively harms map locality here.

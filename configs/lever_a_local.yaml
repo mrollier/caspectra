@@ -1,0 +1,48 @@
+# Lever A, local-norm variant: BatchNorm instead of GroupNorm, otherwise
+# identical to lever_a.yaml. Motivation (RESULTS.md 2026-07-03): criterion 7
+# came back INCONCLUSIVE with the mechanism isolated to context leakage —
+# GroupNorm scales every patch by whole-image statistics, so predict_map is not
+# local. BatchNorm uses fixed running statistics at inference, making the
+# network genuinely local; this run tests that single variable. Gates:
+# criterion 6 must still pass; criterion 7 + the rule-0 partner probe re-run.
+data:
+  rules: null            # the 88 orbit representatives
+  n_ic_per_rule: 256
+  grid_size: 127
+  discard_transient: 0
+  cache_dir: cache       # reuses the existing v1 diagram cache
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: false  # no suppression role in regression; only destroys signal
+    horizontal_flip: true   # exact orbit symmetries; targets are per-orbit
+    invert: true
+model:
+  method: regressor
+  encoder: anticheat
+  embedding_dim: 64
+  n_targets: 4
+  norm_layer: batch      # the one change vs lever_a.yaml (locality at inference)
+train:
+  epochs: 60
+  batch_size: 128
+  lr: 0.001
+  weight_decay: 1.0e-06
+  optimizer: adamw
+  checkpoint_every: 10
+  num_workers: 2
+  output_dir: runs/lever_a_local
+  holdout_fraction: 0.2
+  holdout_seed: 0
+  force_holdout_rules: [110]
+  force_train_rules: [54]
+targets:
+  n_pairs: 256           # matches the measured bootstrap precision (RESULTS.md)
+  ic_density: 0.5        # the protocol tuple's IC measure
+  seed: 0
+eval:
+  checkpoint: runs/lever_a_local/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 256
+  output_dir: runs/lever_a_local/eval
+seed: 0

@@ -1,0 +1,48 @@
+# Lever A, shallow-encoder variant: 3 conv/pool blocks instead of 4, so the
+# predict_map resolution rises from 7x7 to 15x15 at 127px. Builds on the
+# local-norm finding (RESULTS.md 2026-07-03): BatchNorm is mandatory for map
+# locality (GroupNorm leaks whole-image statistics into every patch), so this
+# config combines batch norm + the shallow encoder. Criterion 6 must still pass
+# for the variant to be usable; criterion 7 at 15x15 is the reason it exists.
+data:
+  rules: null            # the 88 orbit representatives
+  n_ic_per_rule: 256
+  grid_size: 127
+  discard_transient: 0
+  cache_dir: cache       # reuses the existing v1 diagram cache
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: false  # no suppression role in regression; only destroys signal
+    horizontal_flip: true   # exact orbit symmetries; targets are per-orbit
+    invert: true
+model:
+  method: regressor
+  encoder: anticheat
+  embedding_dim: 64
+  n_targets: 4
+  encoder_channels: [16, 32, 64]  # 3 blocks -> 15x15 map at 127px
+  norm_layer: batch      # locality requirement (RESULTS.md 2026-07-03)
+train:
+  epochs: 60
+  batch_size: 128
+  lr: 0.001
+  weight_decay: 1.0e-06
+  optimizer: adamw
+  checkpoint_every: 10
+  num_workers: 2
+  output_dir: runs/lever_a_shallow
+  holdout_fraction: 0.2
+  holdout_seed: 0
+  force_holdout_rules: [110]
+  force_train_rules: [54]
+targets:
+  n_pairs: 256           # matches the measured bootstrap precision (RESULTS.md)
+  ic_density: 0.5        # the protocol tuple's IC measure
+  seed: 0
+eval:
+  checkpoint: runs/lever_a_shallow/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 256
+  output_dir: runs/lever_a_shallow/eval
+seed: 0

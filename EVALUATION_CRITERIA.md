@@ -5,6 +5,19 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 3 (2026-07-03) — changelog
+
+Added **before any non-uniform-CA measurement exists** (the `NonUniformCA`
+simulator is implemented in the same change set; no map has been evaluated on
+composed diagrams at the time of writing — auditable via git history):
+
+1. **New criterion 7 (compositional map transfer)** — gates the per-patch
+   phenotype-map payoff of Lever A on non-uniform CA diagrams, with the full
+   measurement spec (rule panel, masks, interface exclusion) fixed below.
+2. Housekeeping: the label spot-check note under "Reference labels" updated —
+   closed by decision on 2026-07-02 (`rule_labels_PROVENANCE.md`).
+3. No change to criteria 1–6 or to any threshold.
+
 ## Revision 2 (2026-07-02) — changelog
 
 Revised after the foundations literature review (`FOUNDATIONS.md`,
@@ -61,7 +74,8 @@ it away.
 
 ## Reference labels
 
-- `rule_labels.csv` (provenance: `rule_labels_PROVENANCE.md`; user spot-check pending).
+- `rule_labels.csv` (provenance: `rule_labels_PROVENANCE.md`; automated checks
+  accepted by decision 2026-07-02, transcribed class lists kept for re-verification).
 - **Class-IV metrics use the `wolfram_class` column (4 = {54, 110})** — under
   Li–Packard, complex rules are folded into "chaotic", so LP cannot score class IV.
 - Wolfram/LP agreement is a **reference touchstone, not ground truth** (rev 2):
@@ -138,6 +152,46 @@ it away.
    model exists. Passing it is what earns the learning component its place;
    the payoff claim (per-patch phenotype maps for nuCA) is only credible if
    this holds.
+   *(Measured 2026-07-02: PASS in both split variants, median rule-level R²
+   0.863 / 0.836 — `RESULTS.md`.)*
+7. **Compositional map transfer (rev 3; gates the phenotype-map payoff).**
+   The per-patch maps must recover *where* behaviour differs, not merely echo
+   the global prediction. Measured on **two-region half/half non-uniform CA
+   diagrams** (`caspectra/ca/nuca.py`): left half evolves under rule A, right
+   half under rule B, standard protocol otherwise (Bernoulli(1/2) ICs, ring
+   127, horizon 127, transient kept).
+   - **Model under test:** the frozen `runs/lever_a/checkpoint_final.pt` (no
+     retraining, no nuCA data in training) for the primary measurement;
+     retrained variants (e.g. a shallower encoder) are additionally reported
+     against the same spec.
+   - **Primary panel (gated):** the 16 rules {0, 4, 204, 184, 26, 73, 154, 90,
+     60, 30, 18, 45, 22, 41, 106, 54} — all orbit representatives in the main
+     run's TRAIN split (so criterion 7 isolates *compositional* generalization
+     from the rule transfer already gated by criterion 6), stratified across
+     damage regimes: dead (0), fixed-point (4, 204), traffic (184), locally
+     chaotic (26, 73, 154), additive/ballistic (90, 60), chaotic (30, 18, 45,
+     22), borderline (41, 106), complex (54). All 120 unordered pairs, ≥ 8
+     ICs per pair with the rule-to-side assignment alternated.
+   - **Statistic:** per region, the mean un-standardized `predict_map` output
+     over map patches whose receptive field lies entirely inside the region
+     (patches within ±16 px of either rule interface are excluded — the
+     4-block encoder's receptive-field half-width; the ring has two
+     interfaces). Ground truth per region = the pure rule's direct invariant
+     vector (`load_or_compute_invariant_targets`, n_pairs = 256, reference
+     protocol). Per-feature R² across all (pair, IC, region) region-means,
+     then the **median across the 4 features** is gated.
+   - **Bars:** success ≥ 0.5; failure < 0.2 (mirrors criterion 6).
+   - **Mandatory control (validity, not a gate):** rule_a == rule_b diagrams
+     must reproduce the uniform-diagram predictions exactly (same simulator
+     output, same map) — if the control fails, the harness is broken and no
+     panel number may be reported.
+   - **Secondary diagnostics (reported, not gated):** pairs of each main-run
+     held-out rule with anchors {0, 204, 30, 54} (rule transfer and
+     composition jointly, incl. 110); spreading-rate **ordering accuracy**
+     (fraction of pairs with distinct true rates where the predicted
+     region ranking matches); striped masks (period 32, qualitative — below
+     the interface-exclusion resolution by construction); interface-band
+     predictions vs the two flanking regions.
 
 ## Reported diagnostics (not gated)
 

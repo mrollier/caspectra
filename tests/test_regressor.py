@@ -44,6 +44,29 @@ def test_predict_map_mean_equals_global_prediction() -> None:
         assert torch.allclose(global_pred, map_mean, atol=1e-5)
 
 
+def test_shallow_encoder_channels() -> None:
+    """3 blocks -> one fewer pooling stage -> 15x15 map at 127px (vs 7x7), and
+    the predict_map identity must survive the depth change."""
+    from caspectra.config import ModelConfig
+    from caspectra.factory import build_model
+
+    cfg = ModelConfig(
+        method="regressor", encoder="anticheat", embedding_dim=16, encoder_channels=[8, 16, 32]
+    )
+    model = build_model(cfg).eval()
+    x = torch.rand(2, 1, 127, 127)
+    with torch.no_grad():
+        pmap = model.predict_map(x)
+        assert pmap.shape == (2, 4, 15, 15)
+        assert torch.allclose(model(x), pmap.mean(dim=(-2, -1)), atol=1e-5)
+    # Default (None) keeps the 4-block geometry.
+    deep = build_model(
+        ModelConfig(method="regressor", encoder="anticheat", embedding_dim=16)
+    ).eval()
+    with torch.no_grad():
+        assert deep.predict_map(x).shape == (2, 4, 7, 7)
+
+
 # ---------------------------------------------------------------------------
 # r2 helper
 # ---------------------------------------------------------------------------
@@ -157,7 +180,14 @@ def test_lever_a_configs_parse() -> None:
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    for path in (root / "configs/lever_a.yaml", root / "configs/lever_a_smoke.yaml"):
+    for path in (
+        root / "configs/lever_a.yaml",
+        root / "configs/lever_a_smoke.yaml",
+        root / "configs/lever_a_shallow.yaml",
+        root / "configs/lever_a_shallow_smoke.yaml",
+        root / "configs/lever_a_local.yaml",
+        root / "configs/lever_a_local_smoke.yaml",
+    ):
         cfg = ExperimentConfig.from_yaml(path)
         assert cfg.model.method == "regressor"
         assert cfg.model.n_targets == len(TARGET_NAMES)
@@ -165,3 +195,7 @@ def test_lever_a_configs_parse() -> None:
         assert cfg.train.force_train_rules == [54]
         assert cfg.data.augmentation.coarse_grain is False
         assert cfg.targets.n_pairs >= 64
+        if "shallow" in path.name:
+            assert cfg.model.encoder_channels == [16, 32, 64]
+        if "local" in path.name:
+            assert cfg.model.norm_layer == "batch"

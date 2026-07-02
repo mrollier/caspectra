@@ -56,6 +56,10 @@ class ModelConfig:
     projection_out: int = 256
     prediction_hidden: int = 4096
     n_targets: int = 4  # regressor only: number of invariant targets
+    # AntiCheatCNN only: per-block channel counts; None -> the encoder default
+    # (16, 32, 64, 64). Fewer blocks -> fewer pooling stages -> finer
+    # predict_map resolution (e.g. [16, 32, 64] gives 15x15 at 127px vs 7x7).
+    encoder_channels: list[int] | None = None
 
 
 @dataclass

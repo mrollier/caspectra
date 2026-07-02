@@ -42,10 +42,12 @@ def build_encoder(cfg: ModelConfig) -> nn.Module:
             num_groups=cfg.num_groups,
         )
     if cfg.encoder == "anticheat":
+        kwargs = {} if cfg.encoder_channels is None else {"channels": tuple(cfg.encoder_channels)}
         return AntiCheatCNN(
             embedding_dim=cfg.embedding_dim,
             norm_layer=cfg.norm_layer,
             num_groups=cfg.num_groups,
+            **kwargs,
         )
     raise ValueError(
         f"Unknown encoder {cfg.encoder!r}; expected 'resnet18', 'smallcnn' or 'anticheat'."
