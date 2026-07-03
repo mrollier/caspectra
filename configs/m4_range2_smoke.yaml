@@ -1,0 +1,104 @@
+data:
+  rules:
+  - 96386148
+  - 203951930
+  - 433702840
+  - 1158725112
+  - 1322117304
+  - 175979945
+  - 323153949
+  - 70985654
+  - 594904267
+  - 2239156464
+  - 2240363840
+  - 1173664266
+  - 28461310
+  - 1152501134
+  - 1571208928
+  - 91094178
+  - 33670266
+  - 259466150
+  - 1208128782
+  - 535361800
+  - 21798220
+  - 441491256
+  - 2881392816
+  - 11761768
+  - 1692857840
+  - 48529700
+  - 84622184
+  - 144248947
+  - 95455032
+  - 523414690
+  - 2585486052
+  - 754435145
+  - 383483662
+  - 2464699146
+  - 94927150
+  - 297258274
+  - 345313848
+  - 1287252768
+  - 1488901849
+  - 212030409
+  radius: 2
+  n_ic_per_rule: 16
+  grid_size: 63
+  discard_transient: 0
+  cache_dir: cache_smoke
+  seed: 0
+  augmentation:
+    cyclic_shift: true
+    coarse_grain: false
+    horizontal_flip: true
+    invert: true
+    random_resized_crop: false
+    coarse_grain_kernel: 2
+    coarse_grain_prob: 0.5
+    crop_scale:
+    - 0.6
+    - 1.0
+    flip_prob: 0.5
+    invert_prob: 0.5
+    mode: symmetric
+model:
+  method: regressor
+  encoder: anticheat
+  width_multiplier: 1.0
+  small_input: false
+  norm_layer: batch
+  num_groups: 8
+  embedding_dim: 64
+  projection_hidden: 4096
+  projection_out: 256
+  prediction_hidden: 4096
+  n_targets: 4
+  encoder_channels: null
+train:
+  epochs: 3
+  batch_size: 128
+  lr: 0.001
+  weight_decay: 1.0e-06
+  optimizer: adamw
+  momentum: 0.9
+  tau_base: 0.996
+  checkpoint_every: 10
+  num_workers: 2
+  output_dir: runs/m4_range2_smoke
+  holdout_fraction: 0.2
+  holdout_seed: 0
+  force_holdout_rules: []
+  force_train_rules: []
+eval:
+  checkpoint: runs/m4_range2_smoke/checkpoint_final.pt
+  rule_labels_csv: rule_labels.csv
+  batch_size: 256
+  umap_components: 10
+  umap_metric: cosine
+  hdbscan_min_cluster_size: 15
+  hdbscan_min_samples: 5
+  output_dir: runs/m4_range2_smoke/eval
+targets:
+  n_pairs: 64
+  ic_density: 0.5
+  seed: 0
+seed: 0

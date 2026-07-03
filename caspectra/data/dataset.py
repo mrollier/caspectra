@@ -18,6 +18,7 @@ import torch
 from torch.utils.data import Dataset
 
 from caspectra.ca.eca import ECASimulator, equivalence_class, independent_rules
+from caspectra.ca.range_ca import RangeCA, canonical
 from caspectra.utils import warn_if_pathological_grid
 
 # A transform maps a (1, H, W) image to either a single tensor or a two-view
@@ -37,8 +38,12 @@ class SpacetimeDataset(Dataset):
     Parameters
     ----------
     rules:
-        ECA rule numbers to include. ``None`` (default) uses the 88 independent
-        equivalence-class representatives.
+        Rule numbers to include. ``None`` (default) uses the 88 independent ECA
+        representatives (only valid for ``radius == 1``); for the M4 larger
+        space (``radius >= 2``) an explicit sampled rule list is required.
+    radius:
+        Neighbourhood radius. ``1`` (default) uses :class:`ECASimulator`; ``2+``
+        uses :class:`caspectra.ca.range_ca.RangeCA` (M4). Part of the cache key.
     n_ic_per_rule:
         Number of random initial conditions per rule.
     grid_size:
@@ -67,8 +72,12 @@ class SpacetimeDataset(Dataset):
         discard_transient: int = 0,
         cache_dir: str = "cache",
         seed: int = 0,
+        radius: int = 1,
     ) -> None:
         warn_if_pathological_grid(grid_size)
+        if rules is None and radius != 1:
+            raise ValueError("radius >= 2 (M4) needs an explicit sampled rule list")
+        self.radius = radius
         self.rules: list[int] = list(rules) if rules is not None else independent_rules()
         self.n_ic_per_rule = n_ic_per_rule
         self.grid_size = grid_size
@@ -95,6 +104,7 @@ class SpacetimeDataset(Dataset):
         payload = json.dumps(
             {
                 "rules": sorted(self.rules),
+                "radius": self.radius,
                 "n_ic_per_rule": self.n_ic_per_rule,
                 "grid_size": self.grid_size,
                 "discard_transient": self.discard_transient,
@@ -111,8 +121,8 @@ class SpacetimeDataset(Dataset):
         rule_ids: list[int] = []
         equiv_reps: list[int] = []
         for rule in self.rules:
-            sim = ECASimulator(rule)
-            rep = min(equivalence_class(rule))
+            sim = ECASimulator(rule) if self.radius == 1 else RangeCA(rule, self.radius)
+            rep = min(equivalence_class(rule)) if self.radius == 1 else canonical(rule, self.radius)
             for _ in range(self.n_ic_per_rule):
                 ic = rng.integers(0, 2, size=self.grid_size, dtype=np.uint8)
                 diagram = sim.evolve(ic, n_steps)

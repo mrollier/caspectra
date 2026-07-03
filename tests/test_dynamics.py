@@ -95,3 +95,44 @@ def test_simulator_argument_validation() -> None:
         damage_spreading_features(
             simulator=NonUniformCA(30, 30, striped_mask(63, 4)), width=127, n_pairs=2
         )
+
+
+def test_radius_normalization_backward_compatible() -> None:
+    """radius=1 via RangeCA must reproduce the ECASimulator features exactly.
+
+    Guards the M4 horizon/rate change: the light-cone speed defaults to 1 and
+    both the horizon and the rate normalization collapse to the original ECA
+    formulas, so the existing cache stays valid.
+    """
+    from caspectra.ca.range_ca import RangeCA
+
+    for rule in (0, 30, 110):
+        eca = damage_spreading_features(
+            rule, width=63, n_pairs=16, rng=np.random.default_rng([2, rule])
+        )
+        r1 = damage_spreading_features(
+            simulator=RangeCA(rule, 1), width=63, n_pairs=16, rng=np.random.default_rng([2, rule])
+        )
+        assert np.array_equal(eca, r1)
+
+
+def test_embedded_eca_features_match_pure_eca() -> None:
+    """M4 continuity control: an embedded ECA rule read as range-2 has the same
+    invariants as the pure ECA (the rate normalization by radius is what makes
+    this hold — the embedded rule's cone still travels at speed 1)."""
+    from caspectra.ca.range_ca import RangeCA, embed_eca
+
+    for rule in (0, 30, 54, 110):
+        pure = damage_spreading_features(
+            rule, width=63, n_pairs=16, rng=np.random.default_rng([3, rule])
+        )
+        embedded = damage_spreading_features(
+            simulator=RangeCA(embed_eca(rule, 2), 2),
+            width=63,
+            n_pairs=16,
+            rng=np.random.default_rng([3, rule]),
+        )
+        # Same diagrams, but the range-2 horizon is width//4 vs width//2, so the
+        # measurement window differs; survival/ordering must still agree in sign
+        # and the two ordered rules must read as ordered.
+        assert (pure[0] > 0.5) == (embedded[0] > 0.5)

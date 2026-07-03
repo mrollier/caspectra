@@ -101,3 +101,18 @@ def test_alloy_targets_cache_roundtrip_and_order_independence(tmp_path) -> None:
     )
     assert len(list(tmp_path.glob("alloy_targets_*.npz"))) == n_before + 1
     assert not np.array_equal(first, other)
+
+
+def test_targets_radius_in_cache_key(tmp_path) -> None:
+    """radius must key the cache: r=1 and r=2 for the same rule ints differ."""
+    from caspectra.data.targets import load_or_compute_invariant_targets
+
+    rules = [0, 30]
+    r1 = load_or_compute_invariant_targets(
+        rules, width=31, n_pairs=4, seed=0, cache_dir=tmp_path, radius=1
+    )
+    r2 = load_or_compute_invariant_targets(
+        rules, width=31, n_pairs=4, seed=0, cache_dir=tmp_path, radius=2
+    )
+    assert r1.shape == r2.shape == (2, len(TARGET_NAMES))
+    assert len(list(tmp_path.glob("targets_*.npz"))) == 2  # distinct keys

@@ -30,6 +30,9 @@ class DataConfig:
     """Dataset generation and augmentation settings."""
 
     rules: list[int] | None = None  # None -> the 88 independent representatives
+    # Neighbourhood radius: 1 = ECA (default); 2 = the M4 range-2 larger space
+    # (2^32 rules, sampled). radius >= 2 requires an explicit `rules` list.
+    radius: int = 1
     n_ic_per_rule: int = 256
     # Odd (non-power-of-two) on purpose: a power-of-two side length makes additive
     # rules such as rule 90 collapse to a homogeneous state under periodic

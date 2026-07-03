@@ -132,6 +132,7 @@ def main() -> None:
         n_pairs=cfg.targets.n_pairs,
         seed=cfg.targets.seed,
         cache_dir=cfg.data.cache_dir,
+        radius=cfg.data.radius,
     )
     target_by_rule = {r: targets[i] for i, r in enumerate(all_rules)}
 

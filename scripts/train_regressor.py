@@ -81,6 +81,7 @@ def main() -> None:
         n_pairs=cfg.targets.n_pairs,
         seed=cfg.targets.seed,
         cache_dir=cfg.data.cache_dir,
+        radius=cfg.data.radius,
     )
     targets_by_rule = {r: matrix[i] for i, r in enumerate(rules)}
 

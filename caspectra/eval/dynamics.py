@@ -60,12 +60,16 @@ def damage_spreading_features(
     ``scripts/protocol_sensitivity.py`` sweeps them.
 
     ``simulator`` (criterion 8): any object with ``ECASimulator``'s ``evolve``
-    surface — e.g. :class:`caspectra.ca.nuca.NonUniformCA` — measured under the
-    *identical* twin-run protocol, so composed-system ("alloy") invariants are
-    directly comparable to the pure-rule cache. Exactly one of ``rule`` /
-    ``simulator`` must be given; with the same ``rng`` a ``(r, r)`` composed
-    simulator reproduces the pure rule ``r`` bit-for-bit (the standing control
-    in ``scripts/validate_stripes.py``).
+    surface — e.g. :class:`caspectra.ca.nuca.NonUniformCA` or
+    :class:`caspectra.ca.range_ca.RangeCA` (M4) — measured under the *identical*
+    twin-run protocol, so composed-system ("alloy") and larger-neighbourhood
+    invariants are directly comparable to the pure-rule cache. Exactly one of
+    ``rule`` / ``simulator`` must be given; with the same ``rng`` a ``(r, r)``
+    composed simulator reproduces the pure rule ``r`` bit-for-bit (the standing
+    control in ``scripts/validate_stripes.py``). A simulator may expose
+    ``max_speed`` (the light-cone speed, = neighbourhood radius); it defaults to
+    1 (ECA), and both the horizon and the rate normalization scale with it so
+    the four features keep their meaning across radii.
     """
     if (rule is None) == (simulator is None):
         raise ValueError("pass exactly one of rule= or simulator=")
@@ -74,7 +78,14 @@ def damage_spreading_features(
     sim_width = getattr(sim, "width", None)
     if sim_width is not None and sim_width != width:
         raise ValueError(f"simulator width {sim_width} != requested width {width}")
-    n_steps = width // 2 - 1  # keep the light cone from wrapping (see module docstring)
+    # Light-cone speed is one cell per step for ECAs, ``radius`` for range-r CAs
+    # (M4). Cap the horizon so the cone of a single flipped cell cannot wrap the
+    # ring, and normalize the spreading rate by that speed so "1 = light speed"
+    # holds for any radius. radius=1 reproduces the ECA formulas exactly.
+    max_speed = int(getattr(sim, "max_speed", 1))
+    n_steps = width // (2 * max_speed) - 1
+    if n_steps < 1:
+        raise ValueError(f"width {width} too small for radius {max_speed}: horizon < 1 step")
 
     survived, fractions, rates, fills = [], [], [], []
     for _ in range(n_pairs):
@@ -95,7 +106,7 @@ def damage_spreading_features(
         # Cone extent: positions re-centred on the flipped cell; no wrap by construction.
         pos = (np.flatnonzero(damage) - flip_at + width // 2) % width
         extent = int(pos.max() - pos.min()) + 1
-        rates.append(float(extent / (2.0 * n_steps)))
+        rates.append(float(extent / (2.0 * max_speed * n_steps)))
         fills.append(float(damage.sum() / extent))
 
     def _mean(xs: list[float]) -> float:
@@ -114,16 +125,36 @@ def dynamics_feature_matrix(
     n_pairs: int = 32,
     ic_density: float = 0.5,
     seed: int = 0,
+    radius: int = 1,
 ) -> np.ndarray:
     """Damage-spreading feature matrix, one row per rule.
 
     A fresh child generator per rule keeps rows independent of the list order.
+    ``radius`` selects the rule space: 1 (default) uses ``ECASimulator``; 2+
+    uses :class:`caspectra.ca.range_ca.RangeCA` (M4 larger space), with the
+    horizon and rate normalization scaled by the radius so the four features
+    keep their meaning.
     """
     root = np.random.default_rng(seed)
+    if radius == 1:
+        return np.stack(
+            [
+                damage_spreading_features(
+                    int(r), width=width, n_pairs=n_pairs, ic_density=ic_density, rng=child
+                )
+                for r, child in zip(rules, root.spawn(len(rules)))
+            ]
+        )
+    from caspectra.ca.range_ca import RangeCA
+
     return np.stack(
         [
             damage_spreading_features(
-                int(r), width=width, n_pairs=n_pairs, ic_density=ic_density, rng=child
+                simulator=RangeCA(int(r), radius),
+                width=width,
+                n_pairs=n_pairs,
+                ic_density=ic_density,
+                rng=child,
             )
             for r, child in zip(rules, root.spawn(len(rules)))
         ]

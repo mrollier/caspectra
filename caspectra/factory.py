@@ -103,6 +103,7 @@ def build_dataset(
         transform = TwoViewTransform(cfg.augmentation)
     return SpacetimeDataset(
         rules=cfg.rules,
+        radius=cfg.radius,
         n_ic_per_rule=cfg.n_ic_per_rule,
         grid_size=cfg.grid_size,
         discard_transient=cfg.discard_transient,

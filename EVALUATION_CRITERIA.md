@@ -5,6 +5,23 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 5 (2026-07-04) — changelog
+
+Added **before any range-2 (M4) model is trained and before any sampled rule is
+held out** — the simulator, sampler, radius-aware targets and the complex
+signature ship in the same change set, and the leave-complex-out split is a
+deterministic function of the pre-registered signature (auditable via git
+history):
+
+1. **Criterion 6 extended to the range-2 rule space** (M4) — same bars,
+   evaluated on sampled range-2 rules; the point of M4 is to test amortization
+   where the intermediate/complex regime is *populated*, not a two-member club.
+2. **New criterion 9 (complex-regime placement)** — the direct test of the
+   §6 caveat: hold out a *set* of complex rules and require unbiased placement.
+3. The **complex signature** thresholds are fixed here (calibrated on the ECA
+   reference and the a-priori embedded-ECA anchors, `caspectra/eval/regimes.py`).
+4. No change to criteria 1–8 or to any existing threshold.
+
 ## Revision 4 (2026-07-03) — changelog
 
 Added **before any map has been evaluated on a striped-mask diagram beyond the
@@ -270,6 +287,54 @@ it away.
      truth. If the map beats the mixture, the network reads *emergent* alloy
      behaviour; if not, the maps do texture-mixing below their resolution.
      Both outcomes are reportable findings; neither changes the 8b verdict.
+
+9. **Complex-regime placement in the range-2 space (rev 5; M4; the §6
+   repair).** Criterion 6 passed on ECAs but the complex regime there is a
+   two-member club ({54, 110}); held out, either is mispredicted, *pulled*
+   toward the nearest populated regime (RESULTS.md 2026-07-02: 110's rate read
+   0.54 vs true 0.37; 54's 0.18 vs true 0.44). ECAs cannot fix this — ~2
+   complex rules in 88. Criterion 9 tests whether **populating** the regime
+   (range-2 binary CAs, `caspectra/ca/range_ca.py`) lets the amortizer place
+   complex behaviour *without systematic bias*.
+   - **Space & protocol:** two-state, radius-2 CAs (2^32 rules), **sampled**
+     and de-duplicated by the reflect+complement orbit. Standard protocol
+     otherwise: Bernoulli(1/2) ICs, ring width 127, horizon **radius-aware**
+     (`width // (2·radius) − 1`, so the light cone cannot wrap; the spreading
+     rate is normalized by the cone speed so the four features keep their
+     meaning across radii). The panel is a fixed sample: `sample_rules(N, 2,
+     seed=0)`; `N` (target 600–1000) is fixed in the training config generated
+     by `scripts/analyze_range2_landscape.py` **before** training.
+   - **Complex signature (pre-registered, `regimes.COMPLEX_SIGNATURE`):** a
+     rule is *complex* iff `damage_survival > 0.85` **and** `0.15 ≤
+     spreading_rate ≤ 0.28` **and** `cone_fill < 0.6` **and** `damage_fraction
+     < 0.15` (the range-2-protocol calibration: damage persists, spreads
+     sub-ballistically, in a sparse localized cone). Calibrated on the
+     embedded-ECA anchors so it includes the class-IV cluster {54, 110, 106};
+     the additive-adjacent rule 60 also matches (a known, reported contaminant).
+     The ECA-protocol sibling (`COMPLEX_SIGNATURE_ECA`) selects exactly
+     {54, 106, 110} across the 88 ECA reps — the provenance the method works.
+   - **Split:** leave-complex-out — **all** signature-complex sampled rules go
+     to the hold-out set (`force_holdout`), plus a stratum-free 20 % random
+     hold-out of the rest for the general criterion-6 number. Training never
+     sees a complex rule.
+   - **Gates (mirror criteria 6/7):** (a) **criterion-6 median R²** on the
+     complex hold-out ≥ 0.5 (fail < 0.2); and (b) **no systematic regime pull**
+     — the mean *signed* spreading-rate error over the complex hold-out has
+     `|mean| ≤ 0.10` (the ECA baseline was strongly signed, ±0.15–0.26). Both
+     must hold to pass.
+   - **Mandatory control (validity, not a gate):** embedded-ECA continuity —
+     the range-2 rules embedding the ECAs reproduce the ECA *diagrams*
+     bit-for-bit (`tests/test_range_ca.py`); a break voids the harness.
+   - **Reported (not gated):** the complex-regime count/fraction under uniform
+     sampling (is it actually populated?); the 4-D invariant landscape vs the
+     ECA landscape; curated-anchor placements; per-feature R² and signed bias
+     on the complex hold-out vs the general hold-out.
+   - **Pre-registered fallback (named now, not post hoc):** if uniform sampling
+     yields < 15 complex rules, re-sample with a targeted sampler — Hamming-1
+     perturbations of the embedded-complex rule tables and rules with high
+     input-entropy variance (Wuensche 1999) — and report both the uniform
+     density and the enriched panel. (The measured density is itself a reported
+     criterion-9 outcome, above.)
 
 ## Reported diagnostics (not gated)
 
