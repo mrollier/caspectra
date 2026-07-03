@@ -329,3 +329,44 @@ spatial detail; striped/irregular masks *below* the current patch size as the
 stress test; M4. Default encoder guidance for regression models: **BatchNorm,
 not GroupNorm** — the batch<256 GroupNorm rule was BYOL/SimSiam advice and
 actively harms map locality here.
+
+## 2026-07-03 — Shallow local-norm variant: both gates PASS at 15×15 (`runs/lever_a_shallow`)
+
+The follow-up flagged above: 3 encoder blocks instead of 4
+(`encoder_channels: [16, 32, 64]`), BatchNorm per the new rule, otherwise the
+`lever_a` recipe unchanged (60 epochs, 127px, 110 held out / 54 trained; 63px
+smoke passed first). Map resolution rises 7×7 → **15×15** (patch ≈ 8.5 cells
+across vs ≈ 18), and the criterion-7 interface exclusion now keeps **4 columns
+per region instead of 2** (kept {2,3,4,5} / {9,10,11,12}).
+
+### Both gates, side by side with the 7×7 local-norm run (same registered specs)
+
+| gate | `lever_a_local` (7×7) | `lever_a_shallow` (15×15) |
+|---|---|---|
+| criterion 6 median rule-level R² | 0.856 PASS | **0.803 PASS** |
+| criterion 6 per feature (surv/frac/rate/fill) | 0.74 / 0.80 / 0.97 / 0.91 | 0.76 / 0.79 / 0.97 / 0.82 |
+| criterion 7 median region R² (primary) | 0.831 PASS | **0.764 PASS** |
+| criterion 7 per feature (surv/frac/rate/fill) | 0.53 / 0.88 / 0.88 / 0.79 | 0.39 / 0.86 / 0.85 / 0.67 |
+| criterion 7 secondary (held-out × anchors) | 0.863 | 0.821 |
+| spreading-rate ordering accuracy (primary/secondary) | 0.95 / 0.96 | **0.97 / 0.98** |
+| rule-0 partner probe (survival, uniform → 5 partners) | −0.032 → −0.031 flat | **0.001 → 0.001 flat** |
+| control (rule_a == rule_b max map diff) | 0.0 | 0.0 |
+
+Reading: everything still passes with margin and **locality holds exactly at
+the finer resolution** (probe flat at 0.001 ± 0.001 for all partners). The
+shallower encoder pays a modest, consistent accuracy tax — criterion 6
+0.856 → 0.803, criterion 7 0.831 → 0.764 — concentrated in `damage_survival`
+(region-level 0.53 → 0.39 on the primary panel; note it remains 0.81 on the
+held-out×anchor secondary, so the weakness is calibration on the extreme
+all-or-nothing panel rules, not transfer). Rate *ordering* is actually the
+best measured yet (0.97/0.98). Rule 110's spreading rate is again over-read
+(0.47 vs true 0.37) — the one-complex-exemplar bias is architecture-independent,
+as expected. Taxonomy diagnostics match the 7×7 run ({54,110} co-membership
+TRUE, cluster {54, 60, 106, 110}; class-IV recall at k=14 still 0.0;
+participation ratio 4.9/64; rule probe 0.925).
+
+**Verdict: the depth/resolution trade is real but cheap.** Use `lever_a_local`
+(7×7) when the global numbers matter most; `lever_a_shallow` (15×15) when
+spatial detail does — both are certified by the same pre-registered gates. The
+natural next stress test is unchanged: masks with stripes at or below the patch
+size (period ≤ 8 at 15×15), where interface-free patches stop existing.
