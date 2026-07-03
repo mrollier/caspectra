@@ -435,3 +435,66 @@ but the deep checkpoint *reads emergent out-of-distribution dynamics better*
 *where* behaviour changes. Caveats stated plainly: `cone_fill` is weakly read
 on alloys by both checkpoints (0.26 / 0.06), and the 7×7 pass at 0.544 clears
 the bar without headroom.
+
+## 2026-07-04 — M4 measured: range-2 rule space repairs the §6 complex caveat (`runs/m4_range2`)
+
+Pre-registered as **EVALUATION_CRITERIA.md revision 5** (commit `e2dd185`,
+before any range-2 model was trained and before any rule was held out).
+Motivation: criterion 6 passed on ECAs but the complex regime there is a
+two-member club ({54, 110}); held out, either is *pulled* toward the nearest
+populated regime (§6, 2026-07-02: 110's rate read 0.54 vs true 0.37, i.e.
+**+0.17**; 54's 0.18 vs 0.44, **−0.26**). ECAs cannot fix this. M4 enlarges the
+space to two-state **radius-2** CAs (2^32 rules; `caspectra/ca/range_ca.py`),
+sampled and orbit-deduped, with a radius-aware damage horizon (`width//(2r)`)
+and rate normalization so the four invariants keep their meaning.
+
+### Landscape (the substrate fix, `runs/m4_range2/landscape`)
+
+800 uniformly-sampled canonical range-2 rules, invariants under the range-2
+protocol (width 127, n_pairs 256). Under the pre-registered complex signature
+(`regimes.COMPLEX_SIGNATURE`: survival > 0.85, 0.15 ≤ rate ≤ 0.28, fill < 0.6,
+fraction < 0.15), **57/800 = 7.1 % are complex** — a genuinely populated
+cluster, versus ~2/88 for ECAs. In the rate×fill plane the sample separates
+into an ordered arm, a dense chaotic bulk (rate 0.4–0.8), and a distinct
+complex band where the embedded rule-54/110 anchors land (both correctly
+flagged; the order/chaos/additive anchors correctly excluded). The
+embedded-ECA continuity control (range-2 rules reproducing ECA diagrams
+bit-for-bit) passes in the test suite. Uniform sampling far exceeds the
+pre-registered fallback threshold (15), so no targeted resampling was needed.
+
+### Training + criteria 6 and 9 (`runs/m4_range2`)
+
+800 rules × 64 ICs at 127 px, BatchNorm regressor, 60 epochs; **all 57
+signature-complex rules held out** (leave-complex-out) plus a 103-rule general
+hold-out. Train MSE 0.343 → 0.123.
+
+| hold-out | rules | median R² | survival | fraction | rate | cone_fill | signed rate bias |
+|---|---|---|---|---|---|---|---|
+| general (criterion 6) | 103 | **0.849** | — | — | — | — | −0.015 |
+| complex (criterion 9) | 57 | **0.822** | 0.739 | 0.914 | 0.906 | 0.410 | **+0.012** |
+
+- **Criterion 6 PASS** on the range-2 space (general median 0.849 ≥ 0.5).
+- **Criterion 9 PASS** (both gates): complex median R² 0.822 ≥ 0.5, **and** the
+  mean signed spreading-rate error is **+0.012** (bar |·| ≤ 0.10) — versus the
+  ECA §6 baseline of **+0.17 / −0.26**. Populating the regime collapsed the
+  systematic pull by ≈ 20×: 57 never-trained complex rules are placed on the
+  diagonal, not rounded toward a neighbour.
+- `cone_fill` is again the weak feature (0.41 on complex, 0.385 overall) — the
+  glider/chaos discriminator remains the hardest to amortize, architecture- and
+  space-independent. Median clears the bar with room regardless.
+
+**Verdict: the §6 two-member-club caveat is repaired.** The amortizer's
+mis-placement of complex rules was a data-population artifact, not a limit of
+invariant amortization: given a populated intermediate regime, held-out complex
+behaviour is recovered without bias. This is the strongest evidence yet that the
+learned estimator tracks *behaviour*, not a memorized small-rule lookup.
+
+**Methods note (target set-dependence, fixed in the evaluator, deferred in the
+core):** `dynamics_feature_matrix` seeds one RNG per rule *by sorted-list
+position*, so target values depend on the rule *set*, not just the rule — a
+subset gives slightly different (equally valid) invariants. Every criterion
+compares predictions against truth from the *same* set the model trained on
+(`validate_complex_placement.py` loads the full 800-rule panel, not the held-out
+subset); an early run that recomputed truth on the 160-subset produced a
+spurious complex R² of −2.1 before this was corrected. A rule-identity RNG seed
+would remove the coupling; deferred because it would shift all cached values.

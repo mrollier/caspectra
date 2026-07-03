@@ -52,11 +52,18 @@ def load_or_compute_invariant_targets(
     """Return the ``(n_rules, len(TARGET_NAMES))`` target matrix, cached on disk.
 
     Rows follow the order of ``rules``. The cache key covers every parameter
-    that affects the values, including the rule list itself; per-rule RNG
-    spawning inside :func:`dynamics_feature_matrix` keeps each row independent
-    of the list order, but the cache is keyed on the sorted list for simplicity
-    and rows are re-indexed to the requested order on load. ``radius`` selects
+    that affects the values, including the rule list itself. ``radius`` selects
     the rule space (1 = ECA, 2+ = range-r for M4) and is part of the key.
+
+    Caveat (list-set dependence): :func:`dynamics_feature_matrix` spawns one RNG
+    per rule *by position in the sorted list*, so the values are invariant to the
+    requested order but **depend on which rules are in the list** — a strict
+    subset gives slightly different (equally valid) invariants than the superset,
+    because the per-rule IC streams differ. Every experiment therefore compares
+    predictions against truth loaded for the *same* rule set the model was
+    trained on (e.g. ``scripts/validate_complex_placement.py`` loads the full
+    panel, not the held-out subset). A rule-identity RNG seed would remove this
+    coupling; it is deferred because changing it would shift all cached values.
     """
     rules = [int(r) for r in rules]
     sorted_rules = sorted(rules)
