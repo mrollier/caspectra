@@ -73,3 +73,31 @@ def test_split_rejects_contradictory_forcing() -> None:
         leave_rules_out_split(RULES, CLASSES, force_holdout=(54,), force_train=(54,))
     with pytest.raises(ValueError):
         leave_rules_out_split(RULES, CLASSES, force_holdout=(99,))
+
+
+def test_alloy_targets_cache_roundtrip_and_order_independence(tmp_path) -> None:
+    from caspectra.data.targets import load_or_compute_alloy_targets
+
+    pairs = [(0, 30), (30, 54)]
+    first = load_or_compute_alloy_targets(
+        pairs, period=4, width=31, n_pairs=4, seed=0, cache_dir=tmp_path
+    )
+    assert first.shape == (2, len(TARGET_NAMES))
+    assert len(list(tmp_path.glob("alloy_targets_*.npz"))) == 1
+    again = load_or_compute_alloy_targets(
+        pairs, period=4, width=31, n_pairs=4, seed=0, cache_dir=tmp_path
+    )
+    assert np.array_equal(first, again)
+    # Per-alloy seeding: a row never depends on which other pairs were requested.
+    solo = load_or_compute_alloy_targets(
+        [(30, 54)], period=4, width=31, n_pairs=4, seed=0, cache_dir=tmp_path
+    )
+    assert np.array_equal(first[1], solo[0])
+    # A different period is a different alloy (new cache entry, new values;
+    # the solo call above created its own entry too — the key covers the list).
+    n_before = len(list(tmp_path.glob("alloy_targets_*.npz")))
+    other = load_or_compute_alloy_targets(
+        pairs, period=8, width=31, n_pairs=4, seed=0, cache_dir=tmp_path
+    )
+    assert len(list(tmp_path.glob("alloy_targets_*.npz"))) == n_before + 1
+    assert not np.array_equal(first, other)

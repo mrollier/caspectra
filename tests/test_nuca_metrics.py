@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from caspectra.ca.nuca import half_mask
+from caspectra.ca.nuca import half_mask, striped_mask
 from caspectra.eval.nuca_metrics import (
+    column_profile,
     interface_positions,
     ordering_accuracy,
     region_columns,
     region_means,
+    stripe_contrast,
 )
 
 
@@ -68,3 +71,39 @@ def test_ordering_accuracy() -> None:
     assert acc == 2 / 3
     acc_none, n_none = ordering_accuracy(pred_a, pred_b, true_a, true_a, min_gap=0.02)
     assert n_none == 0 and np.isnan(acc_none)
+
+
+def test_column_profile_averages_time_axis() -> None:
+    pmap = np.arange(2 * 3 * 4, dtype=float).reshape(2, 3, 4)  # (targets, h, m)
+    prof = column_profile(pmap)
+    assert prof.shape == (2, 4)
+    assert np.allclose(prof, pmap.mean(axis=1))
+
+
+def test_stripe_contrast_recovers_step_profile() -> None:
+    """A profile that mirrors the mask must yield exactly the step height."""
+    width, m = 64, 8
+    mask = striped_mask(width, 16)
+    centers = ((np.arange(m) + 0.5) * width / m).astype(int)
+    profile = np.where(mask[centers] == 1, 0.9, 0.1)
+    assert stripe_contrast(profile, mask, hot_value=1) == pytest.approx(0.8)
+    # Sign flips when the "hot" rule is on the other mask value.
+    assert stripe_contrast(profile, mask, hot_value=0) == pytest.approx(-0.8)
+
+
+def test_stripe_contrast_rolled_mask_and_truncated_stripe() -> None:
+    """Rolled masks and non-divisible widths (127 % p != 0) stay well-defined."""
+    width, m = 127, 15
+    mask = np.roll(striped_mask(width, 8), 5)
+    profile = np.linspace(0.0, 1.0, m)
+    value = stripe_contrast(profile, mask, hot_value=0)
+    assert np.isfinite(value)
+    # Flat profiles have zero contrast on any mask.
+    assert stripe_contrast(np.full(m, 0.3), mask, hot_value=0) == pytest.approx(0.0)
+
+
+def test_stripe_contrast_rejects_degenerate_inputs() -> None:
+    with pytest.raises(ValueError):
+        stripe_contrast(np.zeros(4), np.zeros(16, dtype=np.uint8), hot_value=0)  # one region
+    with pytest.raises(ValueError):
+        stripe_contrast(np.zeros(4), striped_mask(16, 4), hot_value=2)

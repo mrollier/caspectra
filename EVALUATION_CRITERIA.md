@@ -5,6 +5,18 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 4 (2026-07-03) — changelog
+
+Added **before any map has been evaluated on a striped-mask diagram beyond the
+qualitative period-32 figure of criterion 7's secondary diagnostics, and before
+any composed-system invariant has been measured directly** (the harness ships
+in the same change set; auditable via git history):
+
+1. **New criterion 8 (stripe resolution + alloy transfer)** — characterizes
+   the phenotype maps' spatial resolution and gates their behaviour *below*
+   that resolution, with the full measurement spec fixed below.
+2. No change to criteria 1–7 or to any existing threshold.
+
 ## Revision 3 (2026-07-03) — changelog
 
 Added **before any non-uniform-CA measurement exists** (the `NonUniformCA`
@@ -192,6 +204,72 @@ it away.
      region ranking matches); striped masks (period 32, qualitative — below
      the interface-exclusion resolution by construction); interface-band
      predictions vs the two flanking regions.
+
+8. **Stripe resolution & alloy transfer (rev 4; characterizes and gates the
+   maps below the half/half geometry).** Criterion 7 used half/half masks,
+   where even a 7-column map has interface-free columns; no measurement so far
+   supports the finer claim that a higher-resolution map buys finer *spatial*
+   discrimination. Criterion 8 measures that directly, on striped masks
+   (`striped_mask(127, p)` — alternating stripes of `p` cells; the last stripe
+   truncates since 127 is not divisible by `p`). Each striped mask is
+   **cyclically rolled by a per-IC random offset** (seeded) so stripe phase is
+   not accidentally aligned with the fixed patch grid. Applies to **both**
+   certified checkpoints (`runs/lever_a_local`, 7×7 map, patch ≈ 18 cells;
+   `runs/lever_a_shallow`, 15×15 map, patch ≈ 8.5 cells), each measured and
+   gated independently against the same spec.
+
+   **8a — stripe resolution (minimal gate + reported characterization).**
+   - *Systems:* periods p ∈ {32, 16, 8, 4, 2}; pairs = all criterion-7
+     primary-panel pairs whose cached pure-rule spreading rates differ by
+     ≥ 0.25 (n_pairs = 256 reference cache — 78 pairs; derived from public
+     cached truth, fixed before any map is rendered). 16 ICs per (pair, p),
+     random mask offset per IC; plus 16 half/half ICs per pair for the
+     normalizer.
+   - *Statistic:* time-averaged per-column spreading-rate reading of the map;
+     per-diagram contrast C = mean over columns whose centre cell runs the
+     hotter rule (by cached pure-rule rate) − mean over the colder columns,
+     **no interface exclusion** (degradation is the measurement). Per pair:
+     mean over ICs → C(p) and C(half). Relative contrast R(p) = C(p)/C(half).
+     Pairs with measured C(half) < 0.05 are excluded from R(p) aggregation
+     (unstable ratios) and reported as excluded. **Resolution limit** =
+     smallest p with median-over-pairs R(p) ≥ 0.5.
+   - *Gate (deliberately minimal):* at p = 32, the mean-over-pairs R(32) must
+     be positive with a 95% bootstrap CI (over pairs, 10 000 resamples)
+     excluding 0. A checkpoint failing this cannot claim any spatial
+     resolution finer than half/half, and the published "pick 15×15 for
+     spatial detail" guidance must be corrected wherever it appears.
+     The full R(p) curves and the 7×7-vs-15×15 comparison are **reported
+     characterization, not pass/fail** — no bar is set on the resolution
+     limit itself.
+
+   **8b — alloy transfer (gated; bars mirror criteria 6/7).** Below the map's
+   resolution a fine-striped composed system is effectively a *new* homogeneous
+   system — an "alloy" of two rules — and its own invariants are directly
+   measurable by the same twin-run protocol run on the composed simulator.
+   - *Systems:* all 120 criterion-7 primary-panel pairs × p ∈ {2, 4}
+     (240 alloys; both periods are below both checkpoints' patch sizes),
+     8 ICs each with random mask offset per IC.
+   - *Truth:* `damage_spreading_features` computed **on the composed
+     simulator** (n_pairs = 256, width 127, horizon 62, Bernoulli(1/2) —
+     identical protocol to the pure-rule reference cache), at mask offset 0
+     only (Bernoulli ICs are translation-invariant on the ring, so alloy
+     invariants do not depend on the offset).
+   - *Statistic:* per (alloy, IC), the global map mean (≡ the global
+     prediction, by the GAP∘linear identity) vs the alloy truth; per-feature
+     R² over all records; the **median across features is gated**: success
+     ≥ 0.5, failure < 0.2. *Degeneracy rule (fixed now):* a feature whose
+     alloy-truth std across the 240 alloys is < 0.05 is reported but excluded
+     from the gated median.
+   - *Mandatory control (abort, not gate):* for r ∈ {0, 30, 54, 204} and both
+     periods, the (r, r) "alloy" truth must equal the pure-rule truth exactly
+     (same rng path) — otherwise the truth harness is broken and no panel
+     number may be reported.
+   - *Pre-registered interpretation baseline (reported, NOT gated):* the
+     **constituent-mixture baseline** — the mask-area-weighted mean of the two
+     pure rules' cached invariant vectors — scored against the same alloy
+     truth. If the map beats the mixture, the network reads *emergent* alloy
+     behaviour; if not, the maps do texture-mixing below their resolution.
+     Both outcomes are reportable findings; neither changes the 8b verdict.
 
 ## Reported diagnostics (not gated)
 

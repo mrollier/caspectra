@@ -21,6 +21,8 @@ __all__ = [
     "region_columns",
     "region_means",
     "ordering_accuracy",
+    "column_profile",
+    "stripe_contrast",
 ]
 
 
@@ -85,6 +87,37 @@ def region_means(
     return {
         region: pmap[:, :, cols].mean(axis=(1, 2)) for region, cols in columns_by_region.items()
     }
+
+
+def column_profile(pmap: np.ndarray) -> np.ndarray:
+    """Time-averaged per-column readings: ``(n_targets, h, m)`` → ``(n_targets, m)``.
+
+    The spatial signal criterion 8 grades — averaging over time rows keeps the
+    column (spatial) axis, which is the axis stripes vary along.
+    """
+    return np.asarray(pmap).mean(axis=1)
+
+
+def stripe_contrast(profile: np.ndarray, mask: np.ndarray, hot_value: int) -> float:
+    """Hot-region minus cold-region mean of a per-column profile (one feature).
+
+    ``profile`` is one feature's row of :func:`column_profile` (``(m,)``);
+    each column is attributed to the mask value under its centre cell — **no
+    interface exclusion**, because criterion 8a measures exactly the
+    degradation that mixing at the patch scale causes. ``hot_value`` says
+    which mask value (0 or 1) carries the hotter rule, so the sign of the
+    contrast is meaningful (positive = hotter region read hotter).
+    """
+    profile = np.asarray(profile, dtype=float).ravel()
+    mask = np.asarray(mask)
+    if hot_value not in (0, 1):
+        raise ValueError(f"hot_value must be 0 or 1, got {hot_value}")
+    width, m = mask.size, profile.size
+    centers = ((np.arange(m) + 0.5) * width / m).astype(int) % width
+    values = mask[centers]
+    if not ((values == 0).any() and (values == 1).any()):
+        raise ValueError("mask assigns all column centres to one region — no contrast defined")
+    return float(profile[values == hot_value].mean() - profile[values != hot_value].mean())
 
 
 def ordering_accuracy(

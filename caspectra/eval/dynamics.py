@@ -40,14 +40,15 @@ DYNAMICS_FEATURE_NAMES = [
 
 
 def damage_spreading_features(
-    rule: int,
+    rule: int | None = None,
     *,
     width: int = 127,
     n_pairs: int = 32,
     ic_density: float = 0.5,
     rng: np.random.Generator | None = None,
+    simulator: object | None = None,
 ) -> np.ndarray:
-    """Average damage-spreading statistics for one rule over ``n_pairs`` ICs.
+    """Average damage-spreading statistics for one system over ``n_pairs`` ICs.
 
     Returns a vector aligned with :data:`DYNAMICS_FEATURE_NAMES`. Conditional
     features (fraction/rate/fill) are 0 when no damage survives, which is itself
@@ -57,9 +58,22 @@ def damage_spreading_features(
     of the **observation protocol** the features are conditioned on — the class
     of a rule is only defined relative to that protocol (FOUNDATIONS.md §1).
     ``scripts/protocol_sensitivity.py`` sweeps them.
+
+    ``simulator`` (criterion 8): any object with ``ECASimulator``'s ``evolve``
+    surface — e.g. :class:`caspectra.ca.nuca.NonUniformCA` — measured under the
+    *identical* twin-run protocol, so composed-system ("alloy") invariants are
+    directly comparable to the pure-rule cache. Exactly one of ``rule`` /
+    ``simulator`` must be given; with the same ``rng`` a ``(r, r)`` composed
+    simulator reproduces the pure rule ``r`` bit-for-bit (the standing control
+    in ``scripts/validate_stripes.py``).
     """
+    if (rule is None) == (simulator is None):
+        raise ValueError("pass exactly one of rule= or simulator=")
     rng = rng or np.random.default_rng(0)
-    sim = ECASimulator(rule)
+    sim = ECASimulator(rule) if simulator is None else simulator
+    sim_width = getattr(sim, "width", None)
+    if sim_width is not None and sim_width != width:
+        raise ValueError(f"simulator width {sim_width} != requested width {width}")
     n_steps = width // 2 - 1  # keep the light cone from wrapping (see module docstring)
 
     survived, fractions, rates, fills = [], [], [], []
