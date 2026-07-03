@@ -56,10 +56,24 @@ def test_feature_matrix_shape_and_order_independence() -> None:
     rules = [0, 30, 204]
     m = dynamics_feature_matrix(rules, width=63, n_pairs=4, seed=0)
     assert m.shape == (3, len(DYNAMICS_FEATURE_NAMES))
-    # Each rule gets its own spawned RNG stream, so a row does not depend on
-    # which other rules are in the list.
+    # Identity-seeded RNG: a rule's row depends on neither its position in the
+    # list nor which other rules share the list.
     m2 = dynamics_feature_matrix([0], width=63, n_pairs=4, seed=0)
     assert np.allclose(m[0], m2[0])
+
+
+def test_feature_matrix_is_set_independent() -> None:
+    """A non-extremal rule (30) must give the identical row regardless of the
+    companions it is measured with — the S3 guarantee (rev 6). The old
+    position-spawned seeding failed this for any rule not at sorted-position 0.
+    """
+    a = dynamics_feature_matrix([0, 30, 204], width=63, n_pairs=8, seed=0)
+    b = dynamics_feature_matrix([22, 30, 45, 110], width=63, n_pairs=8, seed=0)
+    # rule 30 is at position 1 in `a` and position 1 in `b` here, but with
+    # different neighbours; also check a set where it lands at a different rank.
+    c = dynamics_feature_matrix([30], width=63, n_pairs=8, seed=0)
+    assert np.array_equal(a[1], b[1])
+    assert np.array_equal(a[1], c[0])
 
 
 def test_simulator_argument_rr_alloy_equals_pure_rule() -> None:

@@ -129,20 +129,35 @@ def dynamics_feature_matrix(
 ) -> np.ndarray:
     """Damage-spreading feature matrix, one row per rule.
 
-    A fresh child generator per rule keeps rows independent of the list order.
+    Each rule is assigned an RNG keyed on its **identity** — a
+    ``SeedSequence([seed, rule, radius])`` — so its row is independent of the
+    rule's position in the list *and* of which other rules share the list. The
+    damage target of a rule is therefore a well-defined function of ``(rule,
+    protocol)`` alone, not of the panel it happened to be computed in.
+
+    (Revisions through 2026-07-04 spawned child generators by list *position*
+    instead, which coupled a rule's value to the set it was measured in. S3 in
+    ``EVALUATION_CRITERIA.md`` rev 6 measured that coupling at up to ≈0.05–0.08
+    for borderline-survival rules — pure resampling noise, but set-dependent.
+    Identity seeding removes it exactly, and mirrors the per-alloy seeding
+    already used by ``load_or_compute_alloy_targets``.)
+
     ``radius`` selects the rule space: 1 (default) uses ``ECASimulator``; 2+
     uses :class:`caspectra.ca.range_ca.RangeCA` (M4 larger space), with the
     horizon and rate normalization scaled by the radius so the four features
     keep their meaning.
     """
-    root = np.random.default_rng(seed)
+
+    def _rng(rule: int) -> np.random.Generator:
+        return np.random.default_rng(np.random.SeedSequence([int(seed), int(rule), int(radius)]))
+
     if radius == 1:
         return np.stack(
             [
                 damage_spreading_features(
-                    int(r), width=width, n_pairs=n_pairs, ic_density=ic_density, rng=child
+                    int(r), width=width, n_pairs=n_pairs, ic_density=ic_density, rng=_rng(r)
                 )
-                for r, child in zip(rules, root.spawn(len(rules)))
+                for r in rules
             ]
         )
     from caspectra.ca.range_ca import RangeCA
@@ -154,8 +169,8 @@ def dynamics_feature_matrix(
                 width=width,
                 n_pairs=n_pairs,
                 ic_density=ic_density,
-                rng=child,
+                rng=_rng(r),
             )
-            for r, child in zip(rules, root.spawn(len(rules)))
+            for r in rules
         ]
     )

@@ -55,15 +55,14 @@ def load_or_compute_invariant_targets(
     that affects the values, including the rule list itself. ``radius`` selects
     the rule space (1 = ECA, 2+ = range-r for M4) and is part of the key.
 
-    Caveat (list-set dependence): :func:`dynamics_feature_matrix` spawns one RNG
-    per rule *by position in the sorted list*, so the values are invariant to the
-    requested order but **depend on which rules are in the list** — a strict
-    subset gives slightly different (equally valid) invariants than the superset,
-    because the per-rule IC streams differ. Every experiment therefore compares
-    predictions against truth loaded for the *same* rule set the model was
-    trained on (e.g. ``scripts/validate_complex_placement.py`` loads the full
-    panel, not the held-out subset). A rule-identity RNG seed would remove this
-    coupling; it is deferred because changing it would shift all cached values.
+    Set-independence (fixed 2026-07-04): :func:`dynamics_feature_matrix` now
+    seeds one RNG per rule *by rule identity* (``SeedSequence([seed, rule,
+    radius]))``, so a rule's target is a well-defined function of ``(rule,
+    protocol)`` — invariant to both the list order and the set membership. (The
+    cache key carries ``seed_scheme`` so files written under the earlier
+    position-seeded scheme are not silently reused.) EVALUATION_CRITERIA.md rev 6
+    S3 bounded the old coupling at ≈0.05–0.08 for borderline-survival rules —
+    unbiased resampling noise, but set-dependent; identity seeding removes it.
     """
     rules = [int(r) for r in rules]
     sorted_rules = sorted(rules)
@@ -75,6 +74,9 @@ def load_or_compute_invariant_targets(
             "n_pairs": n_pairs,
             "seed": seed,
             "radius": radius,
+            # Bumped when the per-rule RNG seeding scheme changes, so caches
+            # written under a different scheme are never silently reused.
+            "seed_scheme": "identity_v2",
         },
         sort_keys=True,
     )

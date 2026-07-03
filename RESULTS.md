@@ -498,3 +498,45 @@ compares predictions against truth from the *same* set the model trained on
 subset); an early run that recomputed truth on the 160-subset produced a
 spurious complex R² of −2.1 before this was corrected. A rule-identity RNG seed
 would remove the coupling; deferred because it would shift all cached values.
+
+---
+
+## 2026-07-04 — Manuscript solidification (EVALUATION_CRITERIA.md rev 6 controls)
+
+Pre-registered as **rev 6** (commit `516866b`, numbers-free) before any of these
+controls was measured. Purpose: close the three solidity gaps a Q1 (*Chaos*)
+referee would hit — a single-diagram baseline (S1), seed error bars (S2), and the
+RNG set-dependence (S3) — before drafting the manuscript.
+
+### S3 — RNG set-dependence: measured, then fixed (no longer deferred)
+
+The deferred coupling above is now **resolved, not worked around**. Measured the
+drift directly: 10 probe rules spanning the regimes, each rule's four invariants
+recomputed as a member of **3 rule sets of different composition** (n_pairs = 256,
+the reference protocol), max |Δ| per feature:
+
+| | damage_survival | damage_fraction | spreading_rate | cone_fill |
+|---|---|---|---|---|
+| ECA (r=1), position-seeded | 0.047 | 0.015 | 0.015 | 0.022 |
+| range-2 (r=2), position-seeded | 0.082 | 0.017 | 0.037 | 0.074 |
+| **either, identity-seeded (fixed)** | **0.000** | **0.000** | **0.000** | **0.000** |
+
+The drift is pure Monte-Carlo resampling noise (different IC streams), largest on
+borderline-*survival* rules where the n_pairs = 256 binomial SE peaks (~0.03 near
+p = 0.5) — but it exceeded the pre-registered 0.01 immateriality bar, so per rev-6
+S3 the fix triggered: `dynamics_feature_matrix` now seeds each rule's RNG by
+**identity** (`SeedSequence([seed, rule, radius])`) instead of sorted-list
+position, mirroring `load_or_compute_alloy_targets`. Cross-set drift is now
+exactly 0 — a rule's target is a well-defined function of `(rule, protocol)`,
+independent of the panel. The cache key carries `seed_scheme` so
+position-seeded files are never silently reused; `test_feature_matrix_is_set_independent`
+guards it. Disclosed alongside: the *intrinsic* target precision (SD of one
+n_pairs = 256 estimate across seeds) is ≈0.006 (ECA) / ≈0.008–0.014 (range-2),
+which is the irreducible noise floor that caps achievable amortization R².
+
+**Consequence for the manuscript pipeline:** because the fix shifts every cached
+target value (unbiased, but different realizations), the headline models are
+**retrained under the corrected seeding (S2)** and the baseline comparison (S1)
+is computed against those fresh S2 checkpoints and truth — so training truth and
+evaluation truth always match. The original single-seed runs above stand as
+computed; the manuscript reports the S2 error-barred numbers throughout.
