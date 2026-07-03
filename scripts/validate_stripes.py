@@ -94,6 +94,12 @@ def parse_args() -> argparse.Namespace:
         default=256,
         help="Twin-run pairs per alloy truth vector (spec: 256; lower = smoke only).",
     )
+    parser.add_argument(
+        "--min-half-contrast",
+        type=float,
+        default=MIN_HALF_CONTRAST,
+        help="8a pair-exclusion floor on half/half contrast (spec: 0.05; lower = smoke only).",
+    )
     parser.add_argument("--skip-8b", action="store_true", help="Smoke: 8a only.")
     return parser.parse_args()
 
@@ -156,6 +162,7 @@ def measure_contrast(
     width: int,
     n_ic: int,
     rates_by_rule: dict[int, float],
+    min_half_contrast: float,
 ) -> dict:
     """8a: per-pair mean stripe contrast per period, normalized by half/half.
 
@@ -187,7 +194,7 @@ def measure_contrast(
         contrast[f"{a}|{b}"] = per_geometry
 
     halves = np.array([c["half"] for c in contrast.values()])
-    usable = halves >= MIN_HALF_CONTRAST
+    usable = halves >= min_half_contrast
     excluded_pairs = [p for p, u in zip(contrast, usable) if not u]
     relative = {
         str(p): np.array([c[str(p)] for c in contrast.values()])[usable] / halves[usable]
@@ -196,13 +203,23 @@ def measure_contrast(
     result = {
         "n_pairs": len(pairs),
         "n_pairs_used": int(usable.sum()),
+        "min_half_contrast": min_half_contrast,
         "excluded_pairs_low_half_contrast": excluded_pairs,
         "half_contrast_median": round(float(np.median(halves)), 4),
-        "relative_contrast_median": {p: round(float(np.median(r)), 4) for p, r in relative.items()},
-        "relative_contrast_mean": {p: round(float(np.mean(r)), 4) for p, r in relative.items()},
         "_per_pair": contrast,
         "_relative": relative,
     }
+    if not usable.any():
+        # A weak model (smoke) can leave nothing above the floor; on a
+        # registered run this means no spatial claim can be made at all.
+        result["relative_contrast_median"] = None
+        result["resolution_limit_px"] = None
+        result["gate_period32"] = {"verdict": "INCONCLUSIVE (no usable pairs)"}
+        return result
+    result["relative_contrast_median"] = {
+        p: round(float(np.median(r)), 4) for p, r in relative.items()
+    }
+    result["relative_contrast_mean"] = {p: round(float(np.mean(r)), 4) for p, r in relative.items()}
     # Resolution limit: smallest period whose median relative contrast >= 0.5.
     passing = [p for p in sorted(periods) if float(np.median(relative[str(p)])) >= 0.5]
     result["resolution_limit_px"] = min(passing) if passing else None
@@ -351,6 +368,7 @@ def main() -> None:
         and args.n_ic_contrast >= N_IC_CONTRAST
         and args.n_ic_alloy >= N_IC_ALLOY
         and args.alloy_truth_pairs == 256
+        and args.min_half_contrast == MIN_HALF_CONTRAST
     )
     tag = "" if gated else " (non-registered spec — smoke only)"
 
@@ -398,22 +416,32 @@ def main() -> None:
         width,
         args.n_ic_contrast,
         rates_by_rule,
+        args.min_half_contrast,
+    )
+    print(
+        f"[stripes] 8a: {resolution['n_pairs_used']}/{resolution['n_pairs']} pairs above "
+        f"half-contrast floor {args.min_half_contrast} "
+        f"(median half contrast {resolution['half_contrast_median']})"
     )
     print(f"[stripes] 8a: median relative contrast {resolution['relative_contrast_median']}")
     print(f"[stripes] 8a: resolution limit = {resolution['resolution_limit_px']} px")
     if "gate_period32" in resolution:
         g = resolution["gate_period32"]
         g["verdict"] += tag
-        print(
-            f"[stripes] 8a gate (period 32): mean R = {g['mean_relative_contrast']} "
-            f"CI95 {g['ci95']} -> {g['verdict']}"
+        if "mean_relative_contrast" in g:
+            print(
+                f"[stripes] 8a gate (period 32): mean R = {g['mean_relative_contrast']} "
+                f"CI95 {g['ci95']} -> {g['verdict']}"
+            )
+        else:
+            print(f"[stripes] 8a gate (period 32): {g['verdict']}")
+    if resolution["n_pairs_used"] > 0:
+        contrast_figure(
+            resolution,
+            periods,
+            str(output_dir / "relative_contrast.png"),
+            f"Criterion 8a — spatial contrast vs stripe period{tag}",
         )
-    contrast_figure(
-        resolution,
-        periods,
-        str(output_dir / "relative_contrast.png"),
-        f"Criterion 8a — spatial contrast vs stripe period{tag}",
-    )
 
     summary = {
         "checkpoint": str(checkpoint_path),

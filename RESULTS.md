@@ -370,3 +370,68 @@ participation ratio 4.9/64; rule probe 0.925).
 spatial detail does — both are certified by the same pre-registered gates. The
 natural next stress test is unchanged: masks with stripes at or below the patch
 size (period ≤ 8 at 15×15), where interface-free patches stop existing.
+
+## 2026-07-03 — Criterion 8 measured: stripe resolution + alloy transfer (both checkpoints)
+
+Pre-registered as **EVALUATION_CRITERIA.md revision 4** (commit `ead0fcf`,
+before any striped measurement beyond criterion 7's qualitative figure and
+before any composed-system invariant existed). Harness:
+`scripts/validate_stripes.py`; outputs in `runs/<run>/stripe_eval/`.
+Controls passed on both runs: (r, r) striped diagrams identical to the pure
+ECA, and (r, r) "alloy" twin-run features bit-for-bit equal to the pure rule
+under the same rng. Registered spec throughout (78 contrast pairs, 16 ICs;
+120 alloy pairs × periods {2, 4}, 8 ICs, truth from 256 twin runs each).
+
+### 8a — spatial resolution (point-spread function of the maps)
+
+Median relative contrast R(p) = C(stripes period p) / C(half/half), 78 pairs:
+
+| period p | 7×7 `lever_a_local` | 15×15 `lever_a_shallow` |
+|---|---|---|
+| 32 px | **0.761** | **0.873** |
+| 16 px | 0.302 | **0.648** |
+| 8 px | 0.003 | 0.230 |
+| 4 px | −0.002 | 0.000 |
+| 2 px | 0.001 | −0.003 |
+| gate at p=32 (CI95 > 0) | **PASS** (0.724, CI [0.69, 0.75]) | **PASS** (0.813, CI [0.77, 0.85]) |
+| **resolution limit** (R ≥ 0.5) | **32 px** | **16 px** |
+
+The previously *unverified* "pick 15×15 for spatial detail" claim is now
+measured and holds: the shallow checkpoint's resolution limit is exactly one
+octave finer (16 vs 32 px), matching its 2× map resolution, and it retains
+partial contrast at 8 px (0.23) where the 7×7 map is stone blind (0.00).
+Neither map sees anything at 4 px and below — as geometry demands.
+
+### 8b — alloy transfer (gated): reading systems that are not ECAs at all
+
+Below the resolution limit a fine-striped composed system is a *new*
+homogeneous system. Truth = twin-run invariants measured directly on the
+composed simulator; the registered degeneracy rule fired for no feature
+(truth std 0.12–0.27). Per-feature R², 240 alloys × 8 ICs:
+
+| feature | 7×7 map | 15×15 map | mixture baseline |
+|---|---|---|---|
+| damage_survival | 0.623 | 0.328 | 0.320 |
+| damage_fraction | 0.610 | 0.704 | 0.339 |
+| spreading_rate | 0.478 | 0.408 | 0.233 |
+| cone_fill | 0.258 | 0.064 | −0.539 |
+| **gated median** | **0.544 → PASS** | **0.368 → INCONCLUSIVE** | 0.277 (not gated) |
+
+The alloys are strongly **non-additive** — e.g. rule 30 diluted with rule-0
+stripes at period 2 has true spreading rate 0.009 where the mixture predicts
+0.311 (damage freezes in place but survives, 0.72): an emergent frozen phase.
+The **7×7 map tracks this emergent behaviour** (beats the mixture on every
+feature and passes the registered gate) despite training only on 70 uniform
+ECAs. The 15×15 map still beats the mixture overall but lands INCONCLUSIVE
+under the registered bars — its weakness concentrates in `damage_survival`
+and `cone_fill`, consistent with its already-documented survival calibration
+tax.
+
+**Verdict and guidance correction.** The depth/resolution trade now has both
+sides measured: the shallow checkpoint genuinely *sees finer* (8a, one octave),
+but the deep checkpoint *reads emergent out-of-distribution dynamics better*
+(8b, PASS vs INCONCLUSIVE). "Pick by use case" survives with sharper content:
+7×7 for trustworthy readings of novel/mixed dynamics, 15×15 for localizing
+*where* behaviour changes. Caveats stated plainly: `cone_fill` is weakly read
+on alloys by both checkpoints (0.26 / 0.06), and the 7×7 pass at 0.544 clears
+the bar without headroom.
