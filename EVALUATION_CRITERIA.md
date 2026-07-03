@@ -5,6 +5,23 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 6 (2026-07-04) — changelog
+
+Added **before any baseline-regression fit, any multi-seed retraining, and any
+set-dependence measurement** — the manuscript-solidification controls, fixed here
+so their outcomes cannot be defined after seeing them (same hygiene as rev 2–5;
+auditable via git history):
+
+1. **New "Baseline & robustness controls" section** (below) fixing three
+   pre-measurement specs for the manuscript: **S1** the single-diagram feature
+   baseline the CNN amortizer is compared against, **S2** the multi-seed
+   robustness protocol, **S3** the RNG set-dependence bound.
+2. These are **reported controls with pre-registered interpretation rules**, not
+   new pass/fail gates on criteria 1–9: they error-bar and contextualize the
+   existing criteria; the spatially-resolved-map contribution stands independent
+   of S1's outcome.
+3. No change to criteria 1–9 or to any existing threshold.
+
 ## Revision 5 (2026-07-04) — changelog
 
 Added **before any range-2 (M4) model is trained and before any sampled rule is
@@ -335,6 +352,55 @@ it away.
      input-entropy variance (Wuensche 1999) — and report both the uniform
      density and the enriched panel. (The measured density is itself a reported
      criterion-9 outcome, above.)
+
+## Baseline & robustness controls (rev 6)
+
+Manuscript-grade controls fixed before measurement. Each carries a
+pre-registered interpretation rule; none is a new pass/fail gate on criteria 1–9.
+
+**S1 — single-diagram baseline (does the amortizer beat cheap statistics?).**
+The criterion-6/9 claim is that the damage-spreading invariants — *defined* by
+twin runs — are non-trivial to recover from a **single** diagram. The null
+alternative is that a handful of cheap single-diagram statistics already recover
+them (the "the encoder just reads density" objection). Control: fit regressors
+from the label-free single-diagram features of `caspectra/eval/baselines.py` —
+mean (polarity-folded) density, temporal activity, compression ratio, 2×2 block
+entropy, and a **radius-aware** input-entropy variance (Wuensche 1999;
+width-(2r+1) neighbourhood codes) — onto the four damage invariants, using the
+**identical leave-rules-out split** as the CNN it is compared to (criterion 6 on
+ECAs; criterion 9's leave-complex-out on range-2). Regressors: ridge and
+gradient-boosted trees (the stronger is the baseline of record). Report
+per-feature and median held-out-rule R² for baseline vs CNN on the same truth.
+  - *Pre-registered interpretation:* the amortizer is "meaningfully better" iff
+    its held-out median R² exceeds the best baseline's by ≥ **0.10** absolute on
+    the same split (and, secondarily, beats it on ≥ 3 of the 4 features). If the
+    margin is smaller, the manuscript **softens the global-amortization claim**
+    and foregrounds the per-patch phenotype map — which the scalar baseline
+    cannot produce at all (an architectural fact, not a measured one) — as the
+    contribution. Both outcomes are honest and reportable; S1 changes emphasis,
+    not the validity of criteria 6–9.
+
+**S2 — multi-seed robustness (error bars on every headline number).** The
+certified checkpoints were each a single training run. Retrain the headline
+models with **5 seeds** (seeds fixed as {0, 1, 2, 3, 4} before running; each
+seed sets both weight init and the IC-stream seed; identical data split and
+protocol otherwise): `lever_a_local` (criteria 6/7), `lever_a_shallow`
+(criterion 8a), and `m4_range2` (criteria 6/9). Report **mean ± std** of each
+gated median R² and of the criterion-9 signed spreading-rate bias.
+  - *Pre-registered interpretation:* a gate is robust iff it holds at **mean − 1
+    std** (equivalently, at all 5 seeds). A gate that passes only at some seeds
+    is reported as **seed-fragile**, not as a pass.
+
+**S3 — RNG set-dependence bound.** `dynamics_feature_matrix` seeds one RNG per
+rule by sorted-list position, so a rule's target depends on the set it is
+computed in (documented in `targets.py`). Bound it: for ~10 rules spanning the
+regimes, recompute the four invariants as members of **3 different rule sets**
+(varying size and composition) and report the maximum |Δ| per feature.
+  - *Pre-registered interpretation:* if max |Δ| ≤ **0.01** (the documented
+    bootstrap precision at n_pairs = 256), the coupling is declared immaterial
+    and disclosed as such. If any feature exceeds 0.01, the per-rule RNG is
+    re-seeded by **rule identity** (not list position) and the affected caches
+    and criteria are recomputed before the manuscript reports them.
 
 ## Reported diagnostics (not gated)
 
