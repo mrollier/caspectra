@@ -5,6 +5,44 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 8 (2026-07-04) — changelog
+
+Added **before any of the round-2 review-response analyses is measured**, in
+response to the **second** referee report (`manuscript/reviews/chaos_second_review.md`,
+verdict: major revision — a step up from the first report's reject). The referee
+accepts the science and hands us a stronger, honest spine but flags two
+integrity-level issues in the *reporting*: (A) the CNN-vs-five-statistic narrative
+contradicts our own Tables I/III (the CNN median R² beats the baseline on two
+radius-two rows, and the stacking increment is +0.32 on survival), so "dominates /
+never beats / skip the network" is false as written; (B) the reliability *ceiling*
+is the wrong benchmark for the mechanistic estimator, which is an **independent**
+finite Monte-Carlo draw, so its expected agreement with the cached target is
+**2·ICC−1**, not ICC. These new controls are **reported controls with
+pre-registered decision rules and reporting rules**, not new pass/fail gates on
+criteria 1–9. Numbers-free; auditable via git history. The margins are
+pre-registered and **not to be edited after a number is seen** — claim corrections
+go to `RESULTS.md`/manuscript text only.
+
+1. **New "Round-2 review-response controls (rev 8)" section** (below) fixing
+   C1 narrative correction (§1), C2 three distinguished ceilings (§2),
+   C3 completion-policy sensitivity (§3), C4 identifiability sweep (§3/§4/§7),
+   C5 statistics completeness & repeated outer splits (§6), C6 damage-signature
+   landscape + ECA confusion matrix (§9), C7 mosaic-level spatial resampling (§8),
+   C8 accuracy–compute Pareto (§11). Section numbers in parentheses are the second
+   referee's concerns.
+2. **Reporting language fixed, pre-registered:** no *global* CNN-vs-baseline
+   ordering is asserted — every such comparison is reported per target with its
+   paired CI and TOST verdict; the word "tie"/"equivalent" is reserved for a
+   **passing TOST** (otherwise "inconclusive"); "reaches the reliability ceiling"
+   is replaced by comparison to the **independent-replicate agreement** benchmark;
+   "parameter-free" is retired for the mechanistic estimator unless its completion
+   policy is eliminated; "smooth function of the rule" is removed. Every analysis
+   is labelled **registered / post-hoc-confirmatory-on-new-data / exploratory**.
+3. **No change to criteria 1–9, to rev-2…7 controls, or to any existing
+   threshold.** The rev-7 R1–R8 decision rules stand; rev-8 corrects how their
+   *outputs* are reported and adds the ceiling correction (C2), the completion
+   sensitivity (C3), and the identifiability sweep (C4).
+
 ## Revision 7 (2026-07-04) — changelog
 
 Added **before any of the review-response experiments is measured**, in response
@@ -564,6 +602,115 @@ additive/other family rather than random rules). Report **degradation curves**
 where the R2 incremental value of the net rises above the 0.02 margin (CI
 excluding 0) under any shift, that regime is reported as one where representation
 learning begins to help — a finding, never suppressed.
+
+## Round-2 review-response controls (rev 8)
+
+Fixed before measurement, each with a pre-registered decision/reporting rule; none
+is a new pass/fail gate on criteria 1–9. They correct how the rev-7 outputs are
+reported (§1, §2) and add three analyses (§3 completion sensitivity, §3/§4/§7
+identifiability sweep, §11 compute). All results are reported **per target**.
+
+**C1 — Narrative correction (§1: the CNN-vs-baseline claim contradicts the
+tables).** No *global* ordering of the CNN and the five-statistic baseline is
+asserted. For every task and target the two are compared by the R1 paired
+cluster-bootstrap and classified **superiority / practical-equivalence (TOST) /
+inconclusive** by the rev-7 rule; the manuscript states the per-target verdict, not
+a summary "beats/never beats". The **complementarity** of the CNN is reported as
+the R2 stacking increment (CNN over five statistics) with its CI, and the symmetric
+increment (five statistics over CNN). Pre-registered reporting rule: where the
+stacking increment CI excludes 0 above the 0.02 margin on a target, the CNN is
+described as **adding information** on that target (expected: survival); the
+headline is the mechanistic estimator's dominance over **both** direct estimators,
+not any CNN-vs-baseline ordering.
+
+**C2 — Three distinguished ceilings (§2: the reliability ceiling is the wrong
+benchmark for an independent-simulation estimator).** From the K=20 replicates of
+R3, report per target three quantities, with rule-bootstrap CIs:
+  1. **Latent-target reliability** ICC(1) = σ²_signal/(σ²_signal+σ²_noise) — the
+     ceiling for a predictor of the *noise-free* target mean.
+  2. **Independent-replicate agreement** — the empirical per-target R² of one MC
+     replicate predicting another (expectation 2·ICC−1 under equal-variance
+     additive noise). This is the correct benchmark for the mechanistic estimator,
+     which returns a fresh independent MC simulation.
+  3. **Large-simulation reference** — targets recomputed at a much larger `n_pairs`
+     (subset of rules) as a near-noise-free θ; the mechanistic estimator is scored
+     against this to show it approaches the ICC ceiling as its own MC budget grows.
+Decision/reporting rule: the mechanistic estimator's accuracy is judged **against
+the independent-replicate agreement benchmark (2)**, not against ICC; the phrase
+"reaches the reliability ceiling" is replaced accordingly. Survival is treated as
+heteroscedastic/non-Gaussian: its reliability CI is bootstrap-based, not read off a
+Gaussian random-effects fit alone.
+
+**C3 — Completion-policy sensitivity (§3: default-zero is an unacknowledged
+prior).** For `infer_rule`, report the distribution of observed rule-table
+**coverage** and the number of **missing entries** per rule, broken down by rule
+space, target stratum (Wolfram/LP class where available), and outcome class
+(exact-reconstruction success vs failure). Compare four completions of unobserved
+entries — **default-0, default-1, empirical-prior (marginal bit frequency),
+posterior-averaged** (enumerate the 2^k completions for small k, sample for large
+k) — reporting per-target mechanistic R² under each. A **posterior-averaged**
+mechanistic estimate propagates completion uncertainty into a predictive interval;
+its calibration (coverage of nominal intervals) is reported. Reporting rule:
+"parameter-free" is retired; the estimator is described as **matched-model system
+identification with an explicit completion prior**, and the sensitivity of the
+headline numbers to the prior is stated.
+
+**C4 — Identifiability sweep (§3/§4/§7: quantify when "read the rule" holds).**
+On a fixed rule panel, sweep the observation axes — **diagram width, number of
+time-steps, IC density, IC correlation length, partial-observation (masking) rate,
+observation (bit-flip) noise, state-label permutation noise, known-vs-unknown
+radius** — one/two at a time from the reference protocol. Per sweep cell report:
+rule-table **coverage**, **exact-reconstruction rate**, **mechanistic** target R²,
+**five-statistic** R², and the **existing (frozen)** CNN R² on the axes that
+preserve its fixed input geometry (noise, partial observation, label noise at the
+reference width×horizon). Where an axis changes the CNN's input shape (width,
+steps), the CNN is **omitted** and this is stated (it was not trained on that
+geometry; retraining is out of scope this round). Pre-registered interpretation:
+the "read-the-rule" recommendation is asserted **only in the region where
+exact-reconstruction is high**; regions of degraded observability where the
+mechanistic estimator falls and the frozen CNN degrades more gracefully are
+reported as **where a learned estimator could plausibly help** — a finding, never
+suppressed. Labelled **exploratory** (new axes, not in the rev-7 registration).
+
+**C5 — Statistics completeness & repeated outer splits (§6).** Report the
+**complete per-target table for radius two** (not only ECA): held-out rule count,
+each method's R², its rule-bootstrap CI, the CNN seed mean and spread, the paired
+ΔR² and CI for each method pair, the superiority/equivalence/inconclusive verdict,
+and the C2 replicate-agreement benchmark. Uncertainty beyond a single split is
+added for the **non-CNN methods** (deterministic given data): **leave-one-orbit-out**
+over the 88 ECA representatives and **≥ 10 repeated leave-rules-out** outer splits
+for radius two; the CNN is reported at the fixed pre-registered split with its
+five-seed spread and the split-level uncertainty is **stated as a limitation** (no
+retraining this round). The TOST margin is reported at **δ ∈ {0.02, 0.05, 0.10}**
+(sensitivity), with δ=0.05 remaining primary. Table III (stacking) gains CIs and
+the **full stacked-model R²** alongside the increment.
+
+**C6 — Damage-signature landscape + ECA confusion matrix (§9).** The radius-two
+landscape is renamed a **"damage-signature landscape"** in title, abstract,
+Discussion and figure; the prevalence is reported as "fraction satisfying the
+pre-registered finite-horizon damage-signature criterion under the radius-two
+sampling distribution", never as validated glider/class-IV prevalence. The ECA
+detector validation is reported as a **full confusion matrix**: number of positives
+and negatives, sensitivity/recall, specificity, precision, F1, balanced accuracy,
+the exact detector settings, and the documented failure mode (rule 54). Raw
+agreement alone is not reported as the headline (it is dominated by negatives).
+
+**C7 — Mosaic-level spatial resampling (§8).** In the nuCA map benchmark the unit
+of resampling is the **mosaic / composed system**, not the column (adjacent columns
+share local dynamics, so a column bootstrap is anti-conservative). The map result
+is labelled by its **TOST verdict** under δ=0.05 (expected: inconclusive, given the
+reported CI) — the word "tie" is not used unless TOST passes. The report states the
+number of mosaics, rule pairs, stripe periods and replicates, the train/val/test
+disjointness, the window-selection procedure, and that the local ground truth uses
+independent random streams. "training-free" is corrected to "amortization-free at
+deployment (a pretrained ridge/GBM)".
+
+**C8 — Accuracy–compute Pareto (§11).** Report, per estimator, wall-clock latency
+per diagram (mechanistic = rule inference + MC simulation; CNN = one forward pass),
+the number of MC pairs used by the mechanistic simulator, the one-time CNN training
+cost, and the **break-even query count**, plus an **accuracy-vs-MC-budget** curve
+for the mechanistic estimator. The practical recommendation is stated **with** its
+compute cost, not in the abstract.
 
 ## Reported diagnostics (not gated)
 

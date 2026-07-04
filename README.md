@@ -268,25 +268,71 @@ genotype info ≈ 0, beating the physics baseline, stability):
 - **Cluster-count stability** — `evaluate.py` sweeps `min_cluster_size`; the count
   is a hyperparameter, not an emergent constant.
 
+## Manuscript & review history
+
+The project's results are written up for *Chaos: An Interdisciplinary Journal
+of Nonlinear Science* (AIP): **"Rule reconstruction from a single space–time
+diagram yields simulation-limited prediction of the finite-horizon damage
+response of cellular automata"** (`manuscript/main.tex`, authors Rollier &
+Baetens, Ghent University). The paper went through two simulated referee
+rounds, each of which materially changed the science — the full reports are in
+`manuscript/reviews/`, the point-by-point answers in
+`manuscript/response_to_referees.md`, and every executive decision in
+`DECISIONS.md`:
+
+- **Round 1 (reject → revise).** The referee demanded a transparent mechanistic
+  baseline. Building it — *infer the rule table from one diagram, then simulate
+  the perturbation experiment* — produced the paper's central positive result
+  and reorganized the paper around it (pre-registration rev 7, analyses R1–R7).
+- **Round 2 (major revision).** The referee caught two integrity-level issues:
+  the "interpretable dominates deep networks" narrative contradicted our own
+  tables, and the ICC reliability "ceiling" is the wrong benchmark for a
+  fresh-simulation estimator (the correct one is the independent-replicate
+  agreement, 2·ICC−1). Fixing both *strengthened* the result — the mechanistic
+  estimator sits exactly at the correct benchmark, and at the ICC ceiling
+  against a 16×-larger reference simulation (rev 8, controls C1–C8, including
+  the identifiability phase diagram that now bounds the claim).
+
+The pre-registration discipline is auditable in git: each
+`EVALUATION_CRITERIA.md` revision is committed numbers-free *before* the
+measurements it governs.
+
+**Notebook reading order for newcomers:** `05_reading_the_rule.ipynb` (the
+paper's result, narrated from cached run outputs) → `04_invariant_amortization`
+(the v2 "learn the physics" arc) → `01–03` (historical v1: the SSL-taxonomy
+attempt and its post-mortem). `DECISIONS.md` is the one-page decision log;
+`RESULTS.md` holds every measured number.
+
 ## Repository layout
 
 ```
 caspectra/
-├── ca/         eca.py (simulation + 88-class symmetry) · nuca.py (stub)
-├── data/       dataset.py (+ caching) · augmentations.py (stochastic coarse-grain)
-├── models/     encoder.py (AntiCheatCNN / ResNet18 / SmallCNN) · byol.py (BYOL / SimSiam)
-├── train/      trainer.py (loop, EMA, checkpoints, CSV + loss PNG, collapse metric)
-├── eval/       probes.py (gap) · cluster.py · baselines.py · salience.py (criteria 1&2,
-│               effective rank, density R²) · dynamics.py (damage-spreading physics
-│               baseline) · visualize.py · embed.py · labels.py
+├── ca/         eca.py (simulation + 88-class symmetry) · range_ca.py (radius-r CA,
+│               orbit canonicalization, embed_eca) · nuca.py (non-uniform CA mosaics)
+├── data/       dataset.py (+ caching) · augmentations.py · splits.py (leave-rules-out)
+│               targets.py (damage-response target cache)
+├── models/     encoder.py (AntiCheatCNN / ResNet18 / SmallCNN) · byol.py · regressor.py
+├── train/      trainer.py · regression_trainer.py (criterion-6 amortizer)
+├── eval/       dynamics.py (twin-run damage response) · rule_inference.py (read the
+│               rule off a diagram; completion policies; posterior) · reliability.py
+│               (ICC vs replicate-agreement benchmarks) · identifiability.py (degraded
+│               observation) · method_predictions.py (shared held-out predictions) ·
+│               regimes.py (damage signature) · gliders.py (independent detector) ·
+│               nuca_metrics.py · baselines.py · probes.py · cluster.py · salience.py
 ├── config.py   dataclass configs (+ YAML)   utils.py  seeding / device / IO
-scripts/        generate_data.py · train.py · evaluate.py · protocol_sensitivity.py
-configs/        smoke.yaml · default.yaml
-FOUNDATIONS.md  what can and cannot be claimed (lit-review distillate + decision records)
+scripts/        train_regressor.py · validate_* (mechanistic, reliability, stacking,
+                completion policies, gliders, nuCA local GT, complex placement) ·
+                build_full_results_table.py · build_identifiability_diagram.py ·
+                benchmark_compute.py · analyze_paired_stats.py · protocol_sensitivity.py
+configs/        smoke/default (v1) · lever_a*.yaml (ECA amortizer) · m4_range2.yaml
+manuscript/     main.tex/pdf · refs.bib · figures/ · reviews/ · response_to_referees.md
+DECISIONS.md    executive-decision log (start here for "why")
+FOUNDATIONS.md  what can and cannot be claimed (lit-review distillate)
 RESULTS.md      measured record & decision gates   EVALUATION_CRITERIA.md  pre-registered thresholds
-docs/literature/  the commissioned deep-research report (verbatim)
-tests/          test_eca · test_augment · test_dataset · test_shapes · test_models ·
-                test_trainer · test_config · test_utils · test_eval · test_baselines · test_nuca
+docs/           the commissioned deep-research report (+ literature, gitignored PDFs)
+notebooks/      01–03 (v1, historical) · 04 (v2 arc) · 05 (the paper's result, narrated)
+tests/          22 modules incl. test_rule_inference · test_reliability · test_range_ca ·
+                test_nuca · test_regimes · test_dynamics (202 tests)
 ```
 
 ## Tests
@@ -302,7 +348,7 @@ evaluation path.
 
 ## Out of scope (not built)
 
-Non-uniform CA generation/training (interface stub only in `ca/nuca.py`);
-experiment-tracking frameworks (logging is CSV + PNG only); distributed /
+Experiment-tracking frameworks (logging is CSV + PNG only); distributed /
 multi-GPU; CUDA-specific paths (the device util stays extensible);
-hyperparameter search.
+hyperparameter search. (Non-uniform CA support, once a stub, is now built —
+`ca/nuca.py`, criteria 7–8, and the composed-system map benchmarks.)

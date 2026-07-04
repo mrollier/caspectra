@@ -5,6 +5,116 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-07-04 — Round-2 review-response results (rev 8; C1–C8)
+
+Measured after the second referee report returned **major revision**
+(`manuscript/reviews/chaos_second_review.md`); decision/reporting rules
+pre-registered numbers-free in EVALUATION_CRITERIA.md rev 8 (commit 75e1d42)
+**before** any number below. Two integrity fixes drove the round: (A) the
+"dominates / never beats" narrative contradicted our own tables — retired; (B)
+the ICC "ceiling" is the wrong benchmark for the mechanistic estimator
+(an independent MC draw ⇒ expected R² = **2·ICC−1**, not ICC) — corrected.
+
+### C2 — three reliability benchmarks, distinguished (K=20, rule-bootstrap CIs)
+ECA (88 rules): ICC 0.9936/0.9988/0.9995/0.9992 (survival/fraction/rate/fill);
+**independent-replicate agreement** 0.9871/0.9975/0.9991/0.9984 (matches
+2·ICC−1 to 4 decimals). Range-2 (250 rules): ICC 0.987/0.998/0.998/0.980;
+agreement 0.974/0.997/0.997/0.959. The two benchmarks differ by 2–7× the
+margins at stake on the noisy targets — which one you cite matters.
+
+**Mechanistic vs the right benchmarks:** vs noisy cache — ECA survival 0.985
+(agreement benchmark 0.987 CI[0.978,0.992]); range-2 survival 0.9765
+(benchmark 0.9739), fill 0.9849 (0.9594 CI[0.900,0.987]) — **at benchmark on
+every target, both spaces**. vs 4096-pair near-noise-free reference — ECA
+survival 0.9943 (ICC 0.9936), range-2 survival 0.9877 (ICC 0.987) — **at the
+ICC ceiling**: the old "shortfall" was comparison-target noise. The corrected
+statement is *stronger* than the erroneous one.
+
+### C3 — coverage & completion-policy sensitivity
+ECA: 18/18 held-out tables fully covered → policies identical. Range-2:
+156/160 fully covered; 4 rules miss 1 entry each (coverage min 0.969);
+default-0/default-1/empirical median R² 0.9907/0.9908/0.9905 (< 0.001 apart).
+Posterior-averaged variant gives predictive intervals on the 4 under-covered
+rules (1σ coverage 0.25–1.0 per target; n=4, indicative only). "Parameter-free"
+retired; estimator described as matched-model system identification with a
+weak, testable completion prior.
+
+### C4 — identifiability phase diagram (exploratory; no training)
+Range-2, 80 held-out rules, frozen CNN. **Rows**: mechanistic ≥0.95 from as few
+as 4 observed rows. **Bit-flip noise**: mechanistic 0.96 → 0.61 (1%) → 0.30
+(2%) → −0.92 (5%); frozen CNN 0.65 → 0.58 → 0.43 → 0.09 — **crossover at
+~2–5% noise** (deterministic tables have no noise model; one corrupted
+transition flips an entry). **Masking**: mechanistic robust to 25% (0.90),
+collapses by 50% (−0.20); CNN degrades gracefully — crossover ~40%.
+**IC density**: mechanistic flat at benchmark for p∈[0.25,0.75] (it
+re-simulates under the reference protocol regardless of observed density) but
+0.12 at p=0.1 (table not exercised); CNN/baseline degrade off training density.
+Figure: `manuscript/figures/identifiability.pdf`. This is the paper's scope
+statement in graphical form.
+
+### C5 — complete per-target tables (rule-bootstrap 95% CIs; 5 CNN seeds)
+Range-2 (N=160): survival mech 0.977 [0.930,0.989] | 5-stat 0.809 [0.554,0.906]
+| CNN 0.874±0.009; fraction 0.997 | 0.909 | 0.880±0.020; rate 0.997 | 0.880 |
+0.865±0.020; fill 0.985 [0.969,0.992] | 0.596 [0.320,0.775] | **0.337±0.109**.
+ECA (N=18): survival 0.985 | 0.708 [−0.54,0.92] | 0.700±0.018; fraction 1.000 |
+0.924 | 0.789±0.038; rate 1.000 | 0.965 | 0.956±0.015; fill 0.999 | 0.929 |
+0.916±0.019 (wide baseline CIs = honest under-power).
+**Verdicts (δ=0.05):** CNN−GBM: survival +0.079 CI[0.00,0.20] (sub-margin CNN
+edge), fill −0.212 **B_superior**, fraction/rate inconclusive (equivalent only
+at δ=0.10) — *no stable ordering*. Mech−GBM: A_superior on survival/rate/fill;
+mech−CNN: A_superior on fraction/rate/fill; the 2 remaining contrasts have CIs
+excluding 0 in mech's favour, points just below 0.10. Margin sensitivity: at
+δ=0.02 ECA-rate equivalence reverts to inconclusive; at δ=0.10 range-2
+fraction/rate become equivalent; no superiority verdict changes.
+**Split uncertainty:** baseline leave-one-orbit-out (88 ECA orbits)
+0.73/0.85/0.95/0.93 — consistent with the registered split; range-2 over 20
+outer splits: survival 0.76 (0.56–0.84), fraction 0.92, rate 0.90, fill 0.68
+(0.55–0.75). Mechanistic is split-invariant (no trained parameters).
+
+### C5b — stacking with full stacked-model R²
+CNN over 5 stats: survival +0.320 CI[0.23,0.48], **base 0.556 → stacked
+0.876**; fraction +0.034 (0.851→0.885); rate +0.030 (0.839→0.869); fill n.s.
+5 stats over CNN: nothing (survival −0.009). Mechanistic over 5 stats: +0.14 to
++0.84, stacked 0.97–0.995 everywhere. The net's survival information is real
+and large; it is also strictly dominated by reading the rule.
+
+### C6 — confusion matrices (raw agreement retired as headline)
+ECA damage signature vs literature class-IV truth {54,110}: sensitivity 1.0,
+specificity 0.988, precision 2/3 (the 1 FP = borderline 106), balanced acc
+0.994 — **the signature is near-perfect where ground truth exists**. The
+independent localized-seed detector is the weak instrument: vs literature
+sensitivity 0.5 (misses 54, light-speed ether), precision 0.17, BA 0.71.
+Range-2 (300 rules): signature fraction 8.3%; detector vs signature BA 0.39,
+precision 0.05 (n=231) — single-observable glider detection unreliable in the
+large space; landscape stays "damage-signature landscape", no glider census
+claimed.
+
+### C7 — nuCA map verdict corrected
+Resampling unit = composed system (rule pair; was already pair-level, now
+stated). CNN 0.673 vs val-selected handcrafted 0.605 (oracle 0.638);
+Δ=+0.047, CI95[−0.002,+0.102], CI90[+0.005,+0.092] ⇒ **inconclusive** under
+the registered TOST framework (not "tie": the 90% CI is not inside ±0.05; not
+superiority: point < 0.10). Honest summary: small, statistically unresolved
+edge for the learned map.
+
+### C8 — accuracy–compute Pareto (range-2)
+Mechanistic per diagram: 17 ms @16 pairs (median R² **0.924** — already above
+both direct estimators), 32 ms @32 (0.966), 283 ms @256 (0.991); single CPU
+core, embarrassingly parallel. CNN forward 2.2 ms (Metal); 5-stat 1.4 ms.
+One-time: CNN training ≈22 min/seed; GBM fit 15 s. Break-even ≈4700 queries.
+The mechanistic curve is one-sided: most accurate at every measured budget.
+
+### Net round-2 reframe
+Title/spine: *rule reconstruction from a single diagram yields
+simulation-limited prediction* (system identification is the baseline to
+beat). Retired: "dominates deep networks", "never beats", "three tiers",
+"skip the network", "tie", "smooth function of the rule", "parameter-free",
+ICC-as-mechanistic-ceiling. Manuscript rewritten (8 pp), all analyses labelled
+registered / post-hoc confirmatory / exploratory; Vispoel refs completed with
+DOIs (10.1016/j.chaos.2024.114989; 10.1016/j.physd.2021.133074).
+
+---
+
 ## 2026-07-04 — Review-response experiments (rev 7; R1–R8)
 
 Measured after a referee recommended reject-in-current-form
