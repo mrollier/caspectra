@@ -8,9 +8,6 @@
 \usepackage{hyperref}
 \hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
 
-% Provisional-number marker: numbers awaiting the multi-seed (S2) error bars.
-\newcommand{\prov}[1]{\textcolor{purple}{#1}}
-
 \begin{document}
 
 \title{Simple single-diagram statistics rival deep networks for estimating the
@@ -39,12 +36,14 @@ benchmark. Across the elementary rule space and an enlarged two-state,
 radius-two space of $2^{32}$ rules, we compare an anti-shortcut convolutional
 amortiser against a regressor on five cheap, label-free single-diagram
 statistics, under an explicit observation protocol and leave-rules-out
-evaluation. The deep network provides \emph{no advantage}: the simple baseline
-matches or exceeds it at predicting the invariants globally, at placing held-out
-\emph{complex} (glider-supporting) rules once such rules are made plentiful, and
-at resolving behaviour \emph{spatially} in non-uniform CA. We explain why---the
-local rule is readable from the diagram and the invariants are strongly
-texture-correlated---and turn the negative into two constructive results: a
+evaluation. The deep network provides \emph{no advantage}: it never clears a
+pre-registered margin over a regressor on five cheap statistics---beaten outright
+on the elementary space and merely tying it on the enlarged space and on held-out
+\emph{complex} (glider-supporting) rules---and it resolves behaviour no more
+finely in space, where a patch-wise hand-crafted map ties or beats the learned
+map. We explain why---the local rule is readable from the diagram and the
+invariants are strongly texture-correlated---and turn the negative into two
+constructive results: a
 training-free, interpretable method for spatially-resolved phenotype maps of
 non-uniform CA, and a data-driven map of where complex behaviour lives in rule
 space (${\approx}\,7.8\%$ of radius-two rules, versus ${\approx}\,2\%$ of
@@ -101,11 +100,12 @@ elementary rule space and an enlarged two-state radius-two space of $2^{32}$
 rules, we compare an anti-shortcut convolutional amortiser against a regressor on
 five cheap, label-free single-diagram statistics, with leave-rules-out
 evaluation and thresholds fixed in advance. The deep network provides \emph{no
-advantage}: the simple baseline matches or exceeds it at predicting the
-invariants globally, at placing held-out complex rules once such rules are made
-plentiful, and---the one task a scalar baseline seemingly cannot do---at
-resolving behaviour \emph{spatially} in non-uniform CA, where a patch-wise
-hand-crafted map ties or beats the learned map. We explain why the negative is
+advantage}: it never clears the pre-registered margin over a regressor on five
+cheap statistics---beaten outright at predicting the invariants globally on the
+elementary space, only tying it on the enlarged space and on held-out complex
+rules, and---the one task a scalar baseline seemingly cannot do---resolving
+behaviour \emph{spatially} in non-uniform CA no more finely than a patch-wise
+hand-crafted map, which ties or beats the learned map. We explain why the negative is
 structural rather than a tuning artefact, and turn it into two constructive
 contributions: a training-free, interpretable method for spatially-resolved
 phenotype maps, and a data-driven map of where complex behaviour lives in rule
@@ -197,23 +197,26 @@ result without the suspicion that the comparison was arranged to produce it.
 \section{Results}
 \label{sec:results}
 
-\subsection{Global invariant prediction: simple features win or tie}
+\subsection{Global invariant prediction: no advantage for the deep model}
 \label{sec:global}
-Leave-rules-out median $R^2$ (rule-level). \prov{Single-seed amortiser; S2 adds
-$\pm$ over 5 seeds.}
+Leave-rules-out median $R^2$ (rule-level); the amortiser is reported as mean
+$\pm$ standard deviation over five training seeds (weight init and optimisation
+order varied, data split and targets fixed), the baseline being deterministic.
 \begin{table}[t]
 \centering
 \begin{tabular}{lccc}
 \toprule
-task & best baseline (GBM) & amortiser & margin \\
+task & baseline (GBM) & amortiser (5 seeds) & margin \\
 \midrule
-ECA global & \textbf{0.927} & \prov{0.843} & \prov{$-0.084$} \\
-range-2 global & 0.845 & \prov{0.849} & \prov{$+0.004$} \\
-range-2 complex & 0.795 & \prov{0.822} & \prov{$+0.027$} \\
+ECA global & \textbf{0.927} & $0.852\pm0.015$ & $-0.074\pm0.015$ \\
+range-2 global & $0.845$ & $0.864\pm0.014$ & $+0.019\pm0.014$ \\
+range-2 complex & $0.795$ & $0.832\pm0.022$ & $+0.037\pm0.022$ \\
 \bottomrule
 \end{tabular}
-\caption{The simple baseline matches or beats the deep amortiser at predicting
-the damage invariants; the pre-registered $+0.10$ margin is never met.}
+\caption{The deep amortiser never clears the pre-registered $+0.10$ advantage
+margin: it is \emph{beaten} by the five-statistic baseline on the elementary
+space and merely \emph{ties} it (margin $<0.04$, well inside seed scatter) on the
+enlarged space and on complex-rule placement.}
 \label{tab:global}
 \end{table}
 
@@ -223,7 +226,9 @@ Under uniform sampling, complex (glider-supporting) rules are
 ${\approx}\,7.8\%$ of the radius-two space (Wilson 95\% CI $[6.9,8.8]\%$;
 $n=3000$), versus ${\approx}\,2\%$ of the 88 ECA orbits---so the intermediate
 regime, a two-member club among ECAs, is genuinely populated. Held out entirely,
-these complex rules are placed \emph{without systematic bias}---but by the
+these complex rules are placed \emph{without systematic bias} (mean signed
+spreading-rate error $0.014\pm0.020$ over five seeds, versus the elementary-rule
+pull of $+0.17$/$-0.26$ when only two complex exemplars exist)---but by the
 \emph{baseline} as well as the amortiser (Table~\ref{tab:global}, last row):
 populating the regime, not the network, is what removes the bias
 (Fig.~\ref{fig:landscape}). The complex label here only selects a held-out
@@ -267,7 +272,8 @@ $15\times15$ & $16$ px & $16$ px & tie \\
 \bottomrule
 \end{tabular}
 \caption{The learned map buys no spatial resolution over an $8$-pixel
-hand-crafted window; at coarser architecture it is beaten.}
+hand-crafted window; at coarser architecture it is beaten. The verdict is
+identical at every training seed (5 for $7\times7$, 3 for $15\times15$).}
 \label{tab:maps}
 \end{table}
 

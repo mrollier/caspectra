@@ -611,6 +611,26 @@ on uniform diagrams and applied locally — is *not* what makes the maps work: a
 GBM on five statistics, likewise trained on uniform diagrams and applied locally,
 does the same.
 
+### S2 — error bars (5+5+3 seeds, corrected targets, matched comparison)
+
+Retrained the headline checkpoints varying only `cfg.seed` (weight init +
+optimisation order; split/targets fixed), on the identity-seeded targets, and
+re-ran the matched CNN-vs-baseline comparison per seed. Mean ± s.d.:
+
+| task | baseline (GBM) | amortiser (seeds) | margin |
+|---|---|---|---|
+| ECA global | 0.927 | **0.852 ± 0.015** | −0.074 ± 0.015 (baseline wins, all seeds) |
+| range-2 global | 0.845 | **0.864 ± 0.014** | +0.019 ± 0.014 (tie) |
+| range-2 complex | 0.795 | **0.832 ± 0.022** | +0.037 ± 0.022 (tie) |
+
+Complex signed spreading-rate bias (CNN): **0.014 ± 0.020** (unbiased; vs the
+ECA §6 pull +0.17 / −0.26). Map resolution limit: **7×7 → hand-crafted finer at
+all 5 seeds** (CNN 32 px vs 16 px); **15×15 → tie at all 3 seeds** (16 vs 16).
+The deep amortiser never clears the pre-registered +0.10 advantage margin on any
+task, and is beaten outright on the elementary space — the negative is robust to
+the training seed, not a single-run artefact. These are the numbers reported in
+the manuscript (`manuscript/`, Chaos/AIP format).
+
 **Bottom line (all four controls + map control).** For estimating CA
 damage-spreading invariants under this protocol — globally, for novel complex
 rules in the enlarged range-2 space, *and* as spatially-resolved maps — a deep
