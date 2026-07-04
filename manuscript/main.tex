@@ -174,7 +174,11 @@ under the orbit symmetries, so the baseline is denied no symmetry the encoder
 enjoys. We report both a ridge and a gradient-boosted-tree fit and take the
 stronger as the baseline of record. Crucially, both amortiser and baseline are
 trained on the same rules and evaluated with the \emph{same} leave-rules-out
-split against the \emph{same} targets.
+split against the \emph{same} targets. The comparison is deliberately asymmetric
+in the network's favour: the amortiser has orders of magnitude more parameters
+and capacity than a five-feature regressor, so a failure to \emph{exceed} the
+baseline is not a small-model artefact---and any larger network would still have
+to beat five scalar statistics.
 
 \subsection{Pre-registration}
 Every criterion, threshold, rule panel and control was committed to version
@@ -219,7 +223,12 @@ regime, a two-member club among ECAs, is genuinely populated. Held out entirely,
 these complex rules are placed \emph{without systematic bias}---but by the
 \emph{baseline} as well as the amortiser (Table~\ref{tab:global}, last row):
 populating the regime, not the network, is what removes the bias
-(Fig.~\ref{fig:landscape}).
+(Fig.~\ref{fig:landscape}). The complex label here only selects a held-out
+subpopulation; the reported quantity is the $R^2$ and signed spreading-rate bias
+of the four continuous invariants for those rules, not a classification score, so
+the placement test is not circular. The signature thresholds were fixed a priori
+by calibrating on the famous complex ECAs (54, 110, 106) embedded into radius
+two, which the signature recovers exactly on the 88 elementary orbits.
 
 \begin{figure}[t]
 \centering
@@ -236,9 +245,14 @@ ${\approx}\,2\%$ of the 88 elementary orbits.}
 \subsection{Spatial maps: no resolution advantage}
 \label{sec:maps}
 On striped two-rule diagrams, the amortiser's per-patch map and a patch-wise
-hand-crafted map (same column resolution, same contrast metric) are compared by
-relative contrast $R(p)=C(p)/C(\text{half})$ versus stripe period $p$; the
-resolution limit is the finest $p$ with median $R(p)\ge 0.5$.
+hand-crafted map (same column resolution, same contrast metric, same diagrams)
+are compared by relative contrast $R(p)=C(p)/C(\text{half})$ versus stripe period
+$p$; the resolution limit is the finest $p$ with median $R(p)\ge 0.5$. To avoid
+handicapping the baseline we report its \emph{best} window width per period (the
+strongest hand-crafted map); the hand-crafted regressor is trained on full
+uniform diagrams and applied to local windows, exactly mirroring---and if
+anything disadvantaged by the window-size shift relative to---the CNN's
+train-global/apply-local recipe.
 \begin{table}[t]
 \centering
 \begin{tabular}{lccc}
