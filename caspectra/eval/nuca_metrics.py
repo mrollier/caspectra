@@ -23,7 +23,54 @@ __all__ = [
     "ordering_accuracy",
     "column_profile",
     "stripe_contrast",
+    "local_damage_profile",
 ]
+
+
+def local_damage_profile(
+    sim,
+    columns: np.ndarray,
+    *,
+    n_steps: int,
+    n_pairs: int = 64,
+    ic_density: float = 0.5,
+    rng: np.random.Generator | None = None,
+) -> np.ndarray:
+    """Independent, location-resolved damage ground truth for a composed system.
+
+    EVALUATION_CRITERIA.md rev 7 (R7). For each probe ``column`` we flip *that*
+    cell of a random initial condition, evolve the composed simulator (``sim``,
+    e.g. :class:`caspectra.ca.nuca.NonUniformCA`) and its twin over a **short
+    local horizon** so the damage cone stays local, and measure the local
+    spreading rate (cone extent / light-cone extent) averaged over ``n_pairs``
+    initial conditions. Unlike criterion 7's "assume the pure-rule invariant"
+    ground truth, this measures the *composed system in place*, so it honestly
+    reflects mixed dynamics near rule interfaces — the independent local ground
+    truth the referee asks the phenotype maps to be scored against.
+
+    Returns a length-``len(columns)`` per-column local spreading-rate profile.
+    """
+    rng = rng or np.random.default_rng(0)
+    width = sim.width
+    max_speed = int(getattr(sim, "max_speed", 1))
+    rates = np.zeros(len(columns))
+    for k, x0 in enumerate(columns):
+        vals = []
+        for _ in range(n_pairs):
+            ic = (rng.random(width) < ic_density).astype(np.uint8)
+            icf = ic.copy()
+            icf[int(x0)] ^= 1
+            a = sim.evolve(ic, n_steps)[-1]
+            b = sim.evolve(icf, n_steps)[-1]
+            damage = a != b
+            if not damage.any():
+                vals.append(0.0)
+                continue
+            pos = (np.flatnonzero(damage) - int(x0) + width // 2) % width
+            extent = int(pos.max() - pos.min()) + 1
+            vals.append(extent / (2.0 * max_speed * n_steps))
+        rates[k] = float(np.mean(vals))
+    return rates
 
 
 def interface_positions(mask: np.ndarray) -> np.ndarray:
