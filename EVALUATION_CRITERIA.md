@@ -5,6 +5,37 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 7 (2026-07-04) — changelog
+
+Added **before any of the review-response experiments is measured**, in response
+to a detailed referee report on the first manuscript submission
+(`manuscript/reviews/chaos_review.md`). These are **reported controls with
+pre-registered decision rules**, not new pass/fail gates on criteria 1–9; they
+harden the negative benchmark into an equivalence-grade result, add the
+interpretable positive result (mechanistic rule-inference estimator), and
+validate the two descriptive claims (glider landscape, spatial maps) against
+independent ground truth. Numbers-free; auditable via git history. The margins
+fixed below (δ, the incremental-value margin, K) are pre-registered bars, not
+measured outcomes, and are **not to be edited after a number is seen** — claim
+corrections go to `RESULTS.md`/manuscript text only.
+
+1. **New "Review-response controls" section** (below) fixing R1 equivalence &
+   per-target inference (§2), R2 incremental-value/stacking (§5), R3
+   reliability-adjusted ceiling (§3), R4 mechanistic rule-inference estimator
+   (§5), R5 rule-recovery probes (§1), R6 independent glider validation (§8),
+   R7 nuCA local-perturbation map ground truth (§9), R8 distribution-shift &
+   finite-size (§7). Section numbers in parentheses are the referee's concerns.
+2. **Scope of claims tightened, pre-registered:** "no advantage of the deep net"
+   may be asserted only where the R1 equivalence test (TOST) passes or where the
+   baseline is superior; the "structural" language is bounded to the R8-tested
+   regime; "glider-supporting prevalence" is replaced by "fraction satisfying the
+   pre-registered damage-signature criterion" except on the R6 detector-validated
+   subset.
+3. **No change to criteria 1–9, to rev-6 controls S1–S3, or to any existing
+   threshold.** The rev-6 S1 superiority rule (median ΔR² ≥ 0.10 on ≥ 3 features)
+   is retained and *supplemented* by R1's equivalence test — S1 asks "is the net
+   better?", R1 asks "are they equivalent, or is the baseline better?".
+
 ## Revision 6 (2026-07-04) — changelog
 
 Added **before any baseline-regression fit, any multi-seed retraining, and any
@@ -401,6 +432,138 @@ regimes, recompute the four invariants as members of **3 different rule sets**
     and disclosed as such. If any feature exceeds 0.01, the per-rule RNG is
     re-seeded by **rule identity** (not list position) and the affected caches
     and criteria are recomputed before the manuscript reports them.
+
+## Review-response controls (rev 7)
+
+Fixed before measurement, each with a pre-registered decision rule; none is a new
+pass/fail gate on criteria 1–9. All results below are reported **per target**
+(the four damage-response statistics: survival, fraction, spreading rate, cone
+fill), never only as the 4-target median.
+
+**R1 — Equivalence & per-target inference (§2: "failed superiority ≠
+equivalence").** The unit of resampling is the **held-out rule** (rule-level
+cluster bootstrap). For each ordered method pair (A, B) and each target, the
+paired difference ΔR² = R²_A − R²_B is computed on the *same* held-out rules, and
+its interval is estimated by a nested resample: cluster bootstrap over held-out
+rules (**10 000 resamples**) within **≥ 10 repeated leave-rules-out outer
+splits**, propagating the **K target replicates** of R3 (rules × splits × target
+noise). Decisions per target:
+  - **Superiority** (retains the rev-6 S1 rule): A is meaningfully better iff the
+    median ΔR² ≥ **0.10** *and* the 95% paired CI excludes 0 in A's favour.
+  - **Practical equivalence (TOST):** with a pre-registered margin **δ = 0.05**
+    absolute R², A and B are practically equivalent on a target iff the **90% CI
+    of ΔR² lies entirely within (−δ, +δ)**. δ is chosen a priori as a negligible
+    R² gap and is cross-checked against the R3 noise floor (a gap below 1 −
+    reliability is meaningless regardless of δ).
+  - *Reporting rule:* "the deep net has no advantage" is written as **equivalence
+    only where TOST passes**; where B's (baseline's) CI lies entirely above +δ,
+    it is written as **baseline superiority** (expected on ECA global); elsewhere
+    it is **inconclusive/underpowered**, never "equivalent." Every headline
+    number carries its per-target paired CI and TOST verdict.
+
+**R2 — Incremental value / stacking (§5: "does the representation add
+information beyond the five statistics?").** Cross-fitted, rule-level: on each
+outer fold, fit the baseline (5 features → target) on the training rules and the
+CNN separately; on the held-out rules, compute the **incremental R²** of adding
+the CNN's prediction to the 5 features (nested-model cross-fit R², equivalently
+the variance of the held-out baseline residual explained by the CNN prediction).
+Decision per target: the learned representation **adds value** iff incremental
+ΔR² > **0.02** with a rule-bootstrap 95% CI excluding 0. The symmetric complement
+(does the baseline add value beyond the CNN?) and the oracle-vs-both stack are
+reported alongside. This is the rigorous form of the paper's central claim.
+
+**R3 — Reliability-adjusted ceiling (§3: "MC noise does not by itself bound
+R²").** Draw **K = 20** independent Monte-Carlo target replicates per rule via
+`dynamics_feature_matrix(seed=k)` at the production `n_pairs`. Per target,
+decompose the across-rule variance into between-rule (signal) and
+between-replicate/within-rule (noise) components; the **reliability** is
+ICC(1) = σ²_signal / (σ²_signal + σ²_noise), and the **reliability-adjusted R²
+ceiling** is this ICC (classical attenuation bound). Report per target, with the
+conditional-on-survival quantities (fraction, rate, fill) and the survival
+probability handled separately because their noise is heteroscedastic and
+non-Gaussian. This **replaces** the "0.006–0.014 upper-bounds R²" sentence;
+observed R² for every method is read against the per-target ceiling.
+
+**R4 — Mechanistic rule-inference estimator (§5: the interpretable reference
+method).** `caspectra/eval/rule_inference.py:infer_rule(diagram, radius)`
+tabulates observed neighbourhood→next-cell transitions and returns the inferred
+table plus its **coverage** (fraction of the 2^(2r+1) entries observed).
+Pre-registered handling of unobserved entries: **default to 0**, with coverage
+reported and the sensitivity to the default reported (majority-fill as the
+alternative). `mechanistic_estimate(diagram)` = infer → build the simulator
+(`caspectra/ca/{eca,range_ca}.py`) → `damage_spreading_features` at the
+production protocol → the four targets, evaluated on the **same** leave-rules-out
+split as every other method. Reported (no pass/fail bar — it is the interpretable
+reference): per-target R² vs the R3 ceiling; an **identifiability curve**
+(exact-table-match rate and per-entry accuracy vs number of observed rows /
+width). Pre-registered expectation (stated so it cannot be reframed post hoc): on
+rules whose table is fully covered the estimator should approach the ceiling;
+under-covered rules are where it should degrade, and that degradation is a
+reported finding.
+
+**R5 — Rule-recovery probes (§1: is the rule actually recoverable from the
+representation?).** Extend `caspectra/eval/probes.py` to fit probes from each
+source S ∈ {raw-diagram summary statistics, an intermediate encoder feature map,
+the 64-d bottleneck, the 5 handcrafted baseline features} predicting (a) rule /
+orbit identity and (b) each individual truth-table entry. Identity probes use a
+stratified split (identity cannot transfer to unseen rules); truth-table-entry
+probes use a **leave-rules-out** split (tests transfer of the *reading*
+mechanism). Report balanced accuracy vs the majority baseline for all sources
+side by side. Pre-registered reporting rule: this **replaces** the unsupported
+"the 2×2 first-layer kernel prevents rule recovery" assertion — if the bottleneck
+(or any layer) probe recovers the rule well above chance, the architecture is
+**not** described as "anti-shortcut"; the readability of the rule is instead
+reported as the mechanism behind the null result.
+
+**R6 — Independent glider validation (§8: the complex label must not be defined
+by, and validated on, the same damage signature).** A detector **independent of
+the damage signature**: from long-horizon evolution (production ring 127 plus a
+ring-255 confirmation so structures are not wrap-limited), estimate and subtract
+the dominant temporally-periodic background, then detect **persistent localized
+propagating structures** (connected components of the background-subtracted field
+that persist ≥ a fixed number of rows and translate at finite, sub-ballistic
+velocity), and/or apply a **periodic-localization test** (a single localized seed
+on a quiescent background yields a bounded, comoving-eventually-periodic
+structure). `caspectra/eval/gliders.py`; a rule is **detector-complex** iff such
+a structure is found in ≥ a fixed fraction of trials (threshold fixed in the
+module before range-2 application). The detector is first **validated to recover
+{54, 110, 106} and reject ordered {0, 4, 204} and chaotic {30, 90, 22}**.
+Reported on a held-out range-2 sample: **agreement, false-positive and
+false-negative rates** of the damage signature vs the detector. Pre-registered
+language rule: landscape prevalence is reported as the "**fraction satisfying the
+pre-registered damage-signature criterion**"; only the detector-validated subset
+is called "glider-supporting," and both numbers appear side by side with FP/FN.
+
+**R7 — nuCA local-perturbation map ground truth (§9: the map needs an
+independently computed local ground truth).** For a mosaic
+(`caspectra/ca/nuca.py:NonUniformCA`, `striped_mask`), flip the initial cell at
+position x0, evolve twin copies, and measure the four damage statistics on the
+**local comoving cone** around x0 → a per-location target vector (averaged over
+ICs). This location-resolved target does **not** assume a stripe carries a
+uniform rule's phenotype (it measures the composed system in place). Compare
+`predict_map` (CNN) and the handcrafted patch-map to this ground truth on
+**localization error** (offset of predicted regime boundaries), **spatial
+correlation** (per-column predicted vs true invariant), and **calibration**
+(predicted vs true value), across ≥ a fixed set of rule pairs, both stripe
+orientations, random mosaics, and interface regions analysed explicitly. Window
+selection is **fixed from validation data** for the primary comparison; the
+per-period best window is reported only as a labelled sensitivity. Verdict rule:
+"CNN resolves finer" is asserted only if the CNN map beats the
+validation-selected handcrafted map on localization error with a bootstrap 95% CI
+excluding 0; ties and losses are reported as such.
+
+**R8 — Distribution shift & finite-size (§7: the conclusion is one regime, not
+structural in general).** Train the amortiser and fit the baseline and the R4
+oracle on the reference regime, then **evaluate under shift**: IC densities
+p ∈ {0.25, 0.75} (extremes 0.1/0.9 as context), widths/horizons {63, 127, 255}
+(finite-size scaling; horizon stays radius-aware), perturbation types {1-bit,
+multi-bit, 3-cell block}, and a **rule-family holdout** (hold out an entire
+additive/other family rather than random rules). Report **degradation curves**
+(R² vs shift) for oracle, baseline, and net. Pre-registered interpretation: the
+"structural / no-advantage" claim is asserted **only within the tested regime**;
+where the R2 incremental value of the net rises above the 0.02 margin (CI
+excluding 0) under any shift, that regime is reported as one where representation
+learning begins to help — a finding, never suppressed.
 
 ## Reported diagnostics (not gated)
 
