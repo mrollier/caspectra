@@ -585,8 +585,45 @@ features match or beat the deep model at predicting the damage invariants,
 including the complex-regime placement that criterion 9 was built to showcase.
 Populating the complex regime (M4) repairs the §6 bias for *any* competent
 regressor, not specifically the CNN. The only contribution the scalar baseline
-**cannot** provide is the **spatially-resolved phenotype map**; whether the CNN
-map beats a patch-wise hand-crafted map — especially below the resolution where
-window statistics stay stable — is the open, decisive question for the paper and
-is measured next (fine-resolution map control). Until that lands, no
-"amortization" headline is earned.
+**cannot** provide is the **spatially-resolved phenotype map** — measured next.
+
+### Map control — the CNN map has no resolution advantage over hand-crafting
+
+The decisive test of the one remaining possible contribution
+(`scripts/validate_map_vs_baseline.py`): does the CNN's learned per-patch map
+resolve behaviour *more finely* than a patch-wise hand-crafted map? Maximally
+fair, matched design — same striped diagrams, same `stripe_contrast` metric, a
+hand-crafted per-column map built at the CNN map's own column resolution from a
+GBM (`spreading_rate`) trained on the full uniform training diagrams (mirroring
+the CNN's train-global/apply-local recipe), best window width reported. Registered
+8a panel (78 pairs), periods {32, 16, 8, 4}, 16 ICs.
+
+| checkpoint | CNN resolution limit | best hand-crafted limit | R(16): CNN vs best hc | verdict |
+|---|---|---|---|---|
+| 7×7 `lever_a_local` | 32 px | **16 px** (8px window) | 0.27 vs **0.62** | hand-crafted **finer** |
+| 15×15 `lever_a_shallow` | 16 px | 16 px (8px window) | 0.63 vs 0.57 | **tie** |
+
+At the CNN's best resolution (15×15) it merely **ties** an 8-pixel hand-crafted
+window; at 7×7 the hand-crafted map resolves *finer*. Both are blind at period 8
+(R(8) ≈ 0.2 for both). So the learned spatial map buys **no** resolution the
+cheap sliding window doesn't already provide, and the deep encoder — trained only
+on uniform diagrams and applied locally — is *not* what makes the maps work: a
+GBM on five statistics, likewise trained on uniform diagrams and applied locally,
+does the same.
+
+**Bottom line (all four controls + map control).** For estimating CA
+damage-spreading invariants under this protocol — globally, for novel complex
+rules in the enlarged range-2 space, *and* as spatially-resolved maps — a deep
+CNN provides **no advantage** over cheap hand-crafted single-diagram statistics.
+The damage invariants are texture-predictable and the maps are cheaply
+computable. This is a clean, pre-registered **negative result for deep
+amortization**. What remains genuinely positive and publishable: (i) the
+protocol-tuple framing; (ii) the range-2 landscape (complex ≈ 7.8%,
+CI [6.9, 8.8]% vs ~2% for ECAs); (iii) a **training-free, interpretable spatial
+phenotype-map method** for non-uniform CA (the hand-crafted patch map,
+resolving to ≈16 px); and (iv) the benchmark/negative itself. Per the standing
+decision to write only on a clear positive *deep-learning* result, the
+CNN-centric manuscript is **not** written; direction (honest cheap-method +
+benchmark paper vs. pivot to a predictive/forecasting objective where the
+literature expects learning to add value — FOUNDATIONS §4 Lever B) is a user
+call.
