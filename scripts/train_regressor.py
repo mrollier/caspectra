@@ -33,6 +33,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", required=True, help="Path to a YAML ExperimentConfig.")
     parser.add_argument("--device", default="mps", help="Preferred device (mps/cpu/cuda).")
     parser.add_argument("--output-dir", default=None, help="Override train.output_dir.")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Override cfg.seed (weight init + minibatch/augmentation order). The data "
+        "split, diagram cache and targets are keyed on their own seeds, so a --seed sweep "
+        "measures pure optimisation-seed variance (S2 error bars, EVALUATION_CRITERIA rev 6).",
+    )
     return parser.parse_args()
 
 
@@ -43,6 +51,8 @@ def main() -> None:
         raise SystemExit(f"model.method must be 'regressor', got {cfg.model.method!r}")
     if args.output_dir is not None:
         cfg.train.output_dir = args.output_dir
+    if args.seed is not None:
+        cfg.seed = args.seed
 
     set_seed(cfg.seed)
     device = select_device(prefer=args.device)
