@@ -12,8 +12,9 @@
 
 \begin{document}
 
-\title{Reading the rule beats learning it: interpretable estimators dominate deep
-networks for the finite-horizon damage response of cellular automata}
+\title{Rule reconstruction from a single space--time diagram yields
+simulation-limited prediction of the finite-horizon damage response of cellular
+automata}
 
 % NOTE: placeholder (dummy) authors --- replace before submission.
 \author{First A. Author}
@@ -26,31 +27,40 @@ Example University, Example City, Country}
 \date{\today}
 
 \begin{abstract}
-The behaviour of a cellular automaton (CA) is often summarised by
-perturbation-defined statistics such as \emph{damage spreading}: evolve two
-copies of a configuration that differ in one cell and watch the difference grow.
-Because these statistics require running the simulator twice, estimating them
-from a single observed space--time diagram is a natural task for a learned
-amortiser---and a natural place to ask whether deep representation learning beats
-transparent alternatives. We answer this with a pre-registered benchmark over the
-elementary rule space and an enlarged two-state, radius-two space of $2^{32}$
-rules, under an explicit observation protocol and leave-rules-out evaluation, and
-we compare three estimators of four finite-horizon damage-response statistics: a
-\emph{mechanistic} estimator that reads the local rule off the diagram and
-simulates it; a regressor on five cheap single-diagram statistics; and an
-anti-shortcut convolutional amortiser. The mechanistic estimator reaches the
-Monte-Carlo reliability ceiling (median held-out \rtwo{} $0.99$) and
-\emph{dominates} both the cheap statistics ($0.93$/$0.85$) and the deep network
-($0.85$/$0.86$), everywhere. We explain why---the local rule is fully readable
-from one diagram (recovered exactly; also decodable at $0.88$--$0.95$ from the
-network's own bottleneck)---and quantify the deep model honestly: its only
-measurable edge over five numbers is a modest increment on damage survival, the
-least texture-like statistic, and it never nears the ceiling nor resolves
-behaviour more finely in space. We turn the result into two constructive
-outputs---a training-free, interpretable phenotype map for non-uniform CA, and a
-data-driven map of where complex behaviour lives in rule space---and validate the
-latter against an independent glider criterion. The recommendation for this task
-is direct: read the rule.
+Damage-response statistics of a cellular automaton (CA)---whether, how far and
+how densely the difference between two runs that differ in one cell
+spreads---are defined through \emph{twin} simulations, so estimating them from a
+single observed space--time diagram is a natural amortization task for learned
+models. We report a benchmark, with decision rules committed in advance, over
+the $88$ elementary-CA orbits and $800$ uniformly sampled two-state radius-two
+rules (a $2^{32}$-rule space), under one explicit observation model:
+\emph{fully observed, noiseless, deterministic, synchronous, binary} diagrams of
+\emph{known neighbourhood radius}. Under these matched assumptions a single
+$127$-cell diagram identifies the entire local rule table for $100\%$
+(elementary) and $97.5\%$ (radius-two) of held-out rules, and the transparent
+system-identification estimator---reconstruct the rule, then re-run the
+perturbation experiment---predicts all four damage-response statistics at the
+accuracy of an \emph{independent Monte-Carlo replicate} of the target itself
+(e.g.\ damage survival $0.985$ vs.\ a replicate-agreement benchmark of $0.987$
+on the elementary space). We distinguish this simulation-limited benchmark
+($2\,\mathrm{ICC}-1$ under additive noise) from the latent-reliability ceiling
+(ICC) with which it is easily conflated, and verify against a $16\times$-larger
+reference simulation that the estimator also attains the latter. Two
+\emph{direct} single-diagram estimators---a regressor on five cheap statistics
+and a deliberately constrained convolutional amortiser---fall far short of the
+benchmark on the least texture-like target and show no stable ordering between
+themselves; a cross-fitted stacking test shows the network carries real
+information beyond the five statistics for damage survival (incremental \rtwo{}
+$+0.32$). An identifiability phase diagram then maps where reading the rule
+stops working: under observation noise above ${\sim}2\%$, heavy masking, or
+extreme initial-condition densities, exact reconstruction collapses and the
+frozen network degrades more gracefully---the regime in which direct
+amortization has a rationale. Two descriptive by-products (an interpretable
+phenotype map for non-uniform CA and a damage-signature landscape of the
+radius-two space) are validated against independent ground truth with
+conservative language. The general lesson for machine-learning benchmarks on
+deterministic dynamical systems is structural: when the observation encodes the
+generator, system identification is the baseline to beat.
 \end{abstract}
 
 \maketitle
@@ -58,249 +68,324 @@ is direct: read the rule.
 \section{Introduction}
 \label{sec:intro}
 
-Cellular automata (CA) are the canonical minimal model of emergent
-computation: a single local update rule, iterated in parallel, produces the full
-zoo of behaviours from frozen order to chaos to the localized, interacting
-``particles'' of complex, glider-supporting rules~\cite{wolfram2002,langton1990}.
-Classifying that behaviour is a long-standing and subtle problem, because the
-field distinguishes the \emph{genotype}---the local update rule---from the
-\emph{phenotype}---the mesoscopic structure of the space--time diagram it
-generates. A method that reads behaviour off the diagram must be prevented from
-instead reading the \emph{rule} off the diagram, which is almost always possible:
-a diagram contains, in its local neighbourhoods, the entire rule table, and a
+Cellular automata (CA) are the canonical minimal model of emergent computation:
+a single local update rule, iterated in parallel, produces the full zoo of
+behaviours from frozen order to chaos to the localized interacting ``particles''
+of complex rules~\cite{wolfram2002,langton1990}. Classifying that behaviour is a
+long-standing and subtle problem, because the field distinguishes the
+\emph{genotype}---the local update rule---from the \emph{phenotype}---the
+mesoscopic structure of the space--time diagram it generates. A method intended
+to read behaviour off the diagram must be prevented from instead reading the
+\emph{rule} off the diagram, which is almost always possible: a diagram
+contains, in its local neighbourhoods, the entire rule table, and a
 convolutional network recovers the elementary rule with $99.9\%$ accuracy unless
-architecturally stopped~\cite{rollier2024cnn}. This is a textbook instance of
-\emph{shortcut learning}---deep vision models latch onto the most accessible
-predictive cue rather than the intended one~\cite{geirhos2020shortcut}.
+architecturally impeded~\cite{rollier2024cnn}. This is a textbook instance of
+\emph{shortcut learning}~\cite{geirhos2020shortcut}.
 
-Compounding the difficulty, ``the behaviour class of a rule'' is not a single
-well-defined quantity. Formalized Wolfram-style class membership is
-undecidable~\cite{culikyu1988}, and the class observed in practice depends on the
-initial-condition measure~\cite{gilman1987}, the lattice, and the observation
-horizon. The defensible object is therefore not the rule but a \emph{protocol
+Formalized Wolfram-style class membership is undecidable~\cite{culikyu1988}, and
+the class observed in practice depends on the initial-condition
+measure~\cite{gilman1987}, the lattice, and the horizon. The defensible object
+of study is therefore not ``the class of a rule'' but a \emph{protocol
 tuple}---(rule orbit, IC measure, lattice, horizon)---characterized by
 finite-horizon, perturbation-defined statistics. The best-posed of these is
 \emph{damage spreading}: evolve two copies of a configuration that differ in a
 single cell and measure how the difference grows~\cite{vispoel2024damage,
-vispoel2022progress}. We are careful to call the resulting quantities
-\emph{damage-response statistics}, not invariants: they are finite-size,
-finite-horizon, and measure-dependent by construction.
+vispoel2022progress}. We call the resulting quantities \emph{damage-response
+statistics}, not invariants: they are finite-size, finite-horizon and
+measure-dependent by construction.
 
-Damage-response statistics stratify behaviour as theory predicts (dying damage
-for order, ballistic space-filling for chaos, sub-ballistic sparse cones for
-gliders) and, crucially, are defined through \emph{two} runs of the
-simulator---so they are not a function of any single observed diagram. That last
-property makes them a natural target for \emph{amortization}: train an encoder to
-predict, from one diagram, a quantity that ordinarily requires a perturbation
-experiment. If it succeeds and generalizes to unseen rules, one is tempted to
-conclude the encoder has learned to read behaviour. But there is a transparent
-alternative the deep model must beat: because the rule is readable, one can simply
-\emph{infer the rule from the diagram and simulate the statistic}---an
-interpretable, parameter-free estimator. Whether a learned representation
-\emph{adds value} over this mechanistic estimator, or even over five cheap
-statistics, is an empirical question, and exactly the kind that invites optimistic
-framing after the fact. We therefore \emph{pre-registered} it.
+Because damage-response statistics require \emph{two} runs of the simulator,
+they are not a function of any single observed diagram, which makes them a
+natural target for \emph{amortization}: train an encoder to predict, from one
+diagram, a quantity that ordinarily requires a perturbation experiment. But
+under the observation model in which such benchmarks are usually posed---the
+diagram is complete, noiseless, binary, generated by a deterministic synchronous
+CA of known radius---there is a transparent alternative: \emph{infer the rule
+from the diagram and simulate the statistic}. This is matched-model system
+identification, and this paper measures what it does to the benchmark. Three
+results organize everything that follows.
 
-This paper reports the benchmark. Under a fixed observation protocol, across the
-elementary rule space and an enlarged two-state radius-two space of $2^{32}$
-rules, we compare three estimators of the four damage-response statistics with
-leave-rules-out evaluation and thresholds fixed in advance. The result is a
-three-tier ordering that is the same everywhere we look: the mechanistic
-rule-inference estimator reaches the Monte-Carlo reliability ceiling and
-\emph{dominates}; five cheap single-diagram statistics capture most of the
-signal through texture; and the deep amortiser, even built to resist the
-rule-reading shortcut, never beats the cheap statistics overall and falls far
-short of the ceiling. We prove the mechanism (the rule is fully recoverable from
-one diagram, and pervades the network's own representation), bound the deep
-model's one honest advantage (a modest increment on damage survival, the least
-texture-like statistic), and turn the negative into two constructive outputs.
+\emph{First}, the identification problem is essentially solved by a single
+diagram: the rule table is recovered exactly for $100\%$ of elementary and
+$97.5\%$ of sampled radius-two held-out rules, and reconstruct-and-simulate then
+predicts the damage response at the accuracy of an independent Monte-Carlo
+replicate of the target itself---the correct ``simulation-limited'' benchmark,
+which we carefully separate from the latent-reliability ceiling
+(Sec.~\ref{sec:reliability}). \emph{Second}, the two direct estimators we
+trained---a five-statistic regressor and a convolutional amortiser built to
+resist first-layer rule reading---fall well short of that benchmark exactly
+where texture is least informative (damage survival), and neither dominates the
+other; the network does, however, carry survival information the five
+statistics miss, a real and quantified complementarity. \emph{Third}, the
+mechanistic route is brittle outside its assumptions: an identifiability phase
+diagram (Sec.~\ref{sec:identifiability}) shows exact reconstruction collapsing
+under modest observation noise, heavy masking, or extreme initial-condition
+density, with the frozen network degrading more gracefully---delineating,
+rather than asserting away, the regime where learned amortization can earn its
+keep.
 
-\section{Methods}
+We committed decision rules, margins, and rule panels to a timestamped
+repository before the corresponding measurements; Appendix~\ref{app:repro}
+labels each analysis as \emph{registered}, \emph{post-hoc confirmatory}, or
+\emph{exploratory}, and the repository is released with the article.
+
+\section{Benchmark}
 \label{sec:methods}
 
-\subsection{Rule spaces and the observation protocol}
-We use two rule spaces. \emph{Elementary CA} (ECA): two states, radius one, a
-three-cell neighbourhood, $2^{2^3}=256$ rules, of which $88$ are distinct
-representatives under the reflection and complementation symmetries a behavioural
-method should respect. \emph{Radius-two CA}: two states, a five-cell
-neighbourhood, a $32$-entry table and $2^{32}\approx4\times10^{9}$ rules; ECA is
-the special case whose table ignores the two outer neighbours, so an embedded ECA
-reproduces its elementary diagrams bit-for-bit (a continuity control). Because
-the space is astronomically large we \emph{sample} it uniformly ($800$ rules) and
-deduplicate by the order-four reflect/complement orbit.
+\subsection{Rule spaces and the observation model}
+We use two rule spaces. \emph{Elementary CA} (ECA): two states, radius one,
+$2^{2^3}=256$ rules, of which $88$ are distinct representatives under the
+reflection and complementation symmetries a behavioural method should respect.
+\emph{Radius-two CA}: two states, a five-cell neighbourhood, a $32$-entry table
+and $2^{32}\approx4\times10^{9}$ rules; ECA embeds exactly (a continuity
+control). The radius-two space is sampled uniformly ($800$ canonical rules after
+orbit deduplication).
 
-Every quantity below is indexed by a fixed \emph{observation protocol}: a
-Bernoulli$(1/2)$ initial condition on a ring of $127$ cells with periodic
-boundaries, evolved from $t=0$. We avoid power-of-two widths, under which
-additive rules collapse to homogeneity on a periodic ring and diverge from the
-infinite-lattice reference behaviour. The horizon is capped so that the light cone
-of a single perturbed cell cannot wrap the ring: $\lfloor w/(2r)\rfloor-1$ steps
-for width $w$ and radius $r$, which for ECA is the familiar $\lfloor
-w/2\rfloor-1$. These are deliberately short observations, and we return to their
-scope in Sec.~\ref{sec:discussion}.
+Every quantity is indexed by a fixed \emph{observation protocol}: a
+Bernoulli$(1/2)$ initial condition on a ring of $127$ cells (non-power-of-two,
+so additive rules do not collapse to homogeneity), evolved from $t=0$; the
+damage horizon is $\lfloor w/(2r)\rfloor-1$ steps so a perturbation cone cannot
+wrap. The observation model deliberately matches the generator: diagrams are
+\emph{complete, noiseless, binary, synchronous in the observed time direction,
+spatially uniform in the rule, and of known radius}. These assumptions are load
+bearing---they are what make the rule readable---and
+Sec.~\ref{sec:identifiability} measures what happens when each is relaxed.
 
 \subsection{Damage-response statistics}
-The targets are four label-free scalars per rule, estimated from twin runs: draw
-an initial condition, flip one cell, evolve both copies to the horizon, and
-compare. \emph{Damage survival} is the probability that any difference remains;
-conditional on survival, \emph{damage fraction} is the fraction of the ring that
-differs, \emph{spreading rate} is the cone extent normalised by $2r$ times the
-number of steps (so $1$ is light speed for any radius), and \emph{cone fill} is
-the density of differing cells within the cone (high for chaos, low for sparse
-gliders). Each vector is a Monte-Carlo average over $n_{\mathrm{pairs}}=256$
-initial conditions; the per-rule random stream is keyed on the rule's identity, so
-a rule's target is a well-defined function of $(\text{rule},\text{protocol})$,
-independent of which other rules are computed alongside it
-(Appendix~\ref{app:repro}).
+The targets are four scalars per rule, estimated from twin runs: draw an
+initial condition, flip one uniformly chosen cell, evolve both copies to the
+horizon, and compare final rows. \emph{Damage survival} is the probability that
+any difference remains; conditional on survival, \emph{damage fraction} is the
+fraction of the ring that differs, \emph{spreading rate} is the damage-cone
+extent normalised by $2r$ times the number of steps (so $1$ is light speed at
+any radius), and \emph{cone fill} is the density of differing cells within the
+cone (exact formulas in Appendix~\ref{app:methods}). Each target vector is a
+Monte-Carlo average over $n_{\mathrm{pairs}}=256$ initial conditions from a
+random stream keyed on the rule's identity, so a rule's target is a
+well-defined function of (rule, protocol), reproducible under a fixed seed but
+Monte-Carlo limited (Appendix~\ref{app:repro}).
 
-\emph{Reliability ceiling.} Because each target is a single Monte-Carlo estimate,
-no predictor can exceed its reliability. We draw $K=20$ independent replicates per
-rule and fit a one-way random-effects model to get, per target, the intraclass
-correlation ICC$(1)=\sigma^2_a/(\sigma^2_a+\sigma^2_e)$---the achievable-\rtwo{}
-ceiling. On ECA the ceilings are $0.994$ (survival), $0.999$ (fraction), $0.9995$
-(rate), $0.999$ (fill); on radius two, $0.987$/$0.998$/$0.998$/$0.980$. Survival
-is the noisiest statistic (MC-noise std $0.022$) and, as we shall see, the one on
-which the learned model has anything to add. Every \rtwo{} below is read against
-these ceilings, not against $1$.
+\subsection{Three reliability benchmarks, distinguished}
+\label{sec:reliability}
+Because each cached target is a single Monte-Carlo estimate, no predictor can
+agree with it perfectly. But ``the ceiling'' depends on \emph{what kind of
+predictor} is being scored, and conflating the cases overstates or understates
+a method by several times the margins at stake. From $K=20$ independent target
+replicates per rule we report, per target, with rule-bootstrap confidence
+intervals [registered, rev.~8]:
 
-\subsection{Three estimators}
-All three are trained on the same rules and evaluated with the \emph{same}
-leave-rules-out split against the \emph{same} targets.
+\begin{enumerate}
+\item \emph{Latent-target reliability} $\mathrm{ICC}(1)=\sigma_a^2 /
+(\sigma_a^2+\sigma_e^2)$ from a one-way random-effects decomposition
+($\sigma_a^2$ between-rule signal, $\sigma_e^2$ Monte-Carlo noise): the
+attenuation ceiling for a predictor of the \emph{noise-free} target mean.
+\item \emph{Independent-replicate agreement}: the empirical \rtwo{} of one
+replicate predicting another. For $Y_1=\theta+\varepsilon_1$,
+$Y_2=\theta+\varepsilon_2$ with equal independent noise this is
+$1-2\sigma_e^2/(\sigma_a^2+\sigma_e^2)=2\,\mathrm{ICC}-1$, \emph{not} ICC. This
+is the correct benchmark for the mechanistic estimator below, which returns a
+fresh independent simulation at the same $n_{\mathrm{pairs}}$---not the latent
+mean.
+\item \emph{Large-simulation reference}: the same estimator scored against
+near-noise-free targets recomputed at $n_{\mathrm{pairs}}=4096$; as the
+comparison target's noise vanishes, an optimal fresh-simulation estimator
+should rise from benchmark (2) to benchmark (1).
+\end{enumerate}
 
-\emph{(i) Mechanistic rule-inference estimator.} We invert the forward map: from
-one diagram we tabulate every observed neighbourhood$\to$next-cell transition and
-rebuild the $2^{2r+1}$-bit rule table (entries never exercised default to $0$;
-the observed \emph{coverage} is reported), then simulate the four statistics under
-the identical protocol with an \emph{independent} random stream. When inference is
-exact the estimate is simply a second independent Monte-Carlo draw of the target,
-so its agreement with the cache is bounded by the reliability ceiling, not by any
-learned capacity. The estimator has no trained parameters.
+On ECA the four targets give ICC $0.994/0.999/0.9995/0.999$ (survival is the
+noisiest, Monte-Carlo std $0.022$) and replicate agreement
+$0.987/0.998/0.999/0.998$; on radius two, ICC $0.987/0.998/0.998/0.980$ and
+agreement $0.974/0.997/0.997/0.959$. Survival and cone fill are markedly
+heteroscedastic, so all intervals are bootstrap-based rather than Gaussian.
+Every \rtwo{} in this paper is read against the benchmark appropriate to the
+estimator's type.
 
-\emph{(ii) Five cheap statistics.} A regressor on five label-free single-diagram
-features: the polarity-folded live-cell density, the temporal activity (fraction
-of cells that change between rows), the zlib compression ratio, the $2\times2$
-block entropy, and a radius-aware input-entropy variance (Wuensche's automated
-glider screen~\cite{wuensche1999}). All five are (exactly or approximately)
-invariant under the orbit symmetries. We report both a ridge and a
-gradient-boosted-tree fit and take the stronger as the baseline of record.
+\section{Estimators}
+\label{sec:estimators}
 
-\emph{(iii) Deep amortiser.} A convolutional network designed against the
-rule-reading shortcut: $2\times2$ first-layer kernels (too small to span a
-neighbourhood and its output together) feeding a signed $64$-dimensional
-bottleneck and a linear head; a \texttt{predict\_map} variant emits a per-patch
-map. It uses BatchNorm rather than GroupNorm in the regression encoder, which
-keeps the per-patch map local. Training is $60$ epochs at $127$\,px; five seeds
-vary weight initialization and minibatch order with the split and targets fixed.
-The comparison is deliberately asymmetric in the network's favour: it has orders
-of magnitude more parameters than a five-feature regressor. We stress that ``anti
-shortcut'' names an architectural intent, not an achieved invariance---we measure
-below that the rule remains fully recoverable from the network's representation,
-which is precisely why the intent does not help.
+\emph{(i) Matched-model system identification (``mechanistic'').} From one
+diagram we tabulate every observed neighbourhood$\to$next-cell transition and
+rebuild the $2^{2r+1}$-bit rule table, then re-run the twin-run protocol on the
+reconstructed rule with an independent random stream. The estimator assumes
+exactly the observation model above (deterministic synchronous binary CA, full
+noiseless observation, known radius, spatial uniformity); it is \emph{not}
+assumption-free, and it carries one explicit prior: table entries never
+exercised by the diagram must be completed. The registered default completes
+them with $0$; we report the observed \emph{coverage}, compare default-$0$,
+default-$1$ and empirical-prior completions, and provide a posterior-averaged
+variant that enumerates or samples the $2^k$ completions of $k$ missing entries
+and propagates the spread into a predictive interval [registered, rev.~8].
+Coverage is a non-issue in practice under this protocol---every ECA held-out
+table and $156/160$ radius-two tables are fully covered; the four exceptions
+miss one entry each, and the completion choice moves the radius-two median
+\rtwo{} by ${<}\,0.001$ (Sec.~\ref{sec:results-mech}).
 
-\subsection{Statistics and pre-registration}
-Every criterion, threshold, rule panel and control was committed to a timestamped
-repository \emph{before} the corresponding measurement, and no threshold was
-edited after a number was seen; the repository is released on publication so the
-ordering is independently auditable. We report results \emph{per target}, never as
-a four-target median alone, with the held-out \emph{rule} as the unit of
-resampling. For each method pair we compute the paired difference in \rtwo{} with
-a rule-level cluster bootstrap ($10^4$ resamples) and classify it by a
-pre-registered rule: \emph{superiority} if the median $\Delta R^2\ge0.10$ and the
-$95\%$ CI excludes $0$; \emph{practical equivalence} (TOST) if the $90\%$ CI lies
-within $(-\delta,+\delta)$, $\delta=0.05$; otherwise inconclusive. A cross-fitted
-\emph{stacking} test asks whether one method's prediction adds incremental \rtwo{}
-beyond another's (margin $0.02$). Two descriptive claims are validated
-independently: rule recoverability by linear probes on the network's bottleneck
-versus the raw diagram and the five statistics; and the complex-rule landscape by
-a localized-seed glider detector distinct from the damage signature.
+\emph{(ii) Five cheap statistics.} A regressor on five label-free
+single-diagram features (polarity-folded density, temporal activity, zlib
+compression ratio, $2\times2$ block entropy, and a radius-aware input-entropy
+variance~\cite{wuensche1999}), all exactly or approximately invariant under the
+orbit symmetries. Both a ridge and a gradient-boosted regressor are fit; the
+stronger (the boosted one) is the baseline of record
+(Appendix~\ref{app:methods}).
+
+\emph{(iii) Direct convolutional amortiser.} A small CNN ($31{,}524$
+parameters; full layer table in Appendix~\ref{app:methods}) whose $2\times2$
+first-layer kernels cannot span a neighbourhood together with its output cell,
+feeding a $64$-dimensional bottleneck and a linear head; BatchNorm keeps the
+per-patch \texttt{predict\_map} variant local. Trained $60$ epochs at
+$127\,$px; five seeds vary initialization and minibatch order. \emph{All neural
+claims in this paper are about this architecture under this training budget},
+not about deep networks as a class: we did not run an architecture search, and
+Sec.~\ref{sec:discussion} names the learned system-identification pipelines
+that remain untested. The ``anti-shortcut'' first layer is an architectural
+intent only---Sec.~\ref{sec:probes} shows the rule remains decodable from the
+trained bottleneck.
+
+\emph{Statistical protocol.} Results are reported per target (never only as a
+four-target median), with the held-out \emph{rule} as the unit of resampling.
+Paired differences carry rule-level cluster-bootstrap intervals ($10^4$
+resamples); each method pair is classified per target as \emph{superiority}
+(median $\Delta R^2\ge0.10$, $95\%$ CI excluding $0$), \emph{practical
+equivalence} (TOST: $90\%$ CI within $(-\delta,+\delta)$, $\delta=0.05$,
+reported also at $\delta=0.02$ and $0.10$), or \emph{inconclusive}---the three
+labels are not interchangeable and we use only the one earned. Split
+uncertainty beyond the registered split is quantified for the deterministic
+methods by leave-one-orbit-out over all $88$ ECA orbits and $20$ repeated outer
+splits on radius two; the CNN is reported at the registered split with its
+five-seed spread, and we state explicitly that retraining across splits was not
+performed. A cross-fitted stacking test measures incremental \rtwo{} (margin
+$0.02$, CI excluding $0$) in both directions between the network and the five
+statistics.
 
 \section{Results}
 \label{sec:results}
 
-\subsection{Three tiers, one ordering}
-\label{sec:tiers}
-Table~\ref{tab:tiers} is the paper in one place. Reading the rule and simulating
-it recovers the damage-response statistics at the reliability ceiling and
-\emph{dominates} both the cheap statistics and the deep amortiser, on the
-elementary space, on the enlarged space, and on the held-out complex rules that
-the enlarged space makes plentiful. The deep network never clears the
-pre-registered advantage margin over five cheap statistics: it is beaten outright
-on the elementary space and ties on the enlarged space and on complex rules
-(Sec.~\ref{sec:paired}).
+\subsection{Rule reconstruction is simulation-limited}
+\label{sec:results-mech}
+
+Table~\ref{tab:headline} gives the headline medians; Tables~\ref{tab:eca}
+and~\ref{tab:r2} give the per-target values with intervals on which every
+claim rests. The mechanistic estimator recovers the rule exactly for $100\%$ of
+ECA and $97.5\%$ of radius-two held-out rules and predicts each damage-response
+statistic \emph{at its independent-replicate agreement benchmark}: on ECA,
+survival $0.985$ against a benchmark of $0.987$ (CI $[0.978,0.992]$); on radius
+two, survival $0.977$ against $0.974$ $[0.945,0.984]$ and cone fill $0.985$
+against $0.959$ $[0.900,0.987]$. In other words, under the matched observation
+model, reading the rule and re-running the experiment is statistically
+indistinguishable from having re-measured the ground truth itself. Scored
+against the $16\times$-larger reference simulation instead of the noisy cache,
+the same predictions rise to the latent ICC ceiling (survival: ECA $0.994$
+against ICC $0.994$; radius two $0.988$ against $0.987$)---the residual was
+the comparison target's noise, not estimator error [registered, rev.~8].
 
 \begin{table*}[t]
 \centering
 \begin{ruledtabular}
-\begin{tabular}{lcccc}
-task & mechanistic & 5 statistics & deep CNN & ceiling \\
+\begin{tabular}{lccccc}
+task & mechanistic & 5 statistics & deep CNN & replicate agreement & ICC ceiling \\
 \colrule
-ECA global & \textbf{0.999} & 0.927 & $0.852\pm0.015$ & 0.999 \\
-radius-2 global & \textbf{0.991} & 0.845 & $0.864\pm0.014$ & 0.993 \\
-radius-2 complex & \textbf{0.982} & 0.795 & $0.832\pm0.022$ & $\approx0.98$ \\
+ECA global & \textbf{0.999} & 0.927 & $0.852\pm0.015$ & 0.998 & 0.999 \\
+radius-2 global & \textbf{0.991} & 0.845 & $0.864\pm0.014$ & 0.985 & 0.993 \\
+radius-2 complex & \textbf{0.982} & 0.795 & $0.832\pm0.022$ & --- & $\approx0.98$ \\
 \end{tabular}
 \end{ruledtabular}
-\caption{Median leave-rules-out \rtwo{} of the three estimators against the
-reliability ceiling. The interpretable mechanistic estimator sits at the ceiling
-and dominates; the deep amortiser (mean\,$\pm$\,s.d.\ over five seeds; the other
-methods are deterministic given the split) never beats five cheap statistics.}
-\label{tab:tiers}
+\caption{Median (over the four targets) leave-rules-out \rtwo{}. The
+mechanistic estimator attains the independent-replicate agreement benchmark
+appropriate to a fresh-simulation estimator (and, against a near-noise-free
+reference, the ICC ceiling); both direct estimators sit well below both
+benchmarks. CNN: mean $\pm$ s.d.\ over five training seeds. Per-target values
+with confidence intervals: Tables~\ref{tab:eca} and~\ref{tab:r2}. The
+complex-subset row conditions on the $57$ held-out signature-complex rules,
+for which no separate reliability panel was drawn.}
+\label{tab:headline}
 \end{table*}
 
-The gap is starkest on \emph{damage survival}, the noisiest and least
-texture-like statistic (Table~\ref{tab:eca}). There the mechanistic estimator
-scores $0.985$ against a ceiling of $0.994$, while the five statistics reach only
-$0.71$ and the CNN $0.67$---both leaving roughly a third of the achievable
-variance on the table. On the texture-dominated statistics (fraction, rate, fill)
-the cheap features already come close to the ceiling, and the deep model adds
-nothing.
-
 \begin{table*}[t]
 \centering
 \begin{ruledtabular}
-\begin{tabular}{lcccc}
-ECA target & mechanistic & 5 statistics & deep CNN & ceiling \\
+\begin{tabular}{lccccc}
+ECA target & mechanistic & 5 statistics & deep CNN & replicate agreement & ICC \\
 \colrule
-damage survival & 0.985 & 0.708 & 0.667 & 0.994 \\
-damage fraction & 1.000 & 0.924 & 0.805 & 0.999 \\
-spreading rate & 1.000 & 0.965 & 0.965 & 0.9995 \\
-cone fill & 0.999 & 0.929 & 0.894 & 0.999 \\
+damage survival & 0.985 [0.893, 0.997] & 0.708 [$-0.537$, 0.924] & $0.700\pm0.018$ & 0.987 & 0.994 \\
+damage fraction & 1.000 [0.997, 1.000] & 0.924 [$-0.840$, 0.959] & $0.789\pm0.038$ & 0.998 & 0.999 \\
+spreading rate & 1.000 [0.998, 1.000] & 0.965 [$-0.517$, 0.998] & $0.956\pm0.015$ & 0.999 & 0.9995 \\
+cone fill & 0.999 [0.991, 1.000] & 0.929 [0.849, 0.994] & $0.916\pm0.019$ & 0.998 & 0.999 \\
 \end{tabular}
 \end{ruledtabular}
-\caption{Per-target held-out \rtwo{} on the elementary space (deep CNN at the
-reference seed). The mechanistic estimator is at the ceiling on every statistic;
-the shortfall of the cheap features and the deep model is concentrated on
-\emph{damage survival}.}
+\caption{Per-target held-out \rtwo{} on the elementary space ($18$ held-out
+orbits). Brackets: rule-bootstrap $95\%$ CIs; CNN: mean $\pm$ s.d.\ over five
+seeds. The five-statistic column's split sensitivity (leave-one-orbit-out over
+all $88$ orbits) is reported in Appendix~\ref{app:methods}. The shortfall of
+both direct estimators concentrates on damage survival, the least texture-like
+and least reliable target.}
 \label{tab:eca}
 \end{table*}
 
-\subsection{Paired inference: dominance and equivalence}
-\label{sec:paired}
-On the radius-two space (160 held-out rules, powered) the paired cluster bootstrap
-confirms the ordering per target. The mechanistic estimator is
-\emph{superior} to the cheap statistics on survival ($\Delta R^2=+0.17$), rate
-($+0.12$) and cone fill ($+0.39$), and to the deep network on fraction, rate and
-fill, with the remaining differences positive and excluding $0$. The deep network
-and the cheap statistics, by contrast, \emph{trade}: the network is marginally
-ahead on survival ($+0.08$) and the cheap features clearly ahead on cone fill
-($-0.21$, baseline superior), with the rest a wash---neither dominates, and both
-sit far below the mechanistic estimator. On the elementary space the held-out set
-($18$ rules) is too small for tight per-target intervals; there we report the
-median level of Table~\ref{tab:tiers}, where the cheap statistics beat the deep
-network outright.
+\begin{table*}[t]
+\centering
+\begin{ruledtabular}
+\begin{tabular}{lccccc}
+radius-2 target & mechanistic & 5 statistics & deep CNN & replicate agreement & ICC \\
+\colrule
+damage survival & 0.977 [0.930, 0.989] & 0.809 [0.554, 0.906] & $0.874\pm0.009$ & 0.974 & 0.987 \\
+damage fraction & 0.997 [0.995, 0.998] & 0.909 [0.878, 0.932] & $0.880\pm0.020$ & 0.997 & 0.998 \\
+spreading rate & 0.997 [0.996, 0.998] & 0.880 [0.839, 0.912] & $0.865\pm0.020$ & 0.997 & 0.998 \\
+cone fill & 0.985 [0.969, 0.992] & 0.596 [0.320, 0.775] & $0.337\pm0.109$ & 0.959 & 0.980 \\
+\end{tabular}
+\end{ruledtabular}
+\caption{Per-target held-out \rtwo{} on the radius-two space ($160$ held-out
+rules, of which $57$ signature-complex). Brackets: rule-bootstrap $95\%$ CIs;
+CNN: mean $\pm$ s.d.\ over five seeds. The five-statistic baseline's spread
+over $20$ repeated outer splits is reported in Appendix~\ref{app:methods}.}
+\label{tab:r2}
+\end{table*}
 
-\subsection{Does the network add anything? A stacking test}
+The completion prior is exposed rather than hidden: coverage is complete for
+every ECA held-out rule and for $156/160$ radius-two rules; the four
+under-covered tables miss one entry each, the default-$0$/default-$1$/empirical
+completions change the radius-two median \rtwo{} only in the fourth decimal
+($0.9905$--$0.9908$), and the posterior-averaged variant supplies predictive
+intervals precisely for those rules. We therefore describe the estimator as
+carrying a weak, testable prior---not as assumption-free.
+
+\subsection{No stable ordering between the direct estimators}
+\label{sec:paired}
+
+The paired comparisons [registered, rev.~7--8] give the network and the
+five-statistic baseline no global ranking. On radius two ($160$ held-out rules,
+adequately powered) the CNN is ahead on damage survival ($\Delta R^2=+0.08$,
+$95\%$ CI $[+0.00,+0.20]$ excluding $0$ but below the $0.10$ superiority
+margin), the baseline is \emph{superior} on cone fill ($\Delta R^2=-0.21$, CI
+$[-0.38,-0.07]$), and fraction and rate are \emph{inconclusive} at
+$\delta=0.05$ (equivalent only at the loose $\delta=0.10$; fraction's CI
+$[-0.09,-0.00]$ weakly favours the baseline). On ECA ($18$ held-out orbits)
+every CNN--baseline contrast is inconclusive except spreading rate (equivalent
+at $\delta=0.05$); that panel is underpowered for tight per-target intervals
+and we say so rather than read a ranking into it. The mechanistic estimator,
+by contrast, meets the registered superiority rule against the baseline on
+survival, rate and cone fill ($\Delta R^2$ up to $+0.39$) and against the CNN
+on fraction, rate and cone fill (up to $+0.60$); the two remaining contrasts
+(fraction vs.\ the baseline, survival vs.\ the CNN) have intervals excluding
+zero in its favour with point differences just below the margin. No comparison
+on any target in either space favours a direct method over it.
+
+\subsection{What the network adds: complementarity, not redundancy}
 \label{sec:stacking}
-The rigorous form of ``adds value'' is incremental: does a method's prediction
-explain held-out residual variance beyond another's, under cross-fitting? The
-answer is honest and specific (Table~\ref{tab:stacking}). Augmenting the five
-statistics with the CNN's predictions yields a real, significant increment on
-\emph{damage survival} ($+0.32$) and small increments on fraction and rate, but
-none on cone fill; augmenting the CNN with the five statistics yields nothing.
-The deep representation therefore does carry information the cheap features
-miss---concentrated on survival, exactly the least texture-like statistic---but it
-is dwarfed by the mechanistic estimator, whose increment over the five statistics
-is $+0.14$ to $+0.84$ across targets. The learned model is not useless; it is
-dominated.
+
+The cross-fitted stacking test [registered, rev.~7] asks the sharper question:
+does one method's prediction explain held-out residual variance beyond
+another's? The answer is target-specific (Table~\ref{tab:stacking}). Adding the
+CNN's predictions to the five statistics yields a large, significant increment
+on damage survival ($+0.32$, CI $[+0.23,+0.48]$)---raising the stacked model
+from $0.56$ to $0.88$---with small significant increments on fraction and rate
+and none on cone fill; the reverse direction adds nothing. The
+network therefore extracts real survival information that texture statistics
+miss---exactly the target where both direct methods sit farthest below the
+reliability benchmark, and the concrete reason a learned representation cannot
+be dismissed for this task family. It remains the case that the mechanistic
+estimator's increment over the five statistics is far larger on every target
+($+0.14$ to $+0.84$), so the practical order of preference under the matched
+observation model is unambiguous.
 
 \begin{table*}[t]
 \centering
@@ -308,156 +393,316 @@ dominated.
 \begin{tabular}{lccc}
 target & CNN over 5 stats & 5 stats over CNN & mechanistic over 5 stats \\
 \colrule
-survival & \textbf{+0.32} & $-0.01$ & +0.42 \\
-fraction & +0.03 & +0.01 & +0.14 \\
-rate & +0.03 & +0.01 & +0.16 \\
-cone fill & $+0.08$\,(n.s.) & +0.08\,(n.s.) & +0.84 \\
+damage survival & $+0.32$ [0.23, 0.48] (0.56 $\to$ 0.88) & $-0.01$ [$-0.03$, $-0.00$] & $+0.42$ [0.33, 0.71] (0.56 $\to$ 0.97) \\
+damage fraction & $+0.03$ [0.01, 0.06] (0.85 $\to$ 0.89) & $+0.01$ n.s. & $+0.14$ [0.11, 0.18] (0.85 $\to$ 0.99) \\
+spreading rate & $+0.03$ [0.01, 0.06] (0.84 $\to$ 0.87) & $+0.01$ n.s. & $+0.16$ [0.12, 0.20] (0.84 $\to$ 0.99) \\
+cone fill & $+0.08$ n.s. & $+0.08$ n.s. & $+0.84$ [0.66, 1.00] (0.14 $\to$ 0.98) \\
 \end{tabular}
 \end{ruledtabular}
-\caption{Cross-fitted incremental \rtwo{} (radius-two held-out rules). The CNN
-adds significant information beyond the five statistics only on damage survival;
-the five statistics add nothing beyond the CNN; the mechanistic estimator adds
-far more than either, everywhere.}
+\caption{Cross-fitted incremental \rtwo{} with rule-bootstrap $95\%$ CIs
+(radius-two held-out rules), and the full stacked-model \rtwo{} in parentheses
+(base $\to$ stacked). ``n.s.'': CI includes $0$ or increment below the
+registered $0.02$ margin.}
 \label{tab:stacking}
 \end{table*}
 
-\subsection{Why: the rule is readable}
+\subsection{Why: the rule is readable, including from the network}
 \label{sec:probes}
-The mechanism is that the local rule is fully present in one diagram. The
-mechanistic inverter recovers it \emph{exactly} for $100\%$ of elementary rules
-and $97.5\%$ of sampled radius-two rules (the remainder have under-covered tables,
-the estimator's only failure mode, and the source of its sub-ceiling radius-two
-score). The rule is not hidden from the network either: a linear probe reads the
-rule's identity from the CNN's $64$-dimensional bottleneck at balanced accuracy
-$0.88$ (ECA) and $0.95$ (radius two), and individual truth-table entries of unseen
-rules at $0.78$/$0.61$---far above the five statistics' $0.69$/$0.55$ and the
-majority baseline. The $2\times2$ ``anti-shortcut'' architecture thus does not
-prevent rule recovery; the readable rule is the reason the deep model has nothing
-to add that reading-and-simulating does not already provide.
 
-\subsection{Constructive outputs}
+The mechanism behind these results is that the local rule pervades every
+representation of the diagram. The deterministic inverter recovers it exactly
+(above). Linear probes quantify the same fact for the learned and handcrafted
+representations; we specify the two probe tasks precisely since they answer
+different questions. \emph{Identity probes} (stratified split over diagrams;
+train and test diagrams disjoint, rule classes shared---within-rule decoding
+across new diagrams; $88$ and $800$ classes, majority baseline $\approx0.011$
+and $0.001$) recover the rule from the CNN's own $64$-d bottleneck at balanced
+accuracy $0.88$ (ECA) and $0.95$ (radius two), versus $0.65$/$0.30$ from the
+five statistics. \emph{Truth-table-bit probes} (leave-rules-out GroupKFold;
+test rules never seen by the probe---out-of-rule transfer of the reading
+mechanism; chance $0.5$) reach $0.78$/$0.61$ from the bottleneck versus
+$0.69$/$0.55$ from the statistics. The $2\times2$ first layer therefore does
+\emph{not} prevent rule recovery; we retired that claim. What the probes
+establish is accessibility, not use: they show the information survives into
+the bottleneck, and the mechanistic estimator shows a rule-first route attains
+the reliability benchmark. Whether the network's regression head \emph{causally
+relies} on rule information is not established here; rule-scrubbing and
+rule-provision interventions that would test it are future work
+(Sec.~\ref{sec:discussion}).
+
+\subsection{When reading fails: the identifiability phase diagram}
+\label{sec:identifiability}
+
+The mechanistic route is only as good as its observation model, so we mapped
+its failure surface [exploratory, rev.~8]. Figure~\ref{fig:ident} sweeps, on
+the radius-two held-out rules, four observation axes; per setting it reports
+table coverage, exact-reconstruction rate, and the median held-out \rtwo{} of
+the mechanistic estimator, the five statistics, and the \emph{frozen} CNN (no
+retraining; axes that change the input geometry omit the CNN, as noted).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/identifiability.pdf}
+\caption{Identifiability of the local rule at radius two ($80$ held-out rules;
+median held-out \rtwo{}). (a) Observed rows: a $127$-wide diagram identifies
+the table from as few as $4$ rows (the CNN, trained at fixed geometry, is not
+comparable on this axis and is omitted). (b) Bit-flip observation noise: exact
+reconstruction (dotted) collapses immediately and the mechanistic estimate
+(green) falls below the frozen CNN (blue) beyond ${\sim}2$--$5\%$ noise. (c)
+Random masking: inference tolerates ${\sim}25\%$ missing cells, then collapses.
+(d) Initial-condition density: the mechanistic estimator re-simulates under the
+\emph{reference} protocol regardless of the observed density and stays at its
+benchmark across the mid-range, but fails at extreme densities where the
+diagram no longer exercises the table; the frozen CNN and the statistics
+degrade off their training density. The vertical dotted line marks the training
+density $0.5$.}
+\label{fig:ident}
+\end{figure}
+
+Three regimes emerge. Where the observation model is matched (clean, full,
+mid-density), reconstruction is exact after a handful of rows and the
+mechanistic estimator holds its benchmark---a regime in which single-diagram
+amortization of this task family has no room to add value. Under degradation
+the picture inverts: at $5\%$ bit-flip noise the mechanistic median \rtwo{}
+falls below zero while the frozen CNN retains $0.09$--$0.43$; under masking the
+crossover sits near $40\%$; at density $0.1$ all methods fail but none
+catastrophically like the inverter under noise. The boundary is sharp because a
+deterministic table has no noise model---one corrupted transition flips an
+entry. A rule-\emph{posterior} simulator (our posterior-averaged variant with a
+transition-error likelihood) is the natural extension in the intermediate
+regime, and a learned rule-reader may be the natural one beyond it; neither is
+benchmarked here. These curves are the paper's scope statement in graphical
+form: the recommendation to read the rule holds \emph{inside} panel (a)'s
+regime and is explicitly not asserted outside it.
+
+\subsection{Cost: accuracy versus compute}
+\label{sec:compute}
+
+Accuracy is not the only utility criterion. The mechanistic estimator pays per
+query (rule inference plus a fresh Monte-Carlo simulation), the network pays
+once (training) and then almost nothing per query. Measured on radius two
+[exploratory, rev.~8]: at the production budget ($256$ pairs) the mechanistic
+estimator costs $283$\,ms per diagram (single CPU core; embarrassingly
+parallel over diagrams), against $2.2$\,ms for a CNN forward pass (Metal GPU)
+and $1.4$\,ms for the five statistics. One-time costs are $\approx22$\,min of
+training per CNN seed versus $15$\,s to fit the boosted baseline, giving a
+break-even of $\approx4700$ queries before the network's training amortises
+against the mechanistic estimator. The accuracy-versus-budget curve, however,
+is one-sided: even at a $16$-pair budget ($17$\,ms per diagram) the mechanistic
+median \rtwo{} is $0.924$---above both direct estimators at any cost---and
+$32$ pairs ($32$\,ms) already give $0.966$. The choice is therefore
+workload-dependent in the ordinary way; what the Pareto view adds is that
+under the matched observation model the mechanistic estimator is
+simultaneously the most accurate at every simulation budget we measured, so
+the network's case must rest on degraded-observation regimes
+(Fig.~\ref{fig:ident}) or on extreme-throughput screening, not on accuracy.
+
+\subsection{Descriptive by-products, independently validated}
 \label{sec:constructive}
-The negative has a constructive shadow. First, because the statistics are locally
-and cheaply predictable, one can build \emph{training-free, interpretable}
-phenotype maps for non-uniform CA by sliding the hand-crafted regressor over the
-diagram. We validate this against an \emph{independent} local ground truth---the
-damage response measured by local perturbation \emph{in} the composed system, not
-the assumed pure-rule invariant---and score each map by the spatial correlation of
-its per-column spreading-rate profile with that ground truth. With the
-hand-crafted window selected on a validation split (not per-pair oracle), the
-learned map shows \emph{no significant} localisation advantage over the cheap
-window (Spearman $0.67$ vs $0.61$; $\Delta=+0.05$, $95\%$ CI $[-0.002,+0.10]$)---a
-tie. The interpretable map is GPU-free and needs no training set.
 
-Second, the same statistics over a uniform sample yield a data-driven picture of
-\emph{where} complex behaviour lives (Fig.~\ref{fig:landscape}). We report this
-conservatively: $\approx7.8\%$ of radius-two rules (Wilson $95\%$ CI $[6.9,8.8]\%$,
-$n=3000$) \emph{satisfy the pre-registered damage-signature criterion}, versus
-$\approx2\%$ of the $88$ elementary orbits. On the elementary space the criterion
-selects exactly $\{54,106,110\}$---and $\{54,110\}$ are the literature's canonical
-class-IV rules, so where independent ground truth exists the signature is
-correct. An independent localized-seed glider detector agrees with the damage
-signature on $92\%$ of the elementary rules it applies to (false-positive $6\%$,
-false-negative $2\%$, the one miss being rule $54$, whose ether front advances at
-light speed). On radius two, where no literature ground truth exists, the two
-observables agree only $47\%$ of the time---so we make no claim that the $7.8\%$
-are validated gliders, only that they satisfy the damage-signature shape.
-Single-observable glider detection is itself unreliable in the large space.
+\emph{Phenotype maps for non-uniform CA.} Because the statistics are locally
+predictable, sliding the pretrained five-statistic regressor over a composed
+(two-rule) diagram yields an interpretable phenotype map with no additional
+training at deployment (the regressor itself is trained once; we do not call
+this training-free). Scored against an independent location-resolved ground
+truth---the damage response measured by local perturbation \emph{in} the
+composed system---with the window width chosen on a validation split of rule
+pairs and the \emph{composed system} as the unit of resampling, the learned
+map's advantage is \emph{inconclusive} under the registered framework: mean
+Spearman $0.67$ vs $0.61$, $\Delta=+0.047$, $95\%$ CI $[-0.002,+0.102]$, $90\%$
+CI $[+0.005,+0.092]$---not superiority (point below the $0.10$ margin), not
+equivalence (the $90\%$ CI is not contained in $\pm0.05$). The honest summary
+is a small, statistically unresolved edge for the learned map at $15$-column
+resolution.
+
+\emph{A damage-signature landscape of the radius-two space.} The same
+statistics over $3000$ uniformly sampled canonical rules give
+Fig.~\ref{fig:landscape}: $7.8\%$ (Wilson $95\%$ CI $[6.9,8.8]\%$) of rules
+satisfy the registered damage-signature criterion (persistent, sub-ballistic,
+sparse-cone damage), versus $2/88$ elementary orbits. We emphasize what this
+is: the prevalence of a \emph{finite-horizon damage-signature criterion} under
+the stated sampling distribution---not a validated glider census. On ECA,
+where literature ground truth exists, the signature earns considerable trust:
+it selects $\{54,106,110\}$, i.e.\ both canonical class-IV rules (sensitivity
+$1.0$) with one false positive, the documented borderline rule $106$ (precision
+$2/3$, specificity $0.99$, balanced accuracy $0.99$). An \emph{independent}
+localized-seed glider detector is far weaker as an instrument (vs.\ literature:
+sensitivity $0.5$---it misses rule $54$, whose ether front advances at light
+speed---precision $0.17$); on radius two it agrees with the signature at
+barely better than chance (balanced accuracy $0.39$, precision $0.05$, $231$
+applicable rules). Single-observable glider detection is unreliable in the
+large space, which is precisely why we do not promote the $7.8\%$ region to
+``complex'' or ``glider-supporting'': that would require long-horizon curated
+validation that we have not done.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/landscape.pdf}
-\caption{The radius-two behaviour landscape from data ($n=3000$ uniformly sampled
-canonical rules). Rules satisfying the pre-registered damage-signature criterion
-(red)---persistent, sub-ballistic damage in a sparse cone---form a band between
-the ordered arm and the chaotic bulk; the famous complex ECAs 54 and 110, embedded
-into radius two, land in it (stars). The criterion is met by $\approx7.8\%$ of the
-space versus $\approx2\%$ of the elementary orbits. On the elementary space the
-criterion recovers exactly the literature class-IV set $\{54,110\}$ (plus the
-borderline 106); on radius two it is a signature fraction, not an
-independently validated glider count (Sec.~\ref{sec:constructive}).}
+\caption{The radius-two \emph{damage-signature landscape} ($n=3000$ uniformly
+sampled canonical rules; the $800$-rule estimator panel is a subset of this
+sample). Red: rules satisfying the registered damage-signature
+criterion---persistent, sub-ballistic damage in a sparse cone; they form a band
+between the ordered arm and the chaotic bulk, and the embedded class-IV ECAs
+$54$ and $110$ (stars) land in it. The criterion is met by $7.8\%$ (Wilson
+$95\%$ CI $[6.9,8.8]\%$) of the sample versus $2/88$ elementary orbits. The red
+band is \emph{not} an independently validated glider region
+(Sec.~\ref{sec:constructive}): on ECA the signature matches the literature
+class-IV set exactly up to the borderline rule $106$, but the independent
+detector available at radius two is itself unreliable there.}
 \label{fig:landscape}
 \end{figure}
 
 \section{Discussion}
 \label{sec:discussion}
 
-The benchmark returns the same answer three ways. For finite-horizon
-damage-response statistics of cellular automata, an interpretable estimator that
-reads the local rule and simulates it reaches the Monte-Carlo reliability ceiling
-and dominates both a five-feature texture baseline and a deep amortiser---globally,
-for held-out complex rules in a space where such rules are plentiful, and as a
-spatial map. We read this as a \emph{structural} property of the task under the
-tested protocol, not a failure of tuning, and we can say precisely why: the local
-rule is fully readable from a single diagram (Sec.~\ref{sec:probes}), so any
-statistic that is a smooth function of the rule is recoverable by whatever most
-cheaply exposes it, and the exact route---reconstruct the generator and run
-it---is available and interpretable.
+Under a fully observed, noiseless, deterministic, synchronous, binary
+observation model with known radius, a single space--time diagram identifies
+the local rule almost surely, and reconstructing the generator then re-running
+the stipulated experiment predicts finite-horizon damage response at the
+accuracy of re-measuring it. That is the central, positive, and--- we
+believe---generalizable finding: \emph{a nominally single-observation
+amortization benchmark can be solved by system identification whenever the
+observation encodes the generator}, and benchmark designers who intend to
+test representation learning must break that encoding (noise, partial
+observation, unknown model class) or accept that they are benchmarking
+identification.
 
-We are careful not to overclaim the deep model's uselessness. The stacking test
-(Sec.~\ref{sec:stacking}) shows the network does carry information beyond five
-cheap statistics, concentrated on \emph{damage survival}---the least texture-like
-of the four statistics, and the one whose reliability ceiling is lowest. This is
-exactly where one would expect a learned representation to help: survival is a
-rare-event probability that summary textures capture poorly. But the increment is
-modest, it is confined to that one statistic, and it does not lift the network's
-end-to-end predictions above the cheap baseline, let alone toward the ceiling that
-the mechanistic estimator reaches. The honest reading is not ``deep learning adds
-nothing'' but ``an interpretable estimator dominates, and the learned model's one
-real edge---survival---is small and does not change the recommendation.''
+The neural results are deliberately scoped. For \emph{this} constrained
+architecture at \emph{this} training budget, direct regression neither reaches
+the reliability benchmark nor dominates five cheap statistics, and the two
+trade places by target; the network's one demonstrated edge---substantial
+incremental survival information ($+0.32$)---is real, is exactly where texture
+is least informative, and survives cross-fitting. We do not conclude that deep
+networks cannot close the gap. The probes show rule information is accessible
+to the network; whether exploiting it is an architecture, objective, or
+optimization question is open, and the natural next comparators are learned
+system identifiers---a rule-table prediction head feeding a differentiable or
+exact simulator---plus rule-scrubbing and rule-provision interventions to test
+causality, and evaluation in the degraded-observation regimes of
+Fig.~\ref{fig:ident} where exact inversion is unavailable and a learned reader
+would compete against a rule-posterior simulator rather than against a solved
+problem.
 
-\emph{Scope.} The claim is deliberately narrow: it concerns damage-response
-statistics under one observation protocol (Bernoulli$(1/2)$ initialization, width
-$127$, a horizon of $\sim\!62$ steps for ECA and $\sim\!30$ for radius two) on
-two-state CA. These are short observations, and the statistics are, by
-construction, protocol-dependent~\cite{gilman1987,culikyu1988}; a companion
-sensitivity analysis confirms that the induced taxonomy shifts with the
-IC measure and lattice, which is why we index every claim by the tuple rather than
-by ``the rule.'' Statistics that depend on genuinely non-local or rare structure
-that summary textures miss---long transients, specific particle interactions,
-computational depth---might still reward a learned representation, and the survival
-increment we measure is a small hint in that direction. Identifying a target and
-regime where a learned representation beats reading-and-simulating is the natural
-next step; the natural extension to a predictive, forecasting objective, however,
-we expect to inherit the same shortcut, since forecasting future rows is trivial
-once the rule is recovered.
-
-Our result sits squarely in the shortcut-learning
-literature~\cite{geirhos2020shortcut} and in the older recognition that no
-unsupervised taxonomy is ``just there'' in data without a chosen
-similarity~\cite{kleinberg2002}: here the cheapest similarity---texture---already
-captures most of the signal, and the most faithful route---reading the
-rule---captures all of it, so the deep model is squeezed from both sides. For the
-task as usually posed, the recommendation is to read the rule and, where that is
-undesirable, to compute the cheap features and skip the network.
+Every claim is bounded by the protocol tuple (Bernoulli$(1/2)$ ICs, ring
+$127$, radius-aware horizon): the statistics are finite-horizon and
+measure-dependent by construction~\cite{gilman1987,culikyu1988}, and
+Fig.~\ref{fig:ident}(d) exhibits that dependence directly. Within that scope
+the practical guidance is plain and now carries its price tag
+(Sec.~\ref{sec:compute}): if the observation model is matched, read the rule
+and simulate; if observations are noisy, partial, or off-distribution, the
+identification shortcut degrades sharply and learned estimators---including
+hybrid statistics-plus-network stacks for survival-like targets---are the live
+option. For the broader program of behaviour-first (phenotype) analysis of
+CA~\cite{wolfram2002,lipackard1990,israeli2006}, the damage-signature
+landscape and the composed-system maps stand as usable, independently
+validated artefacts, described at the strength the validation supports and no
+stronger~\cite{kleinberg2002,mitchell1993}.
 
 \appendix
-\section{Reproducibility}
+
+\section{Reproducibility and registration status}
 \label{app:repro}
 
-All experiments run on a single Apple-silicon machine (Metal/CPU, fp32); the
-pipeline is first-party except for the gradient-boosted-tree and ridge baselines
-(\texttt{scikit-learn}) and PyTorch. The amortiser error bars come from five
-training seeds that vary only weight initialization and minibatch order; the
-leave-rules-out split, the diagram cache and the targets are keyed on their own
-fixed seeds, so the spread measures optimisation-seed variance alone. The
-mechanistic estimator and the reliability ceiling are deterministic given the
-protocol.
+All experiments run on one Apple-silicon machine (Metal/CPU, fp32); the
+pipeline is first-party except PyTorch and scikit-learn. Targets, splits and
+panels are keyed on fixed seeds; the mechanistic estimator and reliability
+replicates use random streams provably independent of the target cache (prime
+seed offsets on per-rule \texttt{SeedSequence}s), so agreement between them is
+never contamination. All decision rules, margins and panels were committed to
+a timestamped private repository before the corresponding measurements; the
+full history is released with the article. Because an in-review repository is
+not independently auditable, we label every analysis here rather than lean on
+the word ``pre-registered'': \emph{registered} (rule committed numbers-free
+before measurement): the damage-signature criterion, holdout split, paired
+inference and TOST margins, stacking margin, reliability design, mechanistic
+estimator and completion policy, probe design, detector-validation design,
+map ground-truth design; \emph{post-hoc confirmatory} (analysis added at
+revision, on data or rules not used to tune it): the replicate-agreement
+correction, the large-simulation reference, confusion-matrix reporting, TOST
+margin sensitivity; \emph{exploratory}: the identifiability phase diagram and
+the accuracy--compute curve. One deviation from the original registration is
+disclosed: an early implementation seeded target streams by panel position
+rather than rule identity (cross-panel drift up to $0.05$--$0.08$ on
+borderline-survival rules); it was replaced by identity keying and the drift
+verified to vanish.
 
-\emph{Target well-definedness.} Each rule's damage-response target is estimated
-from an initial-condition stream seeded on the rule's identity, so the value is
-independent of which other rules are computed alongside it. An earlier
-implementation seeded the stream by the rule's position in the sorted panel; we
-measured the resulting cross-panel drift at up to $0.05$--$0.08$ on
-borderline-survival rules (unbiased Monte-Carlo resampling, but panel-dependent)
-and removed it, verifying zero drift under identity keying---the one deviation
-from the original pre-registration, disclosed here. The intrinsic estimation noise
-at $n_{\mathrm{pairs}}=256$ is quantified per target by the reliability analysis
-(Sec.~\ref{sec:methods}).
+\section{Methods supplement}
+\label{app:methods}
 
-The complete pre-registered criteria, the training and evaluation code, the
-sampled rule panels, and the cached targets will be released under the MIT license
-upon publication.
+\emph{Data.} ECA: all $88$ orbit representatives, $256$ diagrams per rule;
+radius two: $800$ canonical rules ($857$ drawn, deduplicated by the order-four
+reflect/complement orbit), $64$ diagrams per rule; all diagrams
+$127\times127$, Bernoulli$(1/2)$ ICs, no transient discarded. Observed
+diagrams and target-estimation streams are disjoint by construction (dataset
+seed vs.\ target seed), and no random numbers are shared across methods.
+Splits: leave-rules-out, holdout fraction $0.2$, stratified by Wolfram label
+where available, seed $0$; radius two force-holds the $57$ signature-complex
+panel rules (so the complex subset is never trained on); ECA force-holds rule
+$110$ and force-trains rule $54$. Hyperparameters were tuned only on training
+rules.
+
+\emph{Targets.} With flip position $x_0$ uniform on the ring, horizon
+$T=\lfloor w/(2r)\rfloor-1$, damage indicator $d=\mathbb{1}[a_T\ne b_T]$:
+survival $=\Pr[\exists i: d_i=1]$; fraction $=\mathbb{E}[\bar d\mid\text{surv}]$;
+rate $=\mathbb{E}[\mathrm{ext}(d)/(2rT)\mid\text{surv}]$ with $\mathrm{ext}$
+the re-centred cone extent (no wrap by construction); fill
+$=\mathbb{E}[\sum_i d_i/\mathrm{ext}(d)\mid\text{surv}]$. Conditional targets
+are $0$ when no pair survives (itself the ordered-rule signature); surviving
+trial counts therefore vary by rule, one reason survival-adjacent targets are
+heteroscedastic and all reliability intervals are bootstrapped.
+
+\emph{Network.} Input $1\times127\times127$; four stages of [Conv $2\times2$,
+stride 1, no padding $\to$ BatchNorm $\to$ ReLU $\to$ MaxPool $2\times2$] with
+channels $16/32/64/64$; $1\times1$ convolution to a $64$-d bottleneck with
+BatchNorm and no final nonlinearity; global average pool; linear head to $4$
+targets ($31{,}524$ parameters; receptive field $31\times31$ per bottleneck
+position before pooling). AdamW, lr $10^{-3}$, weight decay $10^{-6}$, batch
+$128$, $60$ epochs, no early stopping; targets standardized on training rules.
+Augmentations: cyclic shift, horizontal flip, polarity inversion (the exact
+orbit symmetries). Training cost $\approx22$\,min (radius two) and
+$\approx10$\,min (ECA) per seed on the reference machine.
+
+\emph{Baselines.} Ridge ($\alpha=1$) and scikit-learn
+\texttt{GradientBoostingRegressor} (defaults, one per target) on the five
+features standardized on training rules; the boosted model is stronger on both
+spaces and is the baseline of record. Split sensitivity of the baseline:
+leave-one-orbit-out over the $88$ ECA orbits gives per-target \rtwo{} $0.73$
+(survival), $0.85$ (fraction), $0.95$ (rate), $0.93$ (fill), consistent with
+the registered-split values; over $20$ repeated radius-two outer splits the
+per-target median (5th--95th percentile) is $0.76$ $(0.56$--$0.84)$ for
+survival, $0.92$ $(0.90$--$0.93)$ for fraction, $0.90$ $(0.87$--$0.91)$ for
+rate and $0.68$ $(0.55$--$0.75)$ for cone fill---the noisy targets carry
+substantial split variance, one more reason per-target intervals accompany
+every claim.
+
+\emph{Verdicts at other margins.} At $\delta=0.02$ the single equivalence
+verdict (ECA spreading rate, CNN vs.\ baseline) reverts to inconclusive; at
+$\delta=0.10$ radius-two fraction and rate additionally become equivalent; no
+superiority verdict changes at any margin, so the ``no stable ordering''
+conclusion is margin-insensitive.
+
+\emph{Panels.} The $800$-rule estimator panel is a subset of the $3000$-rule
+landscape sample (same sampling stream); landscape prevalence is therefore
+computed on the superset and estimator results never touch the extra $2200$
+rules. The reliability panel subsamples $250$ of the $800$ (fixed seed).
+
+\emph{Detector.} The localized-seed detector evolves a single seeded cell on a
+quiescent background (ring $255$ confirmation) and flags persistent, localized,
+sub-ballistic, non-space-filling structures (thresholds fixed in code before
+radius-two application: alive fraction $\ge0.5$, growth rate $0.05$--$0.9$,
+fill $\le0.75$). Its failure modes on ECA are documented in
+Sec.~\ref{sec:constructive}; a multi-observable detector (periodicity,
+collisions, comoving localization) is the obvious upgrade and was not built
+here.
+
+\emph{Composed-system maps.} Half/half mosaics over the $16$-rule panel listed
+in the released configuration; pairs with spreading-rate gap $\ge0.25$; $8$
+ICs per pair; local ground truth by single-cell perturbation at the map's $15$
+column centres with a $24$-step local horizon and $64$ pairs per location,
+independent streams. Window width selected once on the even-indexed pairs;
+odd-indexed pairs are the test set; the per-pair best window appears only as a
+labelled oracle sensitivity ($0.638$, between the validation-selected $0.605$
+and the CNN's $0.673$).
 
 \bibliographystyle{apsrev4-2}
 \bibliography{refs}

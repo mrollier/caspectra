@@ -1,169 +1,255 @@
-# Response to the referee
+# Response to the referee (second round)
 
-We thank the referee for an unusually detailed and constructive report. The
-central criticism — that the original manuscript's sweeping conclusion outran a
-narrow experiment — was correct, and acting on it produced a materially stronger
-and, we believe, more interesting paper. The single most consequential change is
-that we added the *mechanistic estimator the referee asked for* (concern 5: "a
-transparent mechanistic baseline that infers the rule table and then simulates
-it"). It does not merely contextualise the deep model — it **reaches the
-reliability ceiling and dominates both the deep network and the cheap
-statistics**, which reorganises the paper around a three-tier result and an
-interpretable positive finding rather than a bare negative. Every new decision
-rule was pre-registered numbers-free before measurement (repository revision 7).
-
-Point-by-point below; "R1–R7" name the new pre-registered analyses.
-
----
-
-## 1. The anti-shortcut architecture is not shown to block rule recovery
-
-**Agreed, and we now measure it rather than assert it.** New probes (R5) recover
-rule identity from the CNN's 64-dimensional bottleneck at balanced accuracy 0.88
-(ECA) / 0.95 (radius-two), and truth-table entries of *unseen* rules at 0.78 /
-0.61 — far above the five statistics and chance. The raw diagram yields the rule
-*exactly* (100% ECA, 97.5% radius-two) via the mechanistic inverter (R4). We
-therefore **drop the claim that the architecture prevents rule recovery**;
-"anti-shortcut" now names only an architectural intent, and the *readability* of
-the rule is presented as the mechanism behind the null (new Sec. "Why: the rule
-is readable"). This strengthens rather than weakens the paper: the deep model has
-nothing to add precisely because the rule — and hence any smooth function of
-it — is already fully present.
-
-## 2. Failed superiority ≠ equivalence; baseline treated as deterministic
-
-**Agreed; fully reworked (R1).** We now report **per target** (never a 4-target
-median alone), with the **held-out rule as the unit of resampling** (cluster
-bootstrap, 10⁴ resamples), and classify each method pair by a pre-registered rule:
-superiority (median ΔR² ≥ 0.10, 95% CI excludes 0), practical equivalence (TOST,
-90% CI within ±0.05), or inconclusive. On radius-two (N=160, powered) the
-mechanistic estimator is *superior* to both others on most targets; the deep net
-and the cheap baseline *trade* (net marginally ahead on survival, baseline clearly
-ahead on cone fill), neither dominating. We also disclose honestly that the ECA
-held-out set (N=18) is underpowered for tight per-target intervals and report it
-at the median level there. The baseline is no longer treated as noiseless — the
-bootstrap resamples rules for every method identically.
-
-## 3. Monte-Carlo noise does not by itself bound R²
-
-**Agreed; replaced with a proper reliability analysis (R3).** We draw K=20
-independent target replicates per rule and fit a one-way random-effects model to
-obtain, per target, ICC(1) = the achievable-R² ceiling. On ECA these are
-0.994/0.999/0.9995/0.999 (survival is the noisiest, std 0.022); on radius-two
-0.987/0.998/0.998/0.980. Every R² is now read against its per-target ceiling, and
-the old "0.006–0.014 upper-bounds R²" sentence is removed. This also sharpens the
-result: the mechanistic estimator sits *at* the ceiling, so the gap to the deep
-model is a real, quantified shortfall, not a comparison against an unreachable 1.
-
-## 4. Under-specified experimental design
-
-**Addressed.** Methods now state the rule counts and sampling, the identity-keyed
-target streams and their independence from the training diagrams, the
-leave-rules-out split and that tuning never touches held-out rules, the full
-encoder (kernels, bottleneck, norm, head, map variant), training length and seed
-protocol, the baseline features and both regressors, and the exact definitions of
-the four statistics (cone extent, fill, survival, fraction) and the map contrast.
-The complete code, cached targets and sampled panels are released on publication;
-we have kept the article self-contained on every quantity it reports.
-
-## 5. Selectively strong baseline, selectively weak network
-
-**This is where the referee's suggestion most improved the paper.** We built the
-recommended mechanistic *infer-the-rule-and-simulate* estimator (R4) and the
-cross-fitted *stacking* test (R2). Two consequences:
-
-- The mechanistic estimator reaches the reliability ceiling and **dominates**
-  both the cheap features and the CNN on every task — an interpretable method,
-  not a tuned network, is the right tool. This is now the paper's headline.
-- The stacking test answers "does the representation add information beyond five
-  numbers?" directly and *honestly*: the CNN **does** add a real, significant
-  increment on damage survival (+0.32) — the least texture-like statistic, exactly
-  where the referee (concern 7) predicted learning might help — but nothing on the
-  texture-dominated statistics, and the five statistics add nothing beyond the
-  CNN. We report this nuance prominently; the headline is no longer "deep learning
-  adds nothing" but "an interpretable estimator dominates, and the net's one real
-  edge is small."
-
-We respectfully **push back** on the request for an exhaustive
-architecture/optimiser sweep (larger/multiscale/temporal/recurrent nets): no
-finite sweep can establish "no network ever wins," so we make a *bounded* claim
-instead. The stacking test bounds the incremental value of *any* estimator built
-on the same single-diagram information; the mechanistic estimator shows the
-ceiling is reachable interpretably; and we now argue from *measured* rule
-recoverability (R5) rather than from parameter count, which the referee rightly
-noted is not a capacity proxy. We state explicitly that a learned representation
-may yet win on targets or regimes that depend on non-local or rare structure.
-
-## 6. "Dynamical invariants" is misleading
-
-**Agreed; renamed throughout.** The title and text now say **"finite-horizon
-damage-response statistics,"** and the paper states plainly that they are
-finite-size, finite-horizon and IC-measure-dependent, indexed by the protocol
-tuple.
-
-## 7. One observation regime, treated as structural
-
-**Softened and scoped.** The Discussion now confines the "structural" reading to
-the tested protocol, notes the short horizons explicitly, and cites the
-protocol-sensitivity of the induced taxonomy. Crucially, the survival increment
-from the stacking test is presented as a concrete hint of where a learned
-representation *could* help (rare-event, less-texture-like targets), and
-identifying such a target/regime is named as the natural next step. We do not
-claim universality.
-
-## 8. Complex/glider classification is circular
-
-**Agreed; independently validated and re-worded (R6).** We added a localized-seed
-/ periodic-localization glider detector — a *different observable* from the
-twin-run damage signature. On ECA the damage criterion selects exactly
-{54,106,110}; {54,110} are the literature's canonical class-IV rules (independent
-ground truth), and the detector agrees on 92% of applicable rules (FP 6%, FN 2%,
-the one miss being rule 54, whose ether front advances at light speed — disclosed,
-not tuned away). On radius-two, where no literature ground truth exists, the two
-observables agree only 47%, so we now report the prevalence strictly as **"the
-fraction (≈7.8%, Wilson CI [6.9,8.8]%) satisfying the pre-registered
-damage-signature criterion,"** *not* as validated glider prevalence — exactly the
-conservative wording the referee requested. We state that single-observable glider
-detection is itself unreliable in the large space.
-
-## 9. The spatial-map experiment is not fair or grounded
-
-**Agreed; rebuilt (R7).** We compute a location-resolved ground truth by **local
-perturbation in the composed system** (not the assumed pure-rule invariant, and
-honestly reflecting mixed interface dynamics), and score each map by spatial
-correlation to it. The hand-crafted window is now **selected on a validation split
-of rule pairs** (the per-pair best window is reported only as an oracle
-sensitivity). Against this fair, independent test the learned map shows **no
-statistically significant** localisation advantage (Spearman 0.67 vs 0.61, Δ+0.05,
-95% CI [−0.002,+0.10]) — a tie. We note for the record that the earlier
-best-window choice handicapped the *CNN* (our preferred method), so it could not
-have inflated the negative; the validation-selected comparison removes the concern
-regardless.
-
-## 10. Pre-registration is unverifiable while the repository is private
-
-**Acknowledged.** We have softened the wording to "criteria committed to a
-timestamped repository in advance and released on publication," and we disclose
-the one deviation from the original pre-registration (the target-stream RNG fix)
-explicitly in the appendix, with its measured effect. An immutable, DOI-bearing
-archive of the pre-registration, code, sampled rules and cached targets will
-accompany the published article; we did not want to compromise anonymity/priority
-by making it public during review.
-
-## 11. Presentation and citation quality
-
-**Fixed.** The wide result tables are now full-width and no longer clip; figure
-captions are expanded to stand alone; the incorrect/placeholder citation for the
-prior CNN paper is corrected to the real reference (Rollier, Daly & Baetens, 2024,
-Springer *Emergence, Complexity and Computation*; arXiv:2409.02740) and no
-"TODO" markers remain in the bibliography. Author/affiliation placeholders remain
-only pending the non-anonymised submission.
+We thank the referee for a second exceptionally careful report. Its two central
+technical points — that our narrative contradicted our own tables, and that the
+reliability ceiling we cited is not the correct benchmark for an
+independent-simulation estimator — were both correct, and both are now fixed at
+the root rather than papered over. The manuscript has been rewritten around the
+spine the referee identified as the defensible one: *a single space–time diagram
+identifies the local rule under the matched observation model, and
+reconstruct-and-simulate is then simulation-limited-optimal*. The title is now
+"Rule reconstruction from a single space–time diagram yields simulation-limited
+prediction of the finite-horizon damage response of cellular automata." All new
+decision and reporting rules were committed numbers-free before measurement
+(repository revision 8); "C1–C8" below name them.
 
 ---
 
-## Summary of new, pre-registered evidence added
-R1 per-target paired inference + TOST; R2 cross-fit stacking / incremental value;
-R3 reliability-adjusted ceilings; R4 mechanistic rule-inference estimator; R5
-rule-recoverability probes; R6 independent glider validation; R7 nuCA
-local-perturbation map ground truth. Together they convert the original bare
-negative into a mechanistic, interpretable, and appropriately bounded result.
+## 1. The central narrative is internally inconsistent
+
+**Agreed, and retired (C1).** "Never beats," "three tiers, one ordering,"
+"dominates deep networks," and "compute the cheap features and skip the network"
+are gone from the title, abstract, headings, captions and Discussion. The
+CNN-vs-five-statistic comparison is now reported per target with paired CIs and
+the registered verdict labels, and the honest summary is the referee's: **no
+stable ordering** — the CNN is ahead on survival (Δ = +0.08, CI [+0.00, +0.20],
+below the superiority margin), the baseline is superior on cone fill
+(Δ = −0.21), fraction and rate are inconclusive at δ = 0.05. The stacking result
+is promoted, not minimized: the CNN adds large, significant survival information
+(+0.32, raising the stacked model from 0.56 to 0.88), and the manuscript now
+names the statistics+CNN hybrid as the natural practical choice for
+survival-like targets where rule reconstruction is unavailable (Secs. IV.B–C,
+Discussion). The recommendation is stated conditionally on the observation
+model, never as "skip the network."
+
+## 2. The reliability ceiling is not the correct ceiling
+
+**Agreed — this was our most consequential error, and fixing it made the result
+stronger (C2).** The manuscript now distinguishes three quantities, each with
+rule-bootstrap CIs (Sec. II.C): (1) latent-target reliability ICC; (2)
+**empirical independent-replicate agreement** (the referee's 2·ICC−1; we verify
+the algebraic prediction empirically — they match to four decimals); (3) a
+**large-simulation reference** at 16× the Monte-Carlo budget. The mechanistic
+estimator is judged against (2), the benchmark appropriate to a
+fresh-simulation estimator, and sits *at* it on every target in both spaces
+(e.g. ECA survival 0.985 vs 0.987 [0.978, 0.992]; radius-two cone fill 0.985 vs
+0.959 [0.900, 0.987]). Scored against the near-noise-free reference (3), the
+same predictions rise to the ICC ceiling (ECA survival 0.9943 vs ICC 0.9936;
+radius-two 0.9877 vs 0.987) — the referee's diagnosis was exactly right: the
+apparent shortfall was the comparison target's noise. "Reaches the reliability
+ceiling" has been replaced throughout; survival's heteroscedasticity is noted
+and all reliability intervals are bootstrap-based rather than Gaussian.
+
+## 3. The mechanistic estimator's privileged assumptions and completion prior
+
+**Agreed; both are now explicit (C3).** The estimator is introduced as
+**matched-model system identification**, with the full assumption list
+(deterministic, synchronous, binary, fully observed, noiseless, spatially
+uniform, known radius) stated in the Methods and flagged in the abstract's first
+claims. "Parameter-free" is retired. The default-zero completion is exposed as a
+prior and tested: coverage is reported per rule space (ECA 18/18 fully covered;
+radius-two 156/160, the four exceptions missing one entry each), the
+default-0/default-1/empirical-prior completions move the radius-two median R²
+by <0.001, and a **posterior-averaged variant** (exact enumeration of the 2^k
+completions for small k, sampling otherwise) propagates table uncertainty into
+predictive intervals — available precisely where reconstruction fails.
+
+**Identifiability curve → phase diagram: done (C4).** This was the referee's
+most valuable suggestion and is now a headline figure (Fig. 2). On the
+radius-two held-out rules we sweep observation length, bit-flip noise, random
+masking, and IC density, reporting coverage, exact-reconstruction rate, and the
+median R² of the mechanistic inverter, the five statistics, and the frozen CNN
+(on axes preserving its input geometry). The result quantifies the referee's
+intuition: reconstruction is exact from as few as 4 observed rows when clean,
+but collapses at ~2–5% observation noise and ~40% masking, where the frozen CNN
+degrades more gracefully and *overtakes* the inverter — the regime where direct
+amortization has a rationale, now delineated rather than asserted away. We did
+not sweep IC correlation length, label noise or unknown radius this round;
+the figure is labelled exploratory and those axes are named as extensions.
+
+## 4. The paper does not "prove" why the CNN fails
+
+**Agreed; language corrected.** "Prove(s) the mechanism" is gone; the probes are
+presented as establishing **accessibility, not causal use** (Sec. IV.D states
+this explicitly), and "any statistic that is a smooth function of the rule" has
+been deleted — the argument now rests only on the fact the referee endorsed:
+once the exact rule is known, the finite-horizon target can be directly
+simulated. The rule-scrubbing, rule-provision, and learned rule-reader→simulator
+interventions are named in the Discussion as the tests that would establish
+causality; we have not run them and do not claim their conclusions.
+
+## 5. The probe results need definition
+
+**Provided (Sec. IV.D).** The two probe tasks are now specified separately:
+*identity probes* (88/800 classes; stratified split over diagrams, so train and
+test diagrams are disjoint but rule classes are shared — within-rule decoding
+across new diagrams; majority baseline ≈ 0.011/0.001) and *truth-table-bit
+probes* (leave-rules-out GroupKFold, so test rules are never seen — out-of-rule
+transfer; chance 0.5; bits evaluated separately and averaged). Both are linear
+(logistic) probes on the bottleneck vs the five statistics, with the
+deterministic tabulation result reported alongside as the raw-diagram
+reference. The manuscript no longer speaks of classifying "unseen identities."
+
+## 6. The statistical analysis is incomplete
+
+**Completed (C5).** Table III now gives the full radius-two per-target results:
+held-out count, each method's R² with rule-bootstrap 95% CIs, the CNN's
+mean ± s.d. over all five seeds (no more single "reference seed"), with paired
+ΔR², CIs and verdicts in Sec. IV.B and the replicate-agreement and ICC columns
+alongside. Split uncertainty beyond the registered split is quantified for the
+deterministic methods — **leave-one-orbit-out over all 88 ECA orbits** and **20
+repeated radius-two outer splits** (survival 0.76 with 5th–95th range
+0.56–0.84; fill 0.68, 0.55–0.75) — and the mechanistic estimator is
+split-invariant by construction (no trained parameters). We state explicitly
+that CNN retraining across splits was not performed and that its seed spread
+does not capture split variance. TOST margins are reported at δ ∈ {0.02, 0.05,
+0.10} (verdict changes listed in the appendix; no superiority verdict moves).
+"Tie"/"equivalent" now appear only where TOST passes; the spatial-map result is
+relabelled **inconclusive** (see §8).
+
+## 7. One constrained CNN does not represent deep networks
+
+**Claims narrowed (the referee's option 1).** Every neural claim is scoped to
+"this architecture under this training budget" (Sec. III, Discussion), the full
+architecture (layer table, 31,524 parameters, receptive field, optimizer,
+schedule, augmentations, training cost) is in the supplement, and the
+Discussion names the missing comparators — above all a learned rule-table
+predictor feeding a simulator — as open questions rather than settled ones. We
+did not run a model suite; with the narrowed claims none of our conclusions
+require one. The identifiability diagram additionally identifies the regimes
+where such learned system identifiers would be the interesting competitors.
+
+## 8. The spatial-map conclusion is too strong
+
+**Corrected (C7).** The result is now labelled by the registered framework:
+**inconclusive** (Δ = +0.047, 95% CI [−0.002, +0.102], 90% CI [+0.005, +0.092]
+— neither superiority nor equivalence), described as "a small, statistically
+unresolved edge for the learned map." "Training-free" is corrected to "no
+additional training at deployment." The protocol details the referee asked for
+are in the supplement: 16-rule panel, pairs with rate gap ≥ 0.25, 8 ICs per
+pair, half/half mosaics, validation/test split of pairs (window selected once
+on validation, per-pair best window reported only as a labelled oracle
+sensitivity), independent random streams for the local ground truth, and —
+importantly — the **unit of resampling is the composed system** (per-pair
+mean-over-IC Spearman values are bootstrapped; columns never enter the
+inference as independent observations). Extending the mechanistic contribution
+to a local system-identification map is named as future work; we agree it is
+the on-thesis extension.
+
+## 9. The landscape should be a damage-signature landscape
+
+**Renamed and validated with confusion matrices (C6).** Title, abstract,
+Discussion and the figure caption now say **damage-signature landscape**, and
+the prevalence is stated as "7.8% (Wilson CI [6.9, 8.8]%) satisfying the
+registered finite-horizon damage-signature criterion under the stated sampling
+distribution." The ECA validation is now a full confusion matrix against the
+literature class-IV ground truth: the signature has sensitivity 1.0,
+specificity 0.988, precision 2/3 (its one false positive being the documented
+borderline rule 106), balanced accuracy 0.994 — raw agreement is no longer the
+headline. The same reporting shows the *independent detector* is the weak
+instrument (sensitivity 0.5 — it misses rule 54's light-speed ether — precision
+0.17), which is exactly why we do not promote the radius-two band to a glider
+region: there the detector agrees with the signature at balanced accuracy 0.39
+(precision 0.05). The curated long-horizon radius-two validation the referee
+sketches is the right way to earn a complexity claim; we have not done it and
+make no such claim.
+
+## 10. Pre-registration is unauditable during review
+
+**De-emphasized and labelled, with one candid limitation.** The paper no longer
+leans on "pre-registered" as its warrant: the word is used sparingly, and
+Appendix A now **labels every analysis** as registered / post-hoc confirmatory /
+exploratory, including the honest placement of this revision's own additions
+(the replicate-agreement correction and reference simulation: post-hoc
+confirmatory; the identifiability diagram and Pareto curve: exploratory). The
+one deviation from the original registration (the target-stream RNG fix)
+remains disclosed with its measured effect. On review-time access: we have kept
+the repository private during review to protect anonymity, and we acknowledge
+plainly that this limits auditability; the complete timestamped history
+(criteria revisions, code, cached predictions and targets) is released with the
+article, and we are glad to provide the editor an anonymized archive on
+request.
+
+## 11. Report the compute trade-off
+
+**Done (C8; Sec. IV.F).** Per-diagram latency: mechanistic 283 ms at the
+production 256-pair budget (single CPU core, embarrassingly parallel) vs 2.2 ms
+for a CNN forward pass and 1.4 ms for the five statistics; one-time costs
+≈22 min training per CNN seed vs 15 s for the boosted baseline; break-even
+≈4,700 queries. The accuracy-vs-budget curve is the informative part: at a
+16-pair budget (17 ms) the mechanistic median R² is 0.924 — above both direct
+estimators at any cost — so under the matched observation model the estimator
+is simultaneously the most accurate at every budget we measured. The practical
+recommendation now carries this price tag explicitly.
+
+## 12. Missing methodological detail
+
+**Supplement added (Appendix B).** It contains every item on the referee's
+list: diagrams per rule per split and stream independence (no shared random
+numbers across methods); the full CNN layer table with parameter count and
+receptive field; optimizer, schedule, batch size, augmentations, and the
+absence of early stopping; ridge/GBM settings and the baseline-of-record rule;
+the exact split protocol including the force-held complex panel; the exact
+target formulas including perturbation-cell selection and the
+no-surviving-damage convention; the panel-overlap disclosure (the 800-rule
+estimator panel is a subset of the 3,000-rule landscape sample); the detector
+definition and thresholds; and the composed-system construction.
+
+---
+
+## Editorial points
+
+1. **Slash notation**: removed; every paired value names its rule space.
+2. **Table I caption**: rewritten; it states the aggregation rule, points to
+   the per-target tables, and makes no ordering claim about the CNN and the
+   baseline.
+3. **Reference-seed CNN**: all tables report mean ± s.d. over the five seeds.
+4. **Stacking table**: now carries 95% CIs and the full stacked-model R²
+   (base → stacked) alongside each increment.
+5. **"Deterministic given the protocol"**: corrected to "reproducible under a
+   fixed seed but Monte-Carlo limited."
+6. **"Smooth function of the rule"**: deleted (no smoothness claim is needed
+   or made).
+7. **Companion sensitivity analysis**: the free-floating reference is removed;
+   protocol dependence is shown directly in Fig. 2(d) and the released code
+   contains the full protocol sweep.
+8. **Assumptions visible early**: the observation model (fully observed,
+   noiseless, deterministic, binary, known radius) appears in the abstract and
+   in Methods before any result.
+9. **Vispoel citations**: completed with volume, pages and DOIs
+   (Chaos, Solitons & Fractals **184**, 114989, 2024,
+   doi:10.1016/j.chaos.2024.114989; Physica D **432**, 133074, 2022,
+   doi:10.1016/j.physd.2021.133074).
+10. **Figure 1**: caption rewritten — sample size and Wilson CI stated, panel
+    overlap disclosed, embedded anchor rules identified, and an explicit
+    statement that the red band is not an independently validated glider
+    region.
+11. **Verdict language**: "no evidence of superiority," "practical
+    equivalence," and "inconclusive" are used strictly per the registered
+    definitions everywhere (including the spatial map, which is inconclusive).
+
+---
+
+## Summary of what is new in this revision
+
+C2 corrected reliability benchmarks (ICC vs replicate agreement vs
+large-simulation reference, with CIs); C3 coverage/completion sensitivity and a
+posterior-averaged uncertainty-aware mechanistic variant; C4 the
+identifiability phase diagram (new Fig. 2); C5 complete per-target tables for
+both spaces with seed spreads, repeated-split/leave-one-orbit-out uncertainty,
+and TOST margin sensitivity; C6 confusion-matrix validation and the
+damage-signature reframing of the landscape; C7 the corrected (inconclusive)
+spatial-map verdict with full protocol disclosure; C8 the accuracy–compute
+Pareto analysis. The manuscript was rewritten around rule identifiability and
+simulation-limited prediction, with every neural claim scoped to the tested
+architecture and every analysis labelled by its registration status.
