@@ -41,12 +41,21 @@ from caspectra.eval.dynamics import damage_spreading_features
 __all__ = [
     "infer_rule",
     "infer_rule_table",
+    "transition_counts",
     "neighbourhood_indices",
     "complete_table",
     "table_to_rule",
     "mechanistic_estimate",
     "mechanistic_estimate_posterior",
+    "noisy_table_posterior",
+    "estimate_noise_rate",
+    "bayesian_mechanistic_estimate",
+    "EPS_GRID",
 ]
+
+# Fixed epsilon grid for self-consistency noise estimation (rev-9 F1b; fixed
+# here, before measurement, per the pre-registration).
+EPS_GRID = (0.0, 0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.10, 0.15, 0.20)
 
 
 def neighbourhood_indices(row: np.ndarray, radius: int) -> np.ndarray:
@@ -65,6 +74,27 @@ def neighbourhood_indices(row: np.ndarray, radius: int) -> np.ndarray:
     return index
 
 
+def transition_counts(diagram: np.ndarray, radius: int = 1) -> tuple[np.ndarray, np.ndarray]:
+    """Per-entry ``(ones, total)`` transition counts observed in ``diagram``.
+
+    ``ones[k]`` counts how often neighbourhood ``k`` was seen producing output
+    ``1``; ``total[k]`` how often it was seen at all. These sufficient statistics
+    drive both the deterministic majority inference (:func:`infer_rule_table`)
+    and the noise-aware posterior (:func:`noisy_table_posterior`, rev-9 F1).
+    """
+    diagram = np.asarray(diagram, dtype=np.uint8)
+    if diagram.ndim != 2 or diagram.shape[0] < 2:
+        raise ValueError("diagram must be (n_steps>=2, width)")
+    tsize = 1 << (2 * radius + 1)
+    idx = np.concatenate(
+        [neighbourhood_indices(diagram[t], radius) for t in range(len(diagram) - 1)]
+    )
+    out = diagram[1:].reshape(-1).astype(np.int64)
+    total = np.bincount(idx, minlength=tsize)
+    ones = np.bincount(idx, weights=out, minlength=tsize).astype(np.int64)
+    return ones, total
+
+
 def infer_rule_table(diagram: np.ndarray, radius: int = 1) -> tuple[np.ndarray, np.ndarray, bool]:
     """Infer the local rule *table* and which entries the diagram observed.
 
@@ -79,18 +109,7 @@ def infer_rule_table(diagram: np.ndarray, radius: int = 1) -> tuple[np.ndarray, 
     ``False`` only if some neighbourhood was seen mapping to *both* outputs
     (impossible for a clean deterministic CA; a guard against noisy/partial input).
     """
-    diagram = np.asarray(diagram, dtype=np.uint8)
-    if diagram.ndim != 2 or diagram.shape[0] < 2:
-        raise ValueError("diagram must be (n_steps>=2, width)")
-    tsize = 1 << (2 * radius + 1)
-
-    idx = np.concatenate(
-        [neighbourhood_indices(diagram[t], radius) for t in range(len(diagram) - 1)]
-    )
-    out = diagram[1:].reshape(-1).astype(np.int64)
-
-    total = np.bincount(idx, minlength=tsize)
-    ones = np.bincount(idx, weights=out, minlength=tsize).astype(np.int64)
+    ones, total = transition_counts(diagram, radius)
     observed = total > 0
     # Deterministic CA: every observation of an index agrees; majority is exact.
     table = (2 * ones > total).astype(np.uint8)
@@ -273,3 +292,101 @@ def mechanistic_estimate_posterior(
     mean = np.average(feats_arr, axis=0, weights=w)
     var = np.average((feats_arr - mean) ** 2, axis=0, weights=w)
     return mean, np.sqrt(var), map_rule, coverage, k
+
+
+def noisy_table_posterior(
+    ones: np.ndarray,
+    total: np.ndarray,
+    eps: float,
+    prior_p: float | None = None,
+) -> np.ndarray:
+    """Per-entry posterior ``P(bit_k = 1)`` under bit-flip observation noise (F1).
+
+    Model (rev-9 F1): each observed output cell is flipped independently with
+    probability ``eps``, so ``P(ones_k | bit=1) ∝ (1-eps)^ones eps^(total-ones)``
+    and ``P(ones_k | bit=0) ∝ eps^ones (1-eps)^(total-ones)``. With a
+    ``Bernoulli(prior_p)`` prior per entry (default: the observed marginal
+    one-frequency, matching the rev-8 empirical completion; unobserved entries
+    fall back to the prior) the log posterior odds are
+
+        log(p0/(1-p0)) + (2*ones_k - total_k) * log((1-eps)/eps).
+
+    ``eps`` is clamped away from {0, 1/2} for numerical stability; at ``eps=0``
+    this reduces to certain majority voting.
+    """
+    ones = np.asarray(ones, dtype=np.float64)
+    total = np.asarray(total, dtype=np.float64)
+    if prior_p is None:
+        seen = total > 0
+        prior_p = float(ones[seen].sum() / total[seen].sum()) if seen.any() else 0.5
+    prior_p = float(np.clip(prior_p, 1e-6, 1.0 - 1e-6))
+    eps = float(np.clip(eps, 1e-9, 0.5 - 1e-9))
+    log_odds = np.log(prior_p / (1.0 - prior_p)) + (2.0 * ones - total) * np.log((1.0 - eps) / eps)
+    return 1.0 / (1.0 + np.exp(-np.clip(log_odds, -500, 500)))
+
+
+def estimate_noise_rate(
+    diagram: np.ndarray,
+    radius: int = 1,
+    grid: tuple[float, ...] = EPS_GRID,
+) -> float:
+    """Estimate the effective bit-flip rate by observation self-consistency (F1b).
+
+    Under the noise model, the fraction of transitions that disagree with their
+    entry's majority output estimates the effective corruption rate (output
+    flips exactly; input flips approximately, as pre-registered). Returns the
+    grid value nearest to the measured disagreement fraction — the grid is
+    fixed (:data:`EPS_GRID`) so the selection rule carries no free parameters.
+    """
+    ones, total = transition_counts(diagram, radius)
+    seen = total > 0
+    if not seen.any():
+        return float(grid[0])
+    minority = np.minimum(ones[seen], total[seen] - ones[seen])
+    disagree = float(minority.sum() / total[seen].sum())
+    return float(min(grid, key=lambda e: abs(e - disagree)))
+
+
+def bayesian_mechanistic_estimate(
+    diagram: np.ndarray,
+    radius: int = 1,
+    *,
+    eps: float | None = None,
+    width: int = 127,
+    n_pairs: int = 256,
+    ic_density: float = 0.5,
+    n_samples: int = 8,
+    prior_p: float | None = None,
+    rng: np.random.Generator | None = None,
+) -> tuple[np.ndarray, np.ndarray, int, np.ndarray, float]:
+    """F1: posterior-predictive damage response under observation noise.
+
+    Computes the per-entry table posterior (:func:`noisy_table_posterior`) at
+    ``eps`` (estimated by :func:`estimate_noise_rate` when ``None``), samples
+    ``n_samples`` tables from the independent per-entry posteriors, simulates
+    each under the reference protocol with an independent ``rng`` stream, and
+    averages. Returns ``(mean, std, map_rule, p_bits, eps_used)`` — ``std`` is
+    the posterior-predictive spread (the calibration target of rev-9 F1), and
+    ``map_rule`` thresholds ``p_bits`` at 1/2.
+    """
+    gen = rng if rng is not None else np.random.default_rng()
+    ones, total = transition_counts(diagram, radius)
+    eps_used = float(eps) if eps is not None else estimate_noise_rate(diagram, radius)
+    p_bits = noisy_table_posterior(ones, total, eps_used, prior_p=prior_p)
+    map_rule = table_to_rule((p_bits >= 0.5).astype(np.uint8))
+
+    feats_list = []
+    for _ in range(max(1, n_samples)):
+        tbl = (gen.random(p_bits.shape[0]) < p_bits).astype(np.uint8)
+        feats_list.append(
+            _simulate(
+                table_to_rule(tbl),
+                radius,
+                width=width,
+                n_pairs=n_pairs,
+                ic_density=ic_density,
+                rng=gen,
+            )
+        )
+    feats_arr = np.stack(feats_list)
+    return feats_arr.mean(axis=0), feats_arr.std(axis=0), map_rule, p_bits, eps_used

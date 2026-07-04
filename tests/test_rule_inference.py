@@ -9,14 +9,23 @@ from caspectra.ca.eca import ECASimulator, independent_rules
 from caspectra.ca.range_ca import RangeCA, embed_eca, sample_rules
 from caspectra.eval.dynamics import damage_spreading_features
 from caspectra.eval.rule_inference import (
+    bayesian_mechanistic_estimate,
     complete_table,
+    estimate_noise_rate,
     infer_rule,
     infer_rule_table,
     mechanistic_estimate,
     mechanistic_estimate_posterior,
     neighbourhood_indices,
+    noisy_table_posterior,
     table_to_rule,
+    transition_counts,
 )
+
+
+def _noisy(diagram: np.ndarray, flip_p: float, seed: int = 0) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    return diagram ^ (rng.random(diagram.shape) < flip_p).astype(np.uint8)
 
 
 def test_neighbourhood_indices_match_rangeca():
@@ -159,3 +168,58 @@ def test_posterior_estimate_has_spread_when_under_covered():
     assert k > 0
     assert coverage < 1.0
     assert std.shape == (4,) and np.all(std >= 0.0)
+
+
+def test_noisy_posterior_reduces_to_majority_at_zero_noise():
+    """F1 at eps=0 must agree with the deterministic majority inference."""
+    ic = np.random.default_rng(7).integers(0, 2, size=127, dtype=np.uint8)
+    diagram = ECASimulator(30).evolve(ic, 63)
+    ones, total = transition_counts(diagram, radius=1)
+    p = noisy_table_posterior(ones, total, eps=0.0)
+    assert table_to_rule((p >= 0.5).astype(np.uint8)) == 30
+    seen = total > 0
+    assert np.all((p[seen] > 0.999) | (p[seen] < 0.001))  # certain where observed
+
+
+def test_noisy_posterior_recovers_rule_under_noise():
+    """With enough observations the MAP table survives 5% bit-flip corruption,
+    where the deterministic majority inference is already broken."""
+    ic = np.random.default_rng(8).integers(0, 2, size=127, dtype=np.uint8)
+    clean = ECASimulator(110).evolve(ic, 63)
+    noisy = _noisy(clean, 0.05, seed=1)
+    ones, total = transition_counts(noisy, radius=1)
+    p = noisy_table_posterior(ones, total, eps=0.05)
+    assert table_to_rule((p >= 0.5).astype(np.uint8)) == 110
+    # And the posterior is *uncertain* rather than overconfident: no entry that
+    # was materially contested should sit at machine-precision certainty.
+    contested = (np.minimum(ones, total - ones) / np.maximum(total, 1)) > 0.3
+    if contested.any():
+        assert np.all((p[contested] > 1e-12) & (p[contested] < 1 - 1e-12))
+
+
+def test_estimate_noise_rate_tracks_injected_noise():
+    """Self-consistency estimation lands near the injected corruption level."""
+    ic = np.random.default_rng(9).integers(0, 2, size=127, dtype=np.uint8)
+    clean = ECASimulator(90).evolve(ic, 63)
+    assert estimate_noise_rate(clean, radius=1) == 0.0
+    est = estimate_noise_rate(_noisy(clean, 0.05, seed=2), radius=1)
+    # Input-side flips corrupt neighbourhood indices too, so the *effective*
+    # rate exceeds the per-cell rate; it must be positive and same-magnitude.
+    assert 0.02 <= est <= 0.20
+
+
+def test_bayesian_estimate_shapes_and_map_rule():
+    ic = np.random.default_rng(10).integers(0, 2, size=127, dtype=np.uint8)
+    noisy = _noisy(ECASimulator(30).evolve(ic, 63), 0.02, seed=3)
+    mean, std, map_rule, p_bits, eps_used = bayesian_mechanistic_estimate(
+        noisy,
+        radius=1,
+        width=63,
+        n_pairs=16,
+        n_samples=4,
+        rng=np.random.default_rng(0),
+    )
+    assert mean.shape == (4,) and std.shape == (4,)
+    assert p_bits.shape == (8,)
+    assert 0.0 <= eps_used <= 0.5
+    assert map_rule == 30  # 2% noise, 63 rows: posterior still nails rule 30
