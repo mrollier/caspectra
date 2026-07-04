@@ -10,7 +10,9 @@ guarantees the three analyses score identical rules against identical targets
 
 from __future__ import annotations
 
+import pickle
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
@@ -18,7 +20,7 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
 
 from caspectra.data.targets import TARGET_NAMES, load_or_compute_invariant_targets
-from caspectra.eval.baselines import compute_baseline_features
+from caspectra.eval.baselines import FEATURE_NAMES, compute_baseline_features
 from caspectra.eval.rule_inference import mechanistic_estimate
 from caspectra.factory import build_dataset
 
@@ -34,6 +36,8 @@ class HeldOutPredictions:
     target_names: list[str]
     true: np.ndarray  # (N, 4)
     preds: dict[str, np.ndarray]  # method -> (N, 4)
+    features: np.ndarray  # (N, 5) rule-averaged single-diagram baseline features
+    feature_names: list[str]  # names of the 5 baseline features
     coverage: np.ndarray  # (N,) mechanistic table coverage
     complex_mask: np.ndarray  # (N,) held-out rule is a signature-complex rule
 
@@ -83,8 +87,22 @@ def collect_held_out_predictions(
     device: str = "mps",
     include_mechanistic: bool = True,
     mechanistic_n_pairs: int | None = None,
+    use_cache: bool = True,
 ) -> HeldOutPredictions:
-    """Fit/evaluate every method on the checkpoint's stored held-out split."""
+    """Fit/evaluate every method on the checkpoint's stored held-out split.
+
+    The result is cached next to the checkpoint (the mechanistic simulation is
+    the expensive part and is reused verbatim by the R1/R2/R5 analyses), keyed on
+    the checkpoint path and the mechanistic ``n_pairs``.
+    """
+    n_pairs_key = mechanistic_n_pairs or cfg.targets.n_pairs
+    cache_path = Path(checkpoint).with_name(
+        f"held_out_preds_np{n_pairs_key}_{'mech' if include_mechanistic else 'nomech'}.pkl"
+    )
+    if use_cache and cache_path.exists():
+        with cache_path.open("rb") as fh:
+            return pickle.load(fh)
+
     radius = cfg.data.radius
     dataset = build_dataset(cfg.data, training=False)
     reps = np.asarray(dataset.equiv_reps)
@@ -120,6 +138,9 @@ def collect_held_out_predictions(
         preds[name] = _rule_means(pred_diag, reps_ho, held)
     preds["cnn"] = _rule_means(cnn_pred_diag[ho_mask], reps_ho, held)
 
+    # Rule-averaged raw baseline features (standardised on train rules) for R2.
+    held_features = _rule_means(feats[ho_mask], reps_ho, held)
+
     coverage = np.zeros(len(held))
     if include_mechanistic:
         n_pairs = mechanistic_n_pairs or cfg.targets.n_pairs
@@ -144,12 +165,18 @@ def collect_held_out_predictions(
     complex_set = {int(r) for r in cfg.train.force_holdout_rules} if radius > 1 else set()
     complex_mask = np.array([r in complex_set for r in held], dtype=bool)
 
-    return HeldOutPredictions(
+    result = HeldOutPredictions(
         held=[int(r) for r in held],
         radius=radius,
         target_names=list(TARGET_NAMES),
         true=np.stack([true_by_rule[r] for r in held]),
         preds=preds,
+        features=held_features,
+        feature_names=list(FEATURE_NAMES),
         coverage=coverage,
         complex_mask=complex_mask,
     )
+    if use_cache:
+        with cache_path.open("wb") as fh:
+            pickle.dump(result, fh)
+    return result
