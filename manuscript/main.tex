@@ -1,0 +1,210 @@
+% Benchmark-forward manuscript (working template: REVTeX 4.2 / AIP, compiles
+% out of the box). Final target venue: Machine Learning: Science and Technology
+% (IOP, iopart) — the class swap is a preamble-only change; content is portable.
+\documentclass[aip,jmp,amsmath,amssymb,reprint]{revtex4-2}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% Provisional-number marker: numbers awaiting the multi-seed (S2) error bars.
+\newcommand{\prov}[1]{\textcolor{purple}{#1}}
+
+\begin{document}
+
+\title{Simple single-diagram statistics rival deep networks for estimating the
+dynamical invariants of cellular automata: a pre-registered benchmark}
+
+\author{Michiel Rollier}
+\affiliation{TODO: affiliation}
+\author{TODO: co-authors}
+
+\date{\today}
+
+\begin{abstract}
+The behaviour of a cellular automaton (CA) is most defensibly characterised not
+by its update rule but by \emph{dynamical invariants}---quantities such as
+damage spreading that are defined through perturbation experiments (evolve two
+copies of a configuration that differ in one cell and watch the difference
+grow). Such invariants require running the simulator twice, so estimating them
+from a single observed space--time diagram is a natural task for a learned
+amortiser, and a natural place to ask whether deep representation learning adds
+value over hand-crafted features. We answer this with a pre-registered
+benchmark. Across the elementary rule space and an enlarged two-state,
+radius-two space of $2^{32}$ rules, we compare an anti-shortcut convolutional
+amortiser against a regressor on five cheap, label-free single-diagram
+statistics, under an explicit observation protocol and leave-rules-out
+evaluation. The deep network provides \emph{no advantage}: the simple baseline
+matches or exceeds it at predicting the invariants globally, at placing held-out
+\emph{complex} (glider-supporting) rules once such rules are made plentiful, and
+at resolving behaviour \emph{spatially} in non-uniform CA. We explain why---the
+local rule is readable from the diagram and the invariants are strongly
+texture-correlated---and turn the negative into two constructive results: a
+training-free, interpretable method for spatially-resolved phenotype maps of
+non-uniform CA, and a data-driven map of where complex behaviour lives in rule
+space (${\approx}\,7.8\%$ of radius-two rules, versus ${\approx}\,2\%$ of
+elementary rules). Pre-registration, code, and data are released.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+\label{sec:intro}
+
+% Genotype vs phenotype; the amortization question; shortcut learning; the
+% protocol-tuple framing; the pre-registered benchmark thesis.
+TODO: intro. Key beats:
+(i) CA behaviour classification separates \emph{genotype} (the local rule) from
+\emph{phenotype} (the space--time pattern); reading the rule off the pixels is a
+known shortcut~\cite{rollier2024cnn}.
+(ii) The best-posed phenotype targets are \emph{dynamical invariants}---damage
+spreading and Lyapunov measures~\cite{vispoel2024damage}---and every such claim
+is relative to an \emph{observation protocol} (rule orbit, IC measure, lattice,
+horizon), not the rule in the abstract~\cite{gilman1987,culikyu1988}.
+(iii) Because these invariants need twin runs, amortising them from one diagram
+is a natural learning task; but deep vision models prefer shortcut
+cues~\cite{geirhos2020shortcut}, so whether a deep amortiser beats simple
+features is an empirical question we \emph{pre-register} and answer.
+(iv) Contributions: the benchmark (deep $\not>$ simple, at any scale), the
+training-free spatial-map method, the range-two complexity landscape.
+
+\section{Methods}
+\label{sec:methods}
+
+\subsection{Rule spaces and the observation protocol}
+Elementary CA (ECA; two states, radius one, 256 rules, 88 reflection/complement
+orbit representatives) and an enlarged \emph{radius-two} space (two states,
+five-cell neighbourhood, $2^{32}$ rules), sampled and orbit-deduplicated.
+Protocol tuple: Bernoulli$(1/2)$ initial conditions, ring of $127$ cells,
+horizon $127$ rows (radius-aware for range two). TODO: expand.
+
+\subsection{Damage-spreading invariants}
+Four label-free scalars per rule from twin runs (flip one IC cell, evolve both):
+\emph{damage survival}, \emph{damage fraction}, \emph{spreading rate}
+(normalised so $1=$ light speed), \emph{cone fill}. The horizon caps the light
+cone so it cannot wrap. Targets are cached per rule under a fixed protocol with
+$n_{\mathrm{pairs}}=256$; each rule's random stream is keyed on its identity so
+a rule's target is a well-defined function of $(\text{rule},\text{protocol})$
+independent of the panel it is computed in (Appendix~\ref{app:repro}). TODO.
+
+\subsection{The deep amortiser and the simple baseline}
+\emph{Amortiser}: an anti-shortcut CNN (2$\times$2 first-layer kernels, a signed
+64-d bottleneck) with a linear regression head, and a \texttt{predict\_map}
+variant that emits per-patch predictions; BatchNorm (inference-time running
+statistics) makes the map genuinely local. \emph{Baseline}: ridge and
+gradient-boosted-tree regressors on five single-diagram statistics---folded
+density, temporal activity, compression ratio, $2\times2$ block entropy, and a
+radius-aware input-entropy variance (Wuensche's glider
+screen~\cite{wuensche1999})---all invariant under the orbit symmetries. Both are
+trained on the same rules and evaluated leave-rules-out. TODO.
+
+\subsection{Pre-registration}
+Criteria and controls were committed before measurement (revisions logged in the
+released repository); no threshold was edited after seeing a number. The
+``meaningfully better'' bar for the amortiser was fixed as: held-out median
+$R^2$ exceeding the best baseline by $\geq 0.10$ and on $\geq 3/4$ features. TODO.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Global invariant prediction: simple features win or tie}
+\label{sec:global}
+Leave-rules-out median $R^2$ (rule-level). \prov{Single-seed amortiser; S2 adds
+$\pm$ over 5 seeds.}
+\begin{table}[t]
+\centering
+\begin{tabular}{lccc}
+\toprule
+task & best baseline (GBM) & amortiser & margin \\
+\midrule
+ECA global & \textbf{0.927} & \prov{0.843} & \prov{$-0.084$} \\
+range-2 global & 0.845 & \prov{0.849} & \prov{$+0.004$} \\
+range-2 complex & 0.795 & \prov{0.822} & \prov{$+0.027$} \\
+\bottomrule
+\end{tabular}
+\caption{The simple baseline matches or beats the deep amortiser at predicting
+the damage invariants; the pre-registered $+0.10$ margin is never met.}
+\label{tab:global}
+\end{table}
+
+\subsection{The complexity landscape and complex-rule placement}
+\label{sec:complex}
+Under uniform sampling, complex (glider-supporting) rules are
+${\approx}\,7.8\%$ of the radius-two space (Wilson 95\% CI $[6.9,8.8]\%$;
+$n=3000$), versus ${\approx}\,2\%$ of the 88 ECA orbits---so the intermediate
+regime, a two-member club among ECAs, is genuinely populated. Held out entirely,
+these complex rules are placed \emph{without systematic bias}---but by the
+\emph{baseline} as well as the amortiser (Table~\ref{tab:global}, last row):
+populating the regime, not the network, is what removes the bias
+(Fig.~\ref{fig:landscape}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/landscape.pdf}
+\caption{The radius-two behaviour landscape drawn from data ($n=3000$ uniformly
+sampled canonical rules). Complex, glider-supporting rules (red) form a distinct
+band---sub-ballistic damage in a sparse cone---between the ordered arm and the
+chaotic bulk; the famous complex ECAs 54 and 110, embedded into radius two,
+land in it (stars). Complexity is ${\approx}\,7.8\%$ of the space, versus
+${\approx}\,2\%$ of the 88 elementary orbits.}
+\label{fig:landscape}
+\end{figure}
+
+\subsection{Spatial maps: no resolution advantage}
+\label{sec:maps}
+On striped two-rule diagrams, the amortiser's per-patch map and a patch-wise
+hand-crafted map (same column resolution, same contrast metric) are compared by
+relative contrast $R(p)=C(p)/C(\text{half})$ versus stripe period $p$; the
+resolution limit is the finest $p$ with median $R(p)\ge 0.5$.
+\begin{table}[t]
+\centering
+\begin{tabular}{lccc}
+\toprule
+map & amortiser limit & best hand-crafted limit & verdict \\
+\midrule
+$7\times7$ & $32$ px & $\mathbf{16}$ px & hand-crafted finer \\
+$15\times15$ & $16$ px & $16$ px & tie \\
+\bottomrule
+\end{tabular}
+\caption{The learned map buys no spatial resolution over an $8$-pixel
+hand-crafted window; at coarser architecture it is beaten.}
+\label{tab:maps}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/map_benchmark.pdf}
+\caption{Relative contrast $R(p)$ versus stripe period for the learned map (red)
+and the best hand-crafted patch-wise map (blue), at matched column resolution
+and metric. At $7\times7$ the hand-crafted map resolves finer (crosses $0.5$ at
+$16$ px where the CNN does not); at $15\times15$ they coincide. The learned
+representation buys no spatial resolution the cheap window does not.}
+\label{fig:maps}
+\end{figure}
+
+\section{Discussion}
+\label{sec:discussion}
+Why the negative is structural, not a tuning artefact: (i) the local rule is
+recoverable from the diagram~\cite{rollier2024cnn}, and (ii) the damage
+invariants are strongly correlated with visible texture, so a handful of cheap
+statistics capture what the CNN captures. A forecasting objective would inherit
+the same shortcut (a recovered rule forecasts perfectly). The constructive
+upshot: cheap, interpretable, training-free phenotype maps for non-uniform CA,
+and a data-driven complexity landscape. Relation to shortcut
+learning~\cite{geirhos2020shortcut} and to the impossibility of a bias-free
+taxonomy~\cite{kleinberg2002}. Limits: this invariant family and protocol; other
+invariants (e.g.\ genuinely non-local ones) may yet reward learning. TODO.
+
+\appendix
+\section{Reproducibility}
+\label{app:repro}
+Environment, seeds, the identity-keyed target RNG (set-independence verified to
+$0$ drift, versus $0.05$--$0.08$ under position keying), code and data release.
+TODO.
+
+\bibliographystyle{apsrev4-2}
+\bibliography{refs}
+
+\end{document}
