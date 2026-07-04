@@ -1,7 +1,6 @@
-% Benchmark-forward manuscript (working template: REVTeX 4.2 / AIP, compiles
-% out of the box). Final target venue: Machine Learning: Science and Technology
-% (IOP, iopart) — the class swap is a preamble-only change; content is portable.
-\documentclass[aip,jmp,amsmath,amssymb,reprint]{revtex4-2}
+% Manuscript for Chaos: An Interdisciplinary Journal of Nonlinear Science
+% (AIP), REVTeX 4.2 with the AIP `cha` journal option.
+\documentclass[aip,cha,amsmath,amssymb,reprint]{revtex4-2}
 
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -17,9 +16,13 @@
 \title{Simple single-diagram statistics rival deep networks for estimating the
 dynamical invariants of cellular automata: a pre-registered benchmark}
 
-\author{Michiel Rollier}
-\affiliation{TODO: affiliation}
-\author{TODO: co-authors}
+% NOTE: placeholder (dummy) authors --- replace before submission.
+\author{First A. Author}
+\affiliation{Department of Data Analysis and Mathematical Modelling,
+Example University, Example City, Country}
+\author{Second B. Author}
+\affiliation{Department of Data Analysis and Mathematical Modelling,
+Example University, Example City, Country}
 
 \date{\today}
 
@@ -351,8 +354,9 @@ estimation noise at $n_{\mathrm{pairs}}=256$ ($\approx0.006$--$0.014$ per featur
 remains and is reported as the achievable-$R^2$ ceiling.
 
 The complete pre-registered criteria, the training and evaluation code, the
-sampled rule panels, and the cached invariants are released at
-\texttt{TODO: repository URL} under \texttt{TODO: license}.
+sampled rule panels, and the cached invariants are available at
+\url{https://github.com/mrollier/caspectra} (currently private; released under
+the MIT license upon publication).
 
 \bibliographystyle{apsrev4-2}
 \bibliography{refs}
