@@ -53,58 +53,139 @@ elementary rules). Pre-registration, code, and data are released.
 \section{Introduction}
 \label{sec:intro}
 
-% Genotype vs phenotype; the amortization question; shortcut learning; the
-% protocol-tuple framing; the pre-registered benchmark thesis.
-TODO: intro. Key beats:
-(i) CA behaviour classification separates \emph{genotype} (the local rule) from
-\emph{phenotype} (the space--time pattern); reading the rule off the pixels is a
-known shortcut~\cite{rollier2024cnn}.
-(ii) The best-posed phenotype targets are \emph{dynamical invariants}---damage
-spreading and Lyapunov measures~\cite{vispoel2024damage}---and every such claim
-is relative to an \emph{observation protocol} (rule orbit, IC measure, lattice,
-horizon), not the rule in the abstract~\cite{gilman1987,culikyu1988}.
-(iii) Because these invariants need twin runs, amortising them from one diagram
-is a natural learning task; but deep vision models prefer shortcut
-cues~\cite{geirhos2020shortcut}, so whether a deep amortiser beats simple
-features is an empirical question we \emph{pre-register} and answer.
-(iv) Contributions: the benchmark (deep $\not>$ simple, at any scale), the
-training-free spatial-map method, the range-two complexity landscape.
+Cellular automata (CA) are the canonical minimal model of emergent
+computation: a single local update rule, iterated in parallel, produces the full
+zoo of behaviours from frozen order to chaos to the localized, interacting
+``particles'' of complex, glider-supporting rules~\cite{wolfram2002,langton1990}.
+Classifying that behaviour is a long-standing problem, and a subtle one, because
+the field distinguishes the \emph{genotype}---the local update rule---from the
+\emph{phenotype}---the mesoscopic structure of the space--time diagram it
+generates. A classifier that reads behaviour off the diagram must be prevented
+from instead reading the \emph{rule} off the diagram, which is almost always
+possible: a diagram contains, in its local neighbourhoods, the entire rule table,
+and a convolutional network recovers the elementary rule with $99.9\%$ accuracy
+unless architecturally stopped~\cite{rollier2024cnn}. This is a textbook instance
+of \emph{shortcut learning}---deep vision models latch onto the most accessible
+predictive cue rather than the intended one~\cite{geirhos2020shortcut}.
+
+Compounding the difficulty, ``the behaviour class of a rule'' is not a single
+well-defined quantity. Formalized Wolfram-style class membership is
+undecidable~\cite{culikyu1988}, and the class observed in practice depends on the
+initial-condition measure~\cite{gilman1987}, the lattice, and the observation
+horizon. The defensible object is therefore not the rule but a \emph{protocol
+tuple}---(rule orbit, IC measure, lattice, horizon)---characterized by
+\emph{dynamical invariants}. The best-posed of these is \emph{damage spreading}:
+evolve two copies of a configuration that differ in a single cell and measure how
+the difference grows~\cite{vispoel2024damage}. Damage-spreading scalars stratify
+behaviour as theory predicts (dying damage for order, ballistic space-filling for
+chaos, sub-ballistic sparse cones for gliders) and, crucially, are defined
+through \emph{two} runs of the simulator---so they are not a function of any
+single observed diagram.
+
+That last property makes them a natural target for \emph{amortization}: train an
+encoder to predict, from one diagram, a quantity that ordinarily requires a
+perturbation experiment. If it succeeds and generalizes to unseen rules, one is
+tempted to conclude the encoder has learned to read behaviour. But the shortcut
+worry returns in a quantitative form: the same textures that betray the rule also
+correlate with the invariants, so a deep amortiser might be winning only what a
+handful of cheap statistics already capture. Whether deep representation learning
+\emph{adds value} over hand-crafted features for this task is thus an empirical
+question---and exactly the kind of question that invites, after the fact,
+optimistic framing. We therefore \emph{pre-registered} it.
+
+This paper reports the benchmark. Under a fixed observation protocol, across the
+elementary rule space and an enlarged two-state radius-two space of $2^{32}$
+rules, we compare an anti-shortcut convolutional amortiser against a regressor on
+five cheap, label-free single-diagram statistics, with leave-rules-out
+evaluation and thresholds fixed in advance. The deep network provides \emph{no
+advantage}: the simple baseline matches or exceeds it at predicting the
+invariants globally, at placing held-out complex rules once such rules are made
+plentiful, and---the one task a scalar baseline seemingly cannot do---at
+resolving behaviour \emph{spatially} in non-uniform CA, where a patch-wise
+hand-crafted map ties or beats the learned map. We explain why the negative is
+structural rather than a tuning artefact, and turn it into two constructive
+contributions: a training-free, interpretable method for spatially-resolved
+phenotype maps, and a data-driven map of where complex behaviour lives in rule
+space. All criteria, code, and data are released.
 
 \section{Methods}
 \label{sec:methods}
 
 \subsection{Rule spaces and the observation protocol}
-Elementary CA (ECA; two states, radius one, 256 rules, 88 reflection/complement
-orbit representatives) and an enlarged \emph{radius-two} space (two states,
-five-cell neighbourhood, $2^{32}$ rules), sampled and orbit-deduplicated.
-Protocol tuple: Bernoulli$(1/2)$ initial conditions, ring of $127$ cells,
-horizon $127$ rows (radius-aware for range two). TODO: expand.
+We use two rule spaces. \emph{Elementary CA} (ECA): two states, radius one, so a
+three-cell neighbourhood, $2^{2^3}=256$ rules, of which $88$ are distinct
+representatives under the reflection and complementation symmetries that a
+behavioural classifier should respect. \emph{Radius-two CA}: two states, a
+five-cell neighbourhood, a $32$-entry table and $2^{32}\approx4\times10^{9}$
+rules; ECA is the special case whose table ignores the two outer neighbours, so
+an embedded ECA reproduces its elementary diagrams bit-for-bit (a continuity
+control). Because the space is astronomically large we \emph{sample} it uniformly
+and deduplicate by the order-four reflect/complement orbit.
+
+Every quantity below is indexed by a fixed \emph{observation protocol}: a
+Bernoulli$(1/2)$ initial condition on a ring of $127$ cells with periodic
+boundaries, evolved from $t=0$. We avoid power-of-two widths, under which
+additive rules collapse to homogeneity on a periodic ring and diverge from the
+infinite-lattice reference behaviour. The horizon is capped so that the light
+cone of a single perturbed cell cannot wrap the ring: $\lfloor
+w/(2r)\rfloor-1$ steps for width $w$ and radius $r$, which for ECA is the
+familiar $\lfloor w/2\rfloor-1$.
 
 \subsection{Damage-spreading invariants}
-Four label-free scalars per rule from twin runs (flip one IC cell, evolve both):
-\emph{damage survival}, \emph{damage fraction}, \emph{spreading rate}
-(normalised so $1=$ light speed), \emph{cone fill}. The horizon caps the light
-cone so it cannot wrap. Targets are cached per rule under a fixed protocol with
-$n_{\mathrm{pairs}}=256$; each rule's random stream is keyed on its identity so
-a rule's target is a well-defined function of $(\text{rule},\text{protocol})$
-independent of the panel it is computed in (Appendix~\ref{app:repro}). TODO.
+The targets are four label-free scalars per rule, estimated from twin runs: draw
+an initial condition, flip one cell, evolve both copies to the horizon, and
+compare. \emph{Damage survival} is the probability that any difference remains;
+conditional on survival, \emph{damage fraction} is the fraction of the ring that
+differs, \emph{spreading rate} is the cone extent normalised by $2r$ times the
+number of steps (so $1$ is light speed for any radius), and \emph{cone fill} is
+the density of differing cells within the cone (high for chaos, low for sparse
+gliders). Each vector is a Monte-Carlo average over $n_{\mathrm{pairs}}=256$
+initial conditions; the residual estimation noise is $\approx0.006$--$0.014$ per
+feature, which upper-bounds any amortiser's achievable $R^2$. Each rule's random
+stream is keyed on its identity, so a rule's target is a well-defined function of
+$(\text{rule},\text{protocol})$, independent of which other rules share the
+computed panel (Appendix~\ref{app:repro}).
 
 \subsection{The deep amortiser and the simple baseline}
-\emph{Amortiser}: an anti-shortcut CNN (2$\times$2 first-layer kernels, a signed
-64-d bottleneck) with a linear regression head, and a \texttt{predict\_map}
-variant that emits per-patch predictions; BatchNorm (inference-time running
-statistics) makes the map genuinely local. \emph{Baseline}: ridge and
-gradient-boosted-tree regressors on five single-diagram statistics---folded
-density, temporal activity, compression ratio, $2\times2$ block entropy, and a
-radius-aware input-entropy variance (Wuensche's glider
-screen~\cite{wuensche1999})---all invariant under the orbit symmetries. Both are
-trained on the same rules and evaluated leave-rules-out. TODO.
+The \emph{amortiser} is a convolutional network designed against the rule-reading
+shortcut: $2\times2$ first-layer kernels (too small to span a neighbourhood and
+its output together, unlike a $3\times2$ window that would read a rule-table
+entry directly) feeding a signed $64$-dimensional bottleneck and a linear
+regression head. A \texttt{predict\_map} variant applies the same head before
+global pooling to emit a per-patch map. We use BatchNorm rather than GroupNorm in
+the regression encoder: GroupNorm rescales every patch by whole-image statistics,
+which leaks global context into the map and destroys its locality (a rule-0
+region's predicted survival jumps from $0.01$ to $0.4$--$0.8$ depending on its
+partner), whereas BatchNorm's inference-time running statistics keep the map
+local (the same probe stays flat to the third decimal). Diagrams are augmented
+only by the exact orbit symmetries (cyclic shift, reflection, complementation),
+which map a diagram to a genuine orbit partner. Training is $60$ epochs at $127$
+px with an anti-shortcut-preserving recipe; five seeds vary the weight
+initialization and minibatch/augmentation order while the data split and targets
+are held fixed.
+
+The \emph{baseline} is a regressor on five cheap, label-free single-diagram
+statistics: the polarity-folded live-cell density, the temporal activity
+(fraction of cells that change between rows), the zlib compression ratio, the
+$2\times2$ block entropy, and a radius-aware input-entropy variance---Wuensche's
+automated glider screen~\cite{wuensche1999}, the temporal variance of the
+neighbourhood-pattern entropy. All five are (exactly or approximately) invariant
+under the orbit symmetries, so the baseline is denied no symmetry the encoder
+enjoys. We report both a ridge and a gradient-boosted-tree fit and take the
+stronger as the baseline of record. Crucially, both amortiser and baseline are
+trained on the same rules and evaluated with the \emph{same} leave-rules-out
+split against the \emph{same} targets.
 
 \subsection{Pre-registration}
-Criteria and controls were committed before measurement (revisions logged in the
-released repository); no threshold was edited after seeing a number. The
-``meaningfully better'' bar for the amortiser was fixed as: held-out median
-$R^2$ exceeding the best baseline by $\geq 0.10$ and on $\geq 3/4$ features. TODO.
+Every criterion, threshold, rule panel and control was committed to version
+control \emph{before} the corresponding measurement, and no threshold was edited
+after a number was seen; the revision history makes the ordering auditable. The
+amortiser counts as ``meaningfully better'' only if its held-out median $R^2$
+exceeds the best baseline by $\geq0.10$ \emph{and} it wins on $\geq3$ of the four
+features---a bar fixed in advance. The complex-rule hold-out set, the map
+resolution metric and its verdict rule, and the target-noise bound were likewise
+fixed before measurement. This discipline is what lets us report a negative
+result without the suspicion that the comparison was arranged to produce it.
 
 \section{Results}
 \label{sec:results}
@@ -186,23 +267,78 @@ representation buys no spatial resolution the cheap window does not.}
 
 \section{Discussion}
 \label{sec:discussion}
-Why the negative is structural, not a tuning artefact: (i) the local rule is
-recoverable from the diagram~\cite{rollier2024cnn}, and (ii) the damage
-invariants are strongly correlated with visible texture, so a handful of cheap
-statistics capture what the CNN captures. A forecasting objective would inherit
-the same shortcut (a recovered rule forecasts perfectly). The constructive
-upshot: cheap, interpretable, training-free phenotype maps for non-uniform CA,
-and a data-driven complexity landscape. Relation to shortcut
-learning~\cite{geirhos2020shortcut} and to the impossibility of a bias-free
-taxonomy~\cite{kleinberg2002}. Limits: this invariant family and protocol; other
-invariants (e.g.\ genuinely non-local ones) may yet reward learning. TODO.
+
+The benchmark returns the same answer three ways: a deep amortiser does not beat
+cheap single-diagram statistics at estimating CA damage-spreading invariants---not
+globally, not for held-out complex rules in a space where such rules are
+plentiful, and not as spatially-resolved maps. We read this as a
+\emph{structural} property of the task, not a failure of tuning. Two facts make
+it structural. First, the local rule is essentially readable from the
+diagram~\cite{rollier2024cnn}, so any behaviour that is a smooth function of the
+rule is in principle recoverable by whatever most cheaply exposes it. Second, and
+more to the point, the damage invariants are strongly \emph{texture}-correlated:
+a chaotic rule looks busy and spreads damage fast; a frozen rule looks static and
+does not. Five hand-crafted statistics capture that correlation, and the deep
+encoder---trained on the same information---captures no more of it. The
+much-touted ``repair'' of complex-rule placement in the enlarged space is
+likewise not the network's doing: once the intermediate regime is populated,
+\emph{any} competent regressor places held-out complex rules without bias, so the
+credit belongs to the rule space, not the learner.
+
+This has a bearing on the natural next idea---replacing invariant regression with
+a predictive, forecasting objective. We expect it to inherit the same shortcut:
+forecasting future rows is trivial once the rule is recovered, so a ``read the
+rule, roll it forward'' baseline would again be hard to beat. The texture- and
+rule-readability of ECA-like diagrams appears to be a fundamental obstacle to
+deep learning \emph{adding} value here, rather than an incidental one.
+
+The negative has a constructive shadow. Because the invariants are cheaply and
+locally predictable, one can build \emph{training-free, interpretable} phenotype
+maps for non-uniform CA by sliding the hand-crafted regressor over the diagram;
+these resolve behaviour to $\approx16$ cells---as finely as the best learned map,
+and without a GPU, training set, or opaque encoder. And the same invariants,
+computed over a uniform sample, yield a data-driven picture of \emph{where}
+complex behaviour lives (Fig.~\ref{fig:landscape}): a distinct band at
+sub-ballistic spreading and low cone fill, populated at $\approx7.8\%$ in the
+radius-two space against $\approx2\%$ among elementary rules.
+
+Our result sits squarely in the shortcut-learning
+literature~\cite{geirhos2020shortcut} and in the older recognition that no
+unsupervised taxonomy is ``just there'' in data without a chosen
+similarity~\cite{kleinberg2002}: here the cheapest similarity---texture---already
+suffices, and the deep model adds nothing on top of it. The scope of the claim is
+deliberately narrow: it concerns damage-spreading invariants under one
+observation protocol on two-state CA. Invariants that depend on genuinely
+non-local or rare structure that summary statistics miss---long transients,
+specific particle interactions, computational depth---might still reward a learned
+representation, and identifying such a target is the natural next step. For the
+task as usually posed, however, the honest recommendation is to compute the cheap
+features and skip the network.
 
 \appendix
 \section{Reproducibility}
 \label{app:repro}
-Environment, seeds, the identity-keyed target RNG (set-independence verified to
-$0$ drift, versus $0.05$--$0.08$ under position keying), code and data release.
-TODO.
+
+All experiments run on a single Apple-silicon machine (Metal/CPU, fp32); the
+pipeline is first-party except for the gradient-boosted-tree and ridge baselines
+(\texttt{scikit-learn}) and PyTorch. The amortiser error bars come from five
+training seeds that vary only the weight initialization and minibatch/augmentation
+order; the leave-rules-out split, the diagram cache and the targets are keyed on
+their own fixed seeds, so the spread measures optimisation-seed variance alone.
+
+\emph{Target well-definedness.} Each rule's damage-spreading target is estimated
+from an initial-condition stream seeded on the rule's identity, so the value is
+independent of which other rules are computed alongside it. An earlier
+implementation seeded the stream by the rule's position in the sorted panel; we
+measured the resulting cross-panel drift at up to $0.05$--$0.08$ on
+borderline-survival rules (unbiased Monte-Carlo resampling, but panel-dependent)
+and removed it, verifying zero drift under identity keying. The intrinsic
+estimation noise at $n_{\mathrm{pairs}}=256$ ($\approx0.006$--$0.014$ per feature)
+remains and is reported as the achievable-$R^2$ ceiling.
+
+The complete pre-registered criteria, the training and evaluation code, the
+sampled rule panels, and the cached invariants are released at
+\texttt{TODO: repository URL} under \texttt{TODO: license}.
 
 \bibliographystyle{apsrev4-2}
 \bibliography{refs}
