@@ -56,12 +56,14 @@ is dominated by the interpretable estimator and never nears the ceiling. The
 headline is therefore *not* "deep learning adds nothing," but "interpretable
 rule-reading dominates; the net's only edge is modest survival signal."
 
-### R5 — rule recoverability by representation (ECA seed-0)
-Raw diagram **1.0** (exact, R4). CNN 64-d bottleneck: rule-identity balanced acc
-**0.88**, truth-table-bit BA (leave-rules-out) **0.78**. Five handcrafted stats:
-0.65 / 0.69 (majority baseline 0.011). The 2×2 "anti-shortcut" bottleneck does
-**not** prevent rule recovery — the readable rule is the mechanism behind the
-null, and the "anti-shortcut" claim is dropped.
+### R5 — rule recoverability by representation
+Raw diagram exact inference **1.0** (ECA) / **0.975** (range-2), R4. CNN 64-d
+bottleneck rule-identity balanced acc **0.88** (ECA) / **0.95** (range-2);
+truth-table-bit BA (leave-rules-out) 0.78 / 0.61. Five handcrafted stats: ECA
+0.65 / 0.69, range-2 0.30 / 0.55 (texture reads range-2 rule bits barely above
+the 0.5 chance level; majority-identity baseline ≈0.01). The 2×2 "anti-shortcut"
+bottleneck does **not** prevent rule recovery (identity 0.88–0.95) — the readable
+rule is the mechanism behind the null, and the "anti-shortcut" claim is dropped.
 
 ### R6 — independent glider validation (concern 8 circularity)
 Localized-seed / periodic-localization detector — a *different* observable from
@@ -77,11 +79,13 @@ unreliable in the large space, consistent with the referee's caution.
 ### R7 — maps vs an independent local ground truth (concern 9)
 Location-resolved ground truth by local perturbation *in* the composed system
 (short local horizon), replacing the stripe-contrast proxy; hand-crafted window
-selected on a validation split (not oracle). Shallow map (m=15): mean Spearman to
-the local GT — CNN **0.81**, hand-crafted (val-selected w=16) **0.84**, oracle
-0.87; CNN − val-selected (test) −0.021, CI95[−0.053,+0.006], **cnn_resolves_finer
-= False**. The learned map buys no localisation advantage over cheap windows on a
-fair, independent test.
+selected on a validation split (not oracle). Shallow map (m=15), full 16-rule
+panel: mean Spearman to the local GT — CNN **0.673**, hand-crafted (val-selected
+w=32) **0.605**, oracle 0.638; CNN − val-selected (test) **+0.047**,
+CI95[−0.002,+0.102], **cnn_resolves_finer = False** (CI includes 0). Against a
+fair, independent local ground truth the learned map shows **no statistically
+significant localisation advantage** over a validation-selected cheap window —
+they are a tie, the CNN marginally (not significantly) higher.
 
 ### Net reframe
 An interpretable read-the-rule-and-simulate estimator reaches the reliability
