@@ -5,6 +5,93 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-07-04 — Review-response experiments (rev 7; R1–R8)
+
+Measured after a referee recommended reject-in-current-form
+(`manuscript/reviews/chaos_review.md`); decision rules pre-registered
+numbers-free in EVALUATION_CRITERIA.md rev 7 (commit a809b2a) **before** any
+number below. These reframe the paper around a **three-tier** result.
+
+### R4 — mechanistic rule-inference estimator (the positive result)
+Read the local rule off one diagram (`infer_rule`, exact for a fully-covered
+table), then simulate the damage response with an independent RNG. Same
+leave-rules-out splits as the CNN/baseline (seed-0):
+
+| task | mechanistic | GBM baseline | CNN amortiser | reliability ceiling (R3) |
+|---|---|---|---|---|
+| ECA global (median R²) | **0.999** | 0.927 | 0.850 | 0.999 |
+| range-2 global | **0.991** | 0.845 | 0.859 | 0.993 |
+| range-2 complex | **0.982** | 0.795 | 0.866 | ≈0.98 |
+
+Exact rule inference 1.00 (ECA) / 0.975 (range-2); coverage ≈1.0. The
+interpretable estimator sits **at the reliability ceiling** and dominates both
+the cheap statistics and the deep net. Per-feature ECA R²: survival 0.985,
+fraction 0.9997, rate 1.0, fill 0.9985 — note survival, where CNN=0.667 and
+GBM=0.708 both fall far short of the 0.994 ceiling.
+
+### R3 — reliability-adjusted R² ceilings (ICC(1), K=20 replicates)
+ECA (88 rules): survival 0.994, fraction 0.999, rate 0.9995, fill 0.999;
+MC-noise std 0.022 / 0.004 / 0.006 / 0.009 (refines the old 0.006–0.014 claim,
+which under-stated survival noise). Range-2 (250-rule subsample): survival
+0.987, fraction 0.998, rate 0.998, fill 0.980; median 0.993. Read every method's
+R² against these, not against 1.0.
+
+### R1 — per-target paired inference (rule-cluster bootstrap, TOST δ=0.05)
+Range-2 (N=160, powered): **mechanistic − GBM** A_superior on survival (+0.167),
+rate (+0.117), fill (+0.389); **mechanistic − CNN** A_superior on fraction,
+rate, fill. **CNN − GBM**: they trade — CNN a hair up on survival (+0.079, CI
+excl 0), GBM clearly up on cone_fill (−0.212, B_superior); the rest wash. Neither
+net/baseline dominates; both are far below the mechanistic estimator. ECA (N=18)
+is underpowered per target (wide CIs) — mechanistic survival dominance still
+A_superior; report ECA at the median level.
+
+### R2 — incremental value / stacking (cross-fit, margin 0.02)
+Range-2 (N=160). **Honest nuance:** the CNN *does* add incremental R² beyond the
+five statistics — damage_survival **+0.320** (CI [+0.23,+0.48]), plus small
+significant fraction/rate — but **not** cone_fill. The five statistics add
+~nothing beyond the CNN (all False). The mechanistic estimator adds far more
+everywhere (+0.14…+0.84). So the deep net carries real, mostly-survival
+incremental information (exactly where texture is weakest — cf. referee §7), yet
+is dominated by the interpretable estimator and never nears the ceiling. The
+headline is therefore *not* "deep learning adds nothing," but "interpretable
+rule-reading dominates; the net's only edge is modest survival signal."
+
+### R5 — rule recoverability by representation (ECA seed-0)
+Raw diagram **1.0** (exact, R4). CNN 64-d bottleneck: rule-identity balanced acc
+**0.88**, truth-table-bit BA (leave-rules-out) **0.78**. Five handcrafted stats:
+0.65 / 0.69 (majority baseline 0.011). The 2×2 "anti-shortcut" bottleneck does
+**not** prevent rule recovery — the readable rule is the mechanism behind the
+null, and the "anti-shortcut" claim is dropped.
+
+### R6 — independent glider validation (concern 8 circularity)
+Localized-seed / periodic-localization detector — a *different* observable from
+the twin-run damage signature. ECA: damage set = **{54, 106, 110}** (matches the
+literature class-IV anchors {54, 110}); independent detector agrees **92.2%** on
+the 64 applicable rules (FP 6.2%, FN 1.6% = rule 54, the disclosed ether-front
+case). Range-2 (300 rules): damage-signature complex **8.3%**, but the
+independent detector agrees only **47%** — so range-2 "complex" is reported
+strictly as "fraction satisfying the pre-registered damage-signature criterion,"
+not "glider-supporting prevalence." Single-observable glider detection is itself
+unreliable in the large space, consistent with the referee's caution.
+
+### R7 — maps vs an independent local ground truth (concern 9)
+Location-resolved ground truth by local perturbation *in* the composed system
+(short local horizon), replacing the stripe-contrast proxy; hand-crafted window
+selected on a validation split (not oracle). Shallow map (m=15): mean Spearman to
+the local GT — CNN **0.81**, hand-crafted (val-selected w=16) **0.84**, oracle
+0.87; CNN − val-selected (test) −0.021, CI95[−0.053,+0.006], **cnn_resolves_finer
+= False**. The learned map buys no localisation advantage over cheap windows on a
+fair, independent test.
+
+### Net reframe
+An interpretable read-the-rule-and-simulate estimator reaches the reliability
+ceiling and dominates both cheap statistics and a deep amortiser, for a proven
+mechanism (the rule is fully readable). The amortiser's only measurable edge over
+five cheap numbers is modest survival signal; it never approaches the ceiling and
+buys no spatial-resolution advantage. Recommendation for this task: read the rule.
+
+---
+
 ## 2026-07-01 — v1 full evaluation, finally with labels (`runs/default/eval_v2/`)
 
 The original eval (2026-06-25, `runs/default/eval/`) ran 11 minutes *before*
