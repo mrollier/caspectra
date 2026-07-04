@@ -540,3 +540,53 @@ target value (unbiased, but different realizations), the headline models are
 is computed against those fresh S2 checkpoints and truth — so training truth and
 evaluation truth always match. The original single-seed runs above stand as
 computed; the manuscript reports the S2 error-barred numbers throughout.
+
+### S4 — range-2 complex density, tightened
+
+3000 uniformly-sampled canonical range-2 rules (identity-seeded targets,
+n_pairs = 256): **234/3000 = 7.80% complex**, Wilson 95% CI **[6.9%, 8.8%]** —
+the M4 800-rule estimate (7.1%) sits inside the interval; the "≈7%, vs ~2% for
+ECAs" claim is now referee-proof. Embedded-ECA anchors place correctly (54/110
+complex; order/chaos/additive excluded). Cached to `cache/s4_landscape.npz` for
+the manuscript figure.
+
+### S1 — single-diagram baseline: the amortizer does NOT beat cheap features
+
+The decisive control, and the reason it was pre-registered before drafting. A
+ridge and a gradient-boosted-tree regressor were fit from **five label-free
+single-diagram statistics** (folded density, temporal activity, compression
+ratio, 2×2 block entropy, radius-aware input-entropy variance;
+`caspectra/eval/baselines.py`) onto the four damage invariants, under the
+**identical leave-rules-out split** as the CNN.
+
+| task | best baseline (GBM) median R² | CNN median R² | margin (CNN − baseline) |
+|---|---|---|---|
+| ECA global (18 held out) | **0.927** | 0.843 | **−0.084** (baseline wins) |
+| range-2 global (103 held out) | 0.845 | 0.849 | +0.004 (tie) |
+| range-2 **complex** (57 held out) | 0.795 | 0.822 | +0.027 (within noise) |
+
+Per-feature, the GBM baseline reaches spreading_rate R² 0.965 (ECA) / 0.880
+(range-2), damage_fraction 0.924 / 0.909 — i.e. the damage-spreading invariants
+are **largely texture-predictable from a single diagram**. The pre-registered
+"meaningfully better" bar (CNN median − best baseline ≥ 0.10 **and** beats it on
+≥ 3/4 features) is **not met on any task** — indeed the baseline *wins* on ECAs.
+
+*Caveat (honest, resolved by S2):* the CNN numbers here are from the original
+single-seed runs (trained on the pre-fix targets), while the baseline is on the
+identity-seeded targets — so the +0.03 range-2-complex edge is within the target
+resampling noise and the comparison is not yet strictly matched. S2 retrains the
+CNN on the corrected targets and re-runs S1 with `--checkpoint` for a matched
+head-to-head. But the ECA gap (−0.08, baseline ahead) is far larger than the
+~0.01–0.03 target noise and will not reverse.
+
+**Consequence (pre-registered softening rule, rev 6 S1 fired):** the
+**global/scalar amortization is not a contribution** — cheap hand-crafted
+features match or beat the deep model at predicting the damage invariants,
+including the complex-regime placement that criterion 9 was built to showcase.
+Populating the complex regime (M4) repairs the §6 bias for *any* competent
+regressor, not specifically the CNN. The only contribution the scalar baseline
+**cannot** provide is the **spatially-resolved phenotype map**; whether the CNN
+map beats a patch-wise hand-crafted map — especially below the resolution where
+window statistics stay stable — is the open, decisive question for the paper and
+is measured next (fine-resolution map control). Until that lands, no
+"amortization" headline is earned.

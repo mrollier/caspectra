@@ -91,24 +91,33 @@ def _block_entropy(img: np.ndarray) -> float:
     return float(-(probs * np.log2(probs)).sum())
 
 
-def _input_entropy_variance(img: np.ndarray) -> float:
-    # Neighbourhood-pattern code 0..7 per cell (periodic wrap), one row per step.
-    left = np.roll(img, 1, axis=1).astype(np.int64)
-    right = np.roll(img, -1, axis=1).astype(np.int64)
-    codes = 4 * left + 2 * img.astype(np.int64) + right
+def _input_entropy_variance(img: np.ndarray, radius: int = 1) -> float:
+    # Variance over time of the Shannon entropy of the width-(2r+1)
+    # neighbourhood-pattern frequencies (periodic wrap), one row per step. The
+    # pattern *labelling* is an arbitrary bijection (any offset->bit assignment),
+    # and entropy depends only on the frequency multiset — so radius=1 reproduces
+    # the original width-3 value exactly, while radius=2 (M4) uses the width-5
+    # neighbourhood the range-2 rules actually act on.
+    codes = np.zeros(img.shape, dtype=np.int64)
+    for bit, offset in enumerate(range(-radius, radius + 1)):
+        codes += np.roll(img, -offset, axis=1).astype(np.int64) << bit
+    minlength = 1 << (2 * radius + 1)
     entropies = np.empty(img.shape[0], dtype=np.float64)
     for t in range(img.shape[0]):
-        counts = np.bincount(codes[t], minlength=8).astype(np.float64)
+        counts = np.bincount(codes[t], minlength=minlength).astype(np.float64)
         probs = counts / counts.sum()
         probs = probs[probs > 0]
         entropies[t] = -(probs * np.log2(probs)).sum()
     return float(entropies.var())
 
 
-def compute_baseline_features(images: np.ndarray) -> np.ndarray:
+def compute_baseline_features(images: np.ndarray, radius: int = 1) -> np.ndarray:
     """Return an ``(N, len(FEATURE_NAMES))`` matrix of per-diagram features.
 
     Accepts ``(N, H, W)`` or ``(N, 1, H, W)``; values are binarised at 0.5.
+    ``radius`` sets the neighbourhood width of ``input_entropy_variance`` (1 =
+    ECA width-3, unchanged; 2 = range-2 width-5, for the M4 baseline) — the other
+    four features are radius-agnostic.
     """
     imgs = np.asarray(images)
     if imgs.ndim == 4:
@@ -120,7 +129,7 @@ def compute_baseline_features(images: np.ndarray) -> np.ndarray:
             _temporal_activity(img),
             _compression_ratio(img),
             _block_entropy(img),
-            _input_entropy_variance(img),
+            _input_entropy_variance(img, radius),
         ]
         for img in imgs
     ]
