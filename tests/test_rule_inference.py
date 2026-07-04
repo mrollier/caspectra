@@ -9,9 +9,13 @@ from caspectra.ca.eca import ECASimulator, independent_rules
 from caspectra.ca.range_ca import RangeCA, embed_eca, sample_rules
 from caspectra.eval.dynamics import damage_spreading_features
 from caspectra.eval.rule_inference import (
+    complete_table,
     infer_rule,
+    infer_rule_table,
     mechanistic_estimate,
+    mechanistic_estimate_posterior,
     neighbourhood_indices,
+    table_to_rule,
 )
 
 
@@ -104,3 +108,54 @@ def test_mechanistic_estimate_equals_direct_when_inference_exact():
     assert inferred == rule
     assert coverage == pytest.approx(1.0)
     assert np.allclose(feats_mech, feats_direct)
+
+
+def test_completion_policies_agree_on_full_coverage_diverge_otherwise():
+    """Completions are identical when the table is fully covered (rev-8 C3).
+
+    On a fully-exercised diagram every policy fills nothing, so all give the exact
+    generating rule; on an under-covered diagram the fills differ.
+    """
+    rng = np.random.default_rng(5)
+    ic = rng.integers(0, 2, size=127, dtype=np.uint8)
+    full = ECASimulator(30).evolve(ic, 63)  # rule 30 exercises all 8 entries
+    table, observed, _ = infer_rule_table(full, radius=1)
+    assert observed.all()
+    assert {
+        table_to_rule(complete_table(table, observed, p)) for p in ("zero", "one", "empirical")
+    } == {30}
+
+    # An under-covered diagram: a lone seed under rule 0 leaves most entries unseen.
+    sparse = np.zeros((30, 63), dtype=np.uint8)
+    sparse[0, 3] = 1
+    t2, obs2, _ = infer_rule_table(sparse, radius=1)
+    assert not obs2.all()
+    r_zero = table_to_rule(complete_table(t2, obs2, "zero"))
+    r_one = table_to_rule(complete_table(t2, obs2, "one"))
+    assert r_zero != r_one  # the fill of unobserved entries changes the rule
+
+
+def test_posterior_estimate_zero_spread_when_fully_covered():
+    """A fully-covered table has no unobserved entries -> zero predictive spread."""
+    ic = np.random.default_rng(6).integers(0, 2, size=127, dtype=np.uint8)
+    diagram = ECASimulator(110).evolve(ic, 63)
+    mean, std, _, coverage, k = mechanistic_estimate_posterior(
+        diagram, radius=1, width=127, n_pairs=32, rng=np.random.default_rng(0)
+    )
+    assert k == 0
+    assert coverage == pytest.approx(1.0)
+    assert np.allclose(std, 0.0)
+    assert mean.shape == (4,)
+
+
+def test_posterior_estimate_has_spread_when_under_covered():
+    """An under-covered table yields a non-trivial predictive interval."""
+    sparse = np.zeros((40, 63), dtype=np.uint8)
+    sparse[0, 3] = 1
+    sparse[0, 30] = 1  # a couple of seeds so a few entries are observed, most not
+    mean, std, _, coverage, k = mechanistic_estimate_posterior(
+        sparse, radius=1, width=63, n_pairs=32, rng=np.random.default_rng(1)
+    )
+    assert k > 0
+    assert coverage < 1.0
+    assert std.shape == (4,) and np.all(std >= 0.0)

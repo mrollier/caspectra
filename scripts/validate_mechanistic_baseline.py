@@ -49,6 +49,13 @@ def parse_args() -> argparse.Namespace:
         "--n-pairs", type=int, default=None, help="Twin-run pairs (default targets.n_pairs)."
     )
     p.add_argument(
+        "--reference-n-pairs",
+        type=int,
+        default=None,
+        help="If set, also score against a near-noise-free reference target at this "
+        "much-larger n_pairs (rev-8 C2 large-simulation reference).",
+    )
+    p.add_argument(
         "--identifiability", action="store_true", help="Sweep accuracy vs diagram height."
     )
     return p.parse_args()
@@ -173,6 +180,25 @@ def main() -> None:
     per = r2_per_feature(pred_rule, true_rule)
     median = float(np.nanmedian(per))
 
+    # Large-simulation reference (rev-8 C2.3): a near-noise-free target at a much
+    # larger n_pairs, with a stream decorrelated from both cache and mechanistic
+    # seeds. Scoring the mechanistic estimate against theta (rather than the noisy
+    # cache) shows it approaches the ICC ceiling as the reference noise -> 0.
+    reference_r2 = None
+    if args.reference_n_pairs:
+        ref = load_or_compute_invariant_targets(
+            held,
+            width=cfg.data.grid_size,
+            ic_density=cfg.targets.ic_density,
+            n_pairs=args.reference_n_pairs,
+            seed=int(cfg.targets.seed) + 224737,
+            cache_dir=cfg.data.cache_dir,
+            radius=radius,
+        )
+        ref_rule = np.stack(ref)
+        per_ref = r2_per_feature(pred_rule, ref_rule)
+        reference_r2 = {n: round(float(v), 4) for n, v in zip(TARGET_NAMES, per_ref)}
+
     complex_set = {int(r) for r in cfg.train.force_holdout_rules} if radius > 1 else set()
     held_complex_idx = [i for i, r in enumerate(held) if r in complex_set]
 
@@ -187,6 +213,12 @@ def main() -> None:
         "mean_coverage": round(float(np.mean(coverages)), 4),
         "mean_single_diagram_agreement": round(float(np.mean(agree)), 4),
     }
+    if reference_r2 is not None:
+        summary["reference_n_pairs"] = args.reference_n_pairs
+        summary["per_feature_r2_vs_reference"] = reference_r2
+        summary["median_r2_vs_reference"] = round(
+            float(np.nanmedian(list(reference_r2.values()))), 4
+        )
     if held_complex_idx:
         per_cx = r2_per_feature(pred_rule[held_complex_idx], true_rule[held_complex_idx])
         summary["complex_median_r2"] = round(float(np.nanmedian(per_cx)), 4)
@@ -212,6 +244,11 @@ def main() -> None:
         print(
             f"[r4] complex-subset median R² {summary['complex_median_r2']:.4f}  "
             f"(exact-inference {summary['complex_exact_inference_rate']:.3f})"
+        )
+    if reference_r2 is not None:
+        print(
+            f"[r4] vs large-sim reference (n_pairs={args.reference_n_pairs}): "
+            f"median R² {summary['median_r2_vs_reference']:.4f}  {reference_r2}"
         )
     print(f"[r4] wrote {out}/summary.json")
 

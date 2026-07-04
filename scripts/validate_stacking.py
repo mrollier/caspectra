@@ -97,6 +97,10 @@ def main() -> None:
         "mechanistic_over_features": (X_base, np.hstack([X_base, X_mech])),
     }
 
+    def _r2(pred: np.ndarray, y: np.ndarray) -> float:
+        tot = float(np.sum((y - y.mean()) ** 2))
+        return 1.0 - float(np.sum((y - pred) ** 2)) / tot if tot > 0 else float("nan")
+
     summary = {"radius": hop.radius, "n_held_out": N, "margin": MARGIN, "increments": {}}
     for key, (Xb, Xa) in blocks.items():
         per_target = {}
@@ -110,6 +114,10 @@ def main() -> None:
             per_target[n] = {
                 "incremental_r2": round(point, 4),
                 "ci95": [round(ci[0], 4), round(ci[1], 4)],
+                # Reviewer (round 2, editorial 4): the reader must see the full
+                # stacked model's performance, not only the increment.
+                "base_model_r2": round(_r2(base_pred, hop.true[:, j]), 4),
+                "stacked_model_r2": round(_r2(aug_pred, hop.true[:, j]), 4),
                 "adds_value": bool(point > MARGIN and ci[0] > 0),
             }
         summary["increments"][key] = per_target
@@ -120,7 +128,9 @@ def main() -> None:
         for n, d in pt.items():
             print(
                 f"       {n:>16}  inc R²={d['incremental_r2']:+.3f}  "
-                f"CI95[{d['ci95'][0]:+.3f},{d['ci95'][1]:+.3f}]  adds_value={d['adds_value']}"
+                f"CI95[{d['ci95'][0]:+.3f},{d['ci95'][1]:+.3f}]  "
+                f"base {d['base_model_r2']:.3f} -> stacked {d['stacked_model_r2']:.3f}  "
+                f"adds_value={d['adds_value']}"
             )
     print(f"[r2] wrote {out}/summary.json")
 

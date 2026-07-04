@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""R3 (EVALUATION_CRITERIA.md rev 7): reliability-adjusted R^2 ceilings.
+"""R3 (rev 7) + C2 (rev 8): reliability benchmarks, correctly distinguished.
 
-Draws ``K`` independent Monte-Carlo target replicates per rule and fits a one-way
-random-effects model to get, per target, the reliability ICC(1) = the achievable
-R^2 ceiling for that target under the observation protocol. This replaces the
-hand-wavy "MC noise 0.006-0.014 upper-bounds R^2" claim with a proper
-signal-vs-noise decomposition, and lets every method's R^2 be read against what
-is achievable (in particular, it confirms the mechanistic estimator sits at the
-ceiling while the CNN/baseline fall short, most on damage survival).
+Draws ``K`` independent Monte-Carlo target replicates per rule and reports, per
+target, **two** distinguished quantities with rule-bootstrap CIs (rev-8 C2):
+
+* the **latent-target reliability** ICC(1) — the ceiling for a predictor of the
+  noise-free target mean; and
+* the **independent-replicate agreement** (expectation ``2*ICC-1``) — the ceiling
+  for an estimator that returns a *fresh independent* MC draw, which is exactly
+  what the mechanistic estimator does.
+
+The second referee (concern 2) showed the old code conflated these: the
+mechanistic estimator must be judged against the replicate agreement, not ICC.
+This replaces the "MC noise 0.006-0.014 upper-bounds R^2" claim with a proper
+signal-vs-noise decomposition and the correct estimator-specific benchmark.
 
 Usage::
 
@@ -22,16 +28,17 @@ import argparse
 import numpy as np
 
 from caspectra.config import ExperimentConfig
-from caspectra.eval.reliability import icc_ceilings, target_replicates
+from caspectra.eval.reliability import reliability_benchmarks, target_replicates
 from caspectra.factory import build_dataset
 from caspectra.utils import ensure_dir, save_json, set_seed
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="R3 reliability-adjusted R^2 ceilings (rev 7).")
+    p = argparse.ArgumentParser(description="R3/C2 reliability benchmarks (rev 7/8).")
     p.add_argument("--config", required=True, help="Path to the YAML ExperimentConfig.")
     p.add_argument("--n-replicates", type=int, default=20, help="K independent MC replicates.")
     p.add_argument("--max-rules", type=int, default=None, help="Subsample rules (ICC is stable).")
+    p.add_argument("--n-boot", type=int, default=2000, help="Rule-bootstrap resamples for CIs.")
     p.add_argument("--output-dir", default=None, help="Default <train.output_dir>/reliability.")
     return p.parse_args()
 
@@ -64,26 +71,33 @@ def main() -> None:
         ic_density=cfg.targets.ic_density,
         radius=radius,
     )
-    ceilings = icc_ceilings(reps)
+    bench = reliability_benchmarks(reps, n_boot=args.n_boot)
 
-    median_ceiling = float(np.nanmedian([v["ceiling_r2"] for v in ceilings.values()]))
+    median_icc = float(np.nanmedian([v["icc"] for v in bench.values()]))
+    median_agreement = float(np.nanmedian([v["agreement_r2"] for v in bench.values()]))
     summary = {
         "radius": radius,
         "n_rules": len(rules),
         "n_replicates": args.n_replicates,
         "n_pairs": cfg.targets.n_pairs,
-        "per_feature": ceilings,
-        "median_ceiling_r2": round(median_ceiling, 4),
+        "n_boot": args.n_boot,
+        "per_feature": bench,
+        "median_icc_ceiling": round(median_icc, 4),
+        "median_replicate_agreement": round(median_agreement, 4),
     }
     save_json(summary, out / "summary.json")
 
-    for name, v in ceilings.items():
+    for name, v in bench.items():
         print(
-            f"[r3] {name:>16}: ceiling R² {v['ceiling_r2']:.4f}  "
-            f"(MC-noise std {v['mc_noise_std']:.4f}, between-rule std {v['between_rule_std']:.4f})"
+            f"[c2] {name:>16}: ICC {v['icc']:.4f} CI{v['icc_ci']}  "
+            f"| indep-replicate agreement {v['agreement_r2']:.4f} CI{v['agreement_ci']} "
+            f"(2*ICC-1={v['two_icc_minus_one']:.4f}; MC-noise std {v['mc_noise_std']:.4f})"
         )
-    print(f"[r3] median ceiling R² {median_ceiling:.4f}")
-    print(f"[r3] wrote {out}/summary.json")
+    print(
+        f"[c2] median: ICC ceiling {median_icc:.4f}  |  "
+        f"replicate-agreement benchmark {median_agreement:.4f}"
+    )
+    print(f"[c2] wrote {out}/summary.json")
 
 
 if __name__ == "__main__":

@@ -191,7 +191,11 @@ def main() -> None:
     hc_sel = corr[f"hc{best_w}"]
     hc_oracle = np.nanmax(np.stack([corr[f"hc{w}"] for w in WINDOW_WIDTHS]), axis=0)
 
-    # Pair-bootstrap CI on CNN - validation-selected-handcrafted (test pairs).
+    # Bootstrap CI on CNN - validation-selected-handcrafted (test pairs). The unit
+    # of resampling is the composed system (rule pair), NOT the column: the
+    # resampled observations are per-pair mean-over-IC Spearman values, so
+    # spatially correlated columns inside one mosaic never inflate the effective
+    # sample size (rev-8 C7).
     rng = np.random.default_rng(0)
     d = corr["cnn"][test] - hc_sel[test]
     d = d[np.isfinite(d)]
@@ -201,11 +205,34 @@ def main() -> None:
         else np.array([np.nan])
     )
     ci = [float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5))]
+    ci90 = [float(np.percentile(boot, 5.0)), float(np.percentile(boot, 95.0))]
+    # Pre-registered language rule (rev-8 C7): "equivalent" only if TOST passes
+    # (90% CI within +-delta); a CI straddling 0 but exceeding delta is inconclusive.
+    delta = 0.05
+    if -delta < ci90[0] and ci90[1] < delta:
+        verdict = "equivalent"
+    elif np.nanmean(d) > 0 and ci[0] > 0:
+        verdict = "cnn_superior"
+    elif np.nanmean(d) < 0 and ci[1] < 0:
+        verdict = "handcrafted_superior"
+    else:
+        verdict = "inconclusive"
 
     summary = {
         "checkpoint": str(args.checkpoint),
         "map_columns": int(m),
         "n_pairs": n_pairs,
+        "n_validation_pairs": int(len(val)),
+        "n_test_pairs": int(len(test)),
+        "n_ic_replicates_per_pair": int(args.n_ic),
+        "panel_rules": [int(r) for r in panel],
+        "mosaic_type": "half/half composed system (single interface)",
+        "gt_random_stream": "independent SeedSequence([9, a, b]) per pair; observed "
+        "diagrams use SeedSequence([4, a, b, ic]); streams never shared",
+        "window_selection": "one global window chosen on the validation half of the "
+        "pairs (even indices); test = odd indices; per-pair oracle reported only as "
+        "a labelled sensitivity",
+        "resampling_unit": "composed system (rule pair)",
         "local_horizon": args.local_horizon,
         "validation_selected_window": int(best_w),
         "mean_spearman_to_local_gt": {
@@ -216,6 +243,9 @@ def main() -> None:
         },
         "cnn_minus_val_selected_handcrafted_test": round(float(np.nanmean(d)), 4),
         "ci95": [round(ci[0], 4), round(ci[1], 4)],
+        "ci90": [round(ci90[0], 4), round(ci90[1], 4)],
+        "tost_delta": delta,
+        "verdict": verdict,
         "cnn_resolves_finer": bool(np.nanmean(d) > 0 and ci[0] > 0),
     }
     save_json(summary, out / "summary.json")
@@ -228,7 +258,8 @@ def main() -> None:
     print(
         f"[r7] CNN - val-selected handcrafted (test) "
         f"{summary['cnn_minus_val_selected_handcrafted_test']:+.3f} "
-        f"CI95[{ci[0]:+.3f},{ci[1]:+.3f}]  cnn_resolves_finer={summary['cnn_resolves_finer']}"
+        f"CI95[{ci[0]:+.3f},{ci[1]:+.3f}] CI90[{ci90[0]:+.3f},{ci90[1]:+.3f}]  "
+        f"verdict={verdict}  cnn_resolves_finer={summary['cnn_resolves_finer']}"
     )
     print(f"[r7] wrote {out}/summary.json")
 

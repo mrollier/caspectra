@@ -29,9 +29,15 @@ import numpy as np
 from caspectra.ca.eca import independent_rules
 from caspectra.ca.range_ca import sample_rules
 from caspectra.eval.dynamics import damage_spreading_features
-from caspectra.eval.gliders import is_glider, localized_seed_metrics
+from caspectra.eval.gliders import GLIDER_SIGNATURE, is_glider, localized_seed_metrics
 from caspectra.eval.regimes import COMPLEX_SIGNATURE, COMPLEX_SIGNATURE_ECA, is_complex
 from caspectra.utils import ensure_dir, save_json
+
+# ECA literature ground truth (rule_labels_PROVENANCE.md): the canonical class-IV /
+# glider-supporting elementary rules under the reflect/complement orbit. Rule 106
+# is a documented borderline case and is reported separately, not as ground truth.
+ECA_CLASS_IV_TRUTH = {54, 110}
+ECA_CLASS_IV_BORDERLINE = {106}
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,6 +66,44 @@ def _rates(sig: np.ndarray, det: np.ndarray) -> dict:
         "agreement": round(agree, 4),
         "detector_false_positive_rate": round(fp, 4),
         "detector_false_negative_rate": round(fn, 4),
+    }
+
+
+def _confusion(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
+    """Full confusion matrix + rate summary of ``y_pred`` against ``y_true``.
+
+    Concern 9: raw agreement is misleading when positives are rare, so we report
+    the counts and the rate quartet (sensitivity, specificity, precision, F1,
+    balanced accuracy) explicitly. Restricted to rules where ``y_pred`` is finite.
+    """
+    ok = np.isfinite(y_pred.astype(float))
+    t, p = y_true[ok].astype(bool), y_pred[ok].astype(bool)
+    tp = int(np.sum(t & p))
+    fp = int(np.sum(~t & p))
+    tn = int(np.sum(~t & ~p))
+    fn = int(np.sum(t & ~p))
+    sens = tp / (tp + fn) if (tp + fn) else float("nan")
+    spec = tn / (tn + fp) if (tn + fp) else float("nan")
+    prec = tp / (tp + fp) if (tp + fp) else float("nan")
+    f1 = (
+        2 * prec * sens / (prec + sens)
+        if prec and sens and np.isfinite(prec) and np.isfinite(sens)
+        else float("nan")
+    )
+    bal = np.nanmean([sens, spec])
+    return {
+        "n": int(ok.sum()),
+        "n_positive": tp + fn,
+        "n_negative": tn + fp,
+        "tp": tp,
+        "fp": fp,
+        "tn": tn,
+        "fn": fn,
+        "sensitivity": round(sens, 4),
+        "specificity": round(spec, 4),
+        "precision": round(prec, 4),
+        "f1": round(f1, 4),
+        "balanced_accuracy": round(float(bal), 4),
     }
 
 
@@ -112,13 +156,33 @@ def main() -> None:
     summary = {
         "radius": radius,
         "n_rules": len(rules),
+        "detector_settings": (
+            dict(GLIDER_SIGNATURE._asdict())
+            if hasattr(GLIDER_SIGNATURE, "_asdict")
+            else str(GLIDER_SIGNATURE)
+        ),
         "damage_signature_complex_count": int(sig_arr.sum()),
         "damage_signature_complex_fraction": round(float(sig_arr.mean()), 4),
+        # Concern 9: full confusion matrix of detector vs the damage signature,
+        # not just raw agreement (which rare positives make misleading).
+        "detector_vs_damage_signature_confusion": _confusion(sig_arr, det_arr),
         "rates_vs_damage_signature": _rates(sig_arr, det_arr),
+        "detector_failure_modes": {
+            "rule_54": "ether front advances at light speed; localized-seed detector "
+            "misses it (disclosed, not tuned away)"
+        },
         "flagged_rules": records[:60],
     }
     if radius == 1:
+        rule_arr = np.array([int(r) for r in rules])
+        truth = np.isin(rule_arr, list(ECA_CLASS_IV_TRUTH))
         summary["eca_damage_signature_set"] = sorted(int(r) for r, s in zip(rules, sig_flags) if s)
+        summary["eca_literature_class_iv_truth"] = sorted(ECA_CLASS_IV_TRUTH)
+        # Both observables scored against the literature ground truth.
+        summary["damage_signature_vs_literature_confusion"] = _confusion(
+            truth, sig_arr.astype(float)
+        )
+        summary["detector_vs_literature_confusion"] = _confusion(truth, det_arr)
 
     save_json(summary, out / f"summary_r{radius}.json")
     print(f"[r6] radius={radius}  {len(rules)} rules")
@@ -126,9 +190,18 @@ def main() -> None:
     if radius == 1:
         print(
             f"[r6] ECA damage-signature set: {summary['eca_damage_signature_set']} "
-            f"(literature class-IV anchors 54, 110)"
+            f"(literature class-IV truth {sorted(ECA_CLASS_IV_TRUTH)}, "
+            f"borderline {sorted(ECA_CLASS_IV_BORDERLINE)})"
         )
-    print(f"[r6] independent detector vs damage signature: {summary['rates_vs_damage_signature']}")
+        print(
+            "[r6] damage-signature vs literature: "
+            f"{summary['damage_signature_vs_literature_confusion']}"
+        )
+        print(f"[r6] detector vs literature:        {summary['detector_vs_literature_confusion']}")
+    print(
+        "[r6] detector vs damage signature confusion: "
+        f"{summary['detector_vs_damage_signature_confusion']}"
+    )
     print(f"[r6] wrote {out}/summary_r{radius}.json")
 
 

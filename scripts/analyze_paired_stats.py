@@ -80,10 +80,23 @@ def _classify(point: float, ci95: tuple[float, float], ci90: tuple[float, float]
 
 
 def _load_ceiling(cfg) -> dict | None:
+    """Per-target reliability benchmarks from the C2 reliability summary.
+
+    Returns, per feature, the ICC ceiling and the independent-replicate agreement
+    benchmark (the correct one for the mechanistic estimator). Tolerates both the
+    rev-7 (``ceiling_r2``) and rev-8 (``icc``/``agreement_r2``) summary schemas.
+    """
     path = Path(f"{cfg.train.output_dir}/reliability/summary.json")
-    if path.exists():
-        return json.loads(path.read_text()).get("per_feature")
-    return None
+    if not path.exists():
+        return None
+    per = json.loads(path.read_text()).get("per_feature", {})
+    out = {}
+    for n, v in per.items():
+        out[n] = {
+            "icc": v.get("icc", v.get("ceiling_r2")),
+            "agreement_r2": v.get("agreement_r2"),
+        }
+    return out
 
 
 def main() -> None:
@@ -116,7 +129,10 @@ def main() -> None:
         "pairs": {},
     }
     if ceiling is not None:
-        summary["ceiling_r2"] = {n: ceiling[n]["ceiling_r2"] for n in names}
+        summary["icc_ceiling"] = {n: ceiling[n]["icc"] for n in names if n in ceiling}
+        summary["replicate_agreement"] = {
+            n: ceiling[n]["agreement_r2"] for n in names if n in ceiling
+        }
 
     for a, b in PAIRS:
         if a not in r2_boot or b not in r2_boot:
