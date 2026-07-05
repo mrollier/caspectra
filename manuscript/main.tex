@@ -28,43 +28,52 @@ Ghent University, Ghent, Belgium}
 \date{\today}
 
 \begin{abstract}
-Damage-response statistics of a cellular automaton (CA)---whether, how far and
-how densely the difference between two runs that differ in one cell
-spreads---are defined through \emph{twin} simulations, so estimating them from a
-single observed space--time diagram is a natural amortization task for learned
-models. We report a benchmark, with decision rules committed in advance, over
-the $88$ elementary-CA orbits and $800$ uniformly sampled two-state radius-two
-rules (a $2^{32}$-rule space), under one explicit observation model:
-\emph{fully observed, noiseless, deterministic, synchronous, binary} diagrams of
-\emph{known neighbourhood radius}. Under these matched assumptions a single
-$127$-cell diagram identifies the entire local rule table for $100\%$
-(elementary) and $97.5\%$ (radius-two) of held-out rules, and the transparent
-system-identification estimator---reconstruct the rule, then re-run the
-perturbation experiment---predicts all four damage-response statistics at the
-accuracy of an \emph{independent Monte-Carlo replicate} of the target itself
-(e.g.\ damage survival $0.985$ vs.\ a replicate-agreement benchmark of $0.987$
-on the elementary space). We distinguish this simulation-limited benchmark
-($2\,\mathrm{ICC}-1$ under additive noise) from the latent-reliability ceiling
-(ICC) with which it is easily conflated, and verify against a $16\times$-larger
-reference simulation that the estimator also attains the latter. Two
-\emph{direct} single-diagram estimators---a regressor on five cheap statistics
-and a deliberately constrained convolutional amortiser---fall far short of the
-benchmark on the least texture-like target and show no stable ordering between
-themselves; a cross-fitted stacking test shows the network carries real
-information beyond the five statistics for damage survival (incremental \rtwo{}
-$+0.32$). An identifiability phase diagram then maps where reading the rule
-stops working: under observation noise above ${\sim}2\%$, heavy masking, or
-extreme initial-condition densities, exact reconstruction collapses and the
-frozen network degrades more gracefully---the regime in which direct
-amortization has a rationale. Two descriptive by-products (an interpretable
-phenotype map for non-uniform CA and a damage-signature landscape of the
-radius-two space) are validated against independent ground truth with
-conservative language. The general lesson for machine-learning benchmarks on
-deterministic dynamical systems is structural: when the observation encodes the
-generator, system identification is the baseline to beat.
+Damage-response statistics of a cellular automaton (CA)---whether and how far
+the difference between two runs differing in one cell spreads---are defined
+through \emph{twin} simulations, so estimating them from one observed
+diagram is a natural task for learned amortized models. We
+benchmark that task, with decision rules committed in advance, over the $88$
+elementary-CA orbits and $800$ sampled radius-two rules, for fully observed,
+noiseless, deterministic, synchronous,
+binary diagrams of known radius. Under these matched assumptions a single
+$127$-cell diagram identifies the entire rule table for $100\%$ (elementary)
+and $97.5\%$ (radius-two) of held-out rules, and reconstructing the rule and
+re-running the perturbation experiment predicts all four statistics at the
+accuracy of an independent Monte-Carlo replicate of the target itself. We
+distinguish this
+simulation-limited benchmark ($2\,\mathrm{ICC}-1$) from the latent-reliability
+ceiling (ICC) with which it is easily conflated. Two direct learned estimators
+fall far short of the benchmark on damage survival, the target least visible
+in texture, though the network carries survival information the five cheap
+statistics miss (incremental \rtwo{} $+0.32$). An identifiability frontier
+then maps where rule reading fails and what replaces it: a Bayesian rule
+posterior restores accuracy to $50\%$ masking, extreme initial densities, and
+${\sim}3\%$ noise; beyond ${\sim}5\%$ noise every estimator collapses except a
+degradation-trained learned rule-reader. The degraded regime thus belongs to
+probabilistic and learned system identification, not direct amortization.
+When the observation encodes the generator, system identification in some
+form is the baseline to beat.
 \end{abstract}
 
 \maketitle
+
+\begin{quotation}
+Machine learning is increasingly used to read dynamical properties---chaos,
+stability, sensitivity to perturbation---directly off a single picture of a
+system's evolution, skipping the perturbation experiments that define those
+properties. Cellular automata are the cleanest laboratory for asking what
+such shortcuts are really measuring, because the picture often contains
+enough information to rebuild the generating rule itself. We make that
+alternative explicit: rebuild the rule from one diagram, re-run the
+perturbation experiment, and compare. Under a matched observation model this
+transparent route is statistically indistinguishable from re-measuring the
+ground truth, while two learned models fall well short of it; degrading the
+observation then reveals an orderly frontier where exact reconstruction
+fails and probabilistic or learned variants of the same idea take over. The
+result is a calibrated, pre-registered template for fair baselines in
+data-driven analysis of dynamical systems---and a map of when each strategy
+is the right one.
+\end{quotation}
 
 \section{Introduction}
 \label{sec:intro}
@@ -625,8 +634,9 @@ detector available at radius two is itself unreliable there.}
 \label{sec:discussion}
 
 Under a fully observed, noiseless, deterministic, synchronous, binary
-observation model with known radius, a single space--time diagram identifies
-the local rule almost surely, and reconstructing the generator then re-running
+observation model with known radius, a single space--time diagram identified
+the local rule exactly for every elementary and $97.5\%$ of radius-two
+held-out rules, and reconstructing the generator then re-running
 the stipulated experiment predicts finite-horizon damage response at the
 accuracy of re-measuring it. That is the central, positive, and--- we
 believe---generalizable finding: \emph{a nominally single-observation
@@ -645,10 +655,12 @@ is least informative, and survives cross-fitting. We do not conclude that deep
 networks cannot close the gap. The probes show rule information is accessible
 to the network; whether exploiting it is an architecture, objective, or
 optimization question is open. A first learned system identifier---the
-$3\times10^4$-parameter rule reader of Sec.~\ref{sec:identifiability}---sharpens that
-question: in the degraded regimes where exact inversion is unavailable it is
-the only estimator that retains signal, but it plateaus at $0.73$ per-bit
-accuracy and \rtwo{}${\approx}0$. Whether a larger reader, a differentiable
+$3\times10^4$-parameter rule reader of Sec.~\ref{sec:frontier}---sharpens that
+question: beyond ${\sim}5\%$ observation noise, where exact and posterior
+inversion collapse alike, it is the only estimator of any family that retains
+signal, but it plateaus at $0.73$ per-bit accuracy and \rtwo{}${\approx}0$
+(under masking and extreme densities it is the Bayesian posterior, not the
+reader, that extends the mechanistic route). Whether a larger reader, a differentiable
 simulator in the loop, or joint reader--simulator training closes the gap to
 simulation-limited accuracy is now a concrete, measurable open problem, next
 to rule-scrubbing and rule-provision interventions to test causality.
