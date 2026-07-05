@@ -5,6 +5,76 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 10 (2026-07-05) — changelog
+
+Added **before any round-3 fairness-control measurement**, numbers-free. The
+internal ARS panel review (`manuscript/reviews/simulated/`, editorial items
+R-6 and R-5; independently DA M1/M6 and R3 Q1, echoing the real referee's
+concern 7) identified an adaptation-budget asymmetry on the identifiability
+frontier: the read-then-simulate family fields two estimators purpose-built
+for degradation (Bayesian posterior; degradation-trained reader) while the
+direct family is represented only by a clean-trained, architecturally
+constrained CNN. Rev 10 registers the two symmetric controls and two
+outstanding reporting items. No change to criteria 1–9 or any rev-2…9
+threshold or verdict rule; single seed per control (disclosed limitation,
+matching the reader's gating); 63 px smoke precedes each full training.
+
+1. **C-i — degradation-augmented direct CNN (gated training).** The canonical
+   direct-CNN configuration (`configs/m4_range2.yaml` architecture, epochs,
+   batch size, optimizer, split, seed 0) retrained with the *reader's*
+   registered input-degradation augmentation applied to training diagrams —
+   the same families and ranges fixed for rev-9 F2 (bit-flip probability
+   ~ U(0, 0.15) and masking fraction ~ U(0, 0.5), each applied independently
+   with probability 1/2), targets unchanged. This gives the direct family
+   exactly the adaptation the reader received, nothing more.
+2. **C-ii — same-budget unconstrained CNN (gated training).** The expressive
+   `resnet18` encoder (the architecture the anti-shortcut constraint was
+   designed against), identical data, split, targets, epochs, batch size,
+   optimizer and seed as C-i's parent config, clean-trained (no degradation
+   augmentation); wall-clock and parameter count disclosed next to the
+   constrained CNN's. This tests whether the matched-regime negative result
+   is an artifact of the author-imposed first-layer constraint whose
+   motivating claim rev-8 retired.
+3. **Evaluation and verdict rules (fixed here, before measurement):**
+   - *Matched regime:* both controls are scored on the clean-protocol
+     held-out panel exactly as Table III (160 rules, production targets,
+     rule-bootstrap CIs). The rev-7/8 verdict machinery is reapplied
+     unchanged: a control "changes the matched-regime verdict" only if it
+     meets the registered simulation-limited test that the current direct
+     estimators fail (per-target R² CI reaching the replicate-agreement
+     benchmark band). Superiority/equivalence margins unchanged (0.10 / TOST
+     δ=0.05).
+   - *Frontier:* both controls are evaluated on the existing rev-9 grid
+     cells (noise, mask, density axes; same 80-rule panel, same n_pairs=48
+     protocol, CNN-family estimators only — the read-family cells are not
+     re-simulated). Rev-9 hypothesis (iii) is re-tested with the controls
+     added to the direct-amortizer family under its unchanged rule (a
+     violation = control's point estimate above the best read-family
+     estimator's bootstrap CI_high at a cell with per-bit table recovery
+     ≥ 0.95). C-i "extends into the dead zone" at a noise cell only where
+     its rule-bootstrap CI excludes the F2-sampled point value from below —
+     the same rule shape rev 9 used for F2-vs-F1.
+   - *Reporting:* all outcomes are reported regardless of direction. If
+     either control overturns the degraded-regime guidance or the
+     matched-regime scoping, the manuscript text is rewritten to the
+     measured result, not argued around; if the controls confirm the
+     guidance, the scoped-claim language ("adaptation-naive amortization")
+     is retained with the controls cited as evidence.
+4. **Outstanding reporting items completed under existing registrations:**
+   - *F1 predictive-interval calibration* (registered in rev 9, not yet
+     reported): empirical coverage of the posterior's nominal 1σ predictive
+     intervals per grid cell on the noise and mask axes, ε-estimated
+     variant, same panel and budgets as the rev-9 grid. Reporting only; no
+     pass/fail gate. Nominal coverage for a 1σ interval is ~68%; the
+     comparison is stated per cell.
+   - *Stacking under the headline base* (post-hoc confirmatory): the rev-7
+     stacking protocol rerun with cross-fitted out-of-fold predictions of
+     the boosted baseline (Table III's baseline of record) as the base
+     regressor, CNN augmentation as before; increment + rule-bootstrap CI
+     reported at the registered 0.02 margin. This answers "what is the
+     increment under the headline protocol" (DA M2) without replacing the
+     registered rev-7 result.
+
 ## Revision 9 (2026-07-05) — changelog
 
 Added **before any identifiability-frontier measurement**, numbers-free. The
