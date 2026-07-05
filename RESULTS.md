@@ -51,12 +51,12 @@ Grid, noise axis (median held-out R²; F2-sampled = averaging simulations of
 
 | noise | best F1 | F2-MAP | F2-sampled [CI95] | frozen CNN | det |
 |---|---|---|---|---|---|
-| 3% | **0.38** | −3.62 | 0.09 [−0.45, 0.36] | 0.36 | 0.09 |
-| 5% | −0.84 | −3.46 | −0.02 [−0.57, 0.28] | **0.13** (stack 0.14) | −1.07 |
-| 7.5% | −1.46 | −3.75 | **0.02** [−0.50, 0.27] | −0.09 | −1.60 |
-| 10% | −2.11 | −3.86 | **0.17** [−0.35, 0.37] | −0.34 | −2.02 |
-| 15% | −3.42 | −3.60 | **−0.04** [−0.46, 0.15] | −0.73 | −3.42 |
-| 20% | −5.33 | −2.59 | **0.12** [−0.22, 0.27] | −1.09 | −5.61 |
+| 3% | **0.38** | −3.62 | 0.09 [−0.45, 0.36] | 0.25 | 0.09 |
+| 5% | −0.84 | −3.46 | −0.02 [−0.57, 0.28] | **0.15** (stack 0.10) | −1.07 |
+| 7.5% | −1.46 | −3.75 | **0.02** [−0.50, 0.27] | −0.13 | −1.60 |
+| 10% | −2.11 | −3.86 | **0.17** [−0.35, 0.37] | −0.25 | −2.02 |
+| 15% | −3.42 | −3.60 | **−0.04** [−0.46, 0.15] | −0.57 | −3.42 |
+| 20% | −5.33 | −2.59 | **0.12** [−0.22, 0.27] | −0.93 | −5.61 |
 
 - **F2-MAP fails everywhere** (median R² −2.2 … −24.9 across all axes; exact
   0.000): thresholding 0.73-accurate bit probabilities into a single table
@@ -65,7 +65,7 @@ Grid, noise axis (median held-out R²; F2-sampled = averaging simulations of
 - **F2-sampled is the only estimator that does not collapse in the dead
   zone**: it beats F1 at every noise cell ≥5% (Δ vs best-F1 +0.8 to +5.5),
   is the best of *all* estimators from 7.5% on (at 5% the direct family is
-  still marginally positive: stack 0.14, CNN 0.13), and satisfies the
+  still marginally positive: CNN 0.15, stack 0.10), and satisfies the
   registered beats-the-inverter rule at every cell ≥5% (bootstrap CI_low >
   det point value). But its absolute level (median ≤0.17, CI spanning 0)
   is nowhere near simulation-limited — it holds the line at ~zero, flat in
@@ -98,6 +98,18 @@ checkpoint. Audit: the F1-only grid summary is preserved as
 every shared estimator column bit-exactly (checked programmatically), incl.
 cnn/stack. Figure: `runs/m4_range2/frontier_grid/frontier.pdf` =
 `manuscript/figures/identifiability_v2.pdf`.
+
+**Correction (2026-07-05, round-3 revision).** The F2 noise table above and
+its 5%-cell bullet were first written from the discarded run's cnn/stack
+cells (cnn 0.36 / 0.13 / −0.09 / −0.34 / −0.73 / −1.09; stack 0.14 at 5%) —
+the in-session reproduction audit covered the shared F1 columns but not these
+six cells, and the manuscript inherited "−1.1" from here. Found by the
+internal ARS review (`manuscript/reviews/simulated/r1_methodology.md` W1);
+re-derived from the canonical `summary.json` (cnn 0.25 / 0.15 / −0.13 /
+−0.25 / −0.57 / −0.93; stack 0.10 at 5%). Conclusion-preserving: no bolded
+best-of-row cell and no registered verdict changes.
+`scripts/audit_manuscript_numbers.py` now re-derives every §IV.E prose
+number and these table cells from the artifact and fails on mismatch.
 
 ---
 

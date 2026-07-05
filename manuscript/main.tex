@@ -355,7 +355,7 @@ carrying a weak, testable prior---not as assumption-free.
 The paired comparisons [registered, rev.~7--8] give the network and the
 five-statistic baseline no global ranking. On radius two ($160$ held-out rules,
 adequately powered) the CNN is ahead on damage survival ($\Delta R^2=+0.08$,
-$95\%$ CI $[+0.00,+0.20]$ excluding $0$ but below the $0.10$ superiority
+$95\%$ CI $[+0.002,+0.201]$ excluding $0$ but below the $0.10$ superiority
 margin), the baseline is \emph{superior} on cone fill ($\Delta R^2=-0.21$, CI
 $[-0.38,-0.07]$), and fraction and rate are \emph{inconclusive} at
 $\delta=0.05$ (equivalent only at the loose $\delta=0.10$; fraction's CI
@@ -397,13 +397,14 @@ target & CNN over 5 stats & 5 stats over CNN & mechanistic over 5 stats \\
 damage survival & $+0.32$ [0.23, 0.48] (0.56 $\to$ 0.88) & $-0.01$ [$-0.03$, $-0.00$] & $+0.42$ [0.33, 0.71] (0.56 $\to$ 0.97) \\
 damage fraction & $+0.03$ [0.01, 0.06] (0.85 $\to$ 0.89) & $+0.01$ n.s. & $+0.14$ [0.11, 0.18] (0.85 $\to$ 0.99) \\
 spreading rate & $+0.03$ [0.01, 0.06] (0.84 $\to$ 0.87) & $+0.01$ n.s. & $+0.16$ [0.12, 0.20] (0.84 $\to$ 0.99) \\
-cone fill & $+0.08$ n.s. & $+0.08$ n.s. & $+0.84$ [0.66, 1.00] (0.14 $\to$ 0.98) \\
+cone fill & $+0.08$ n.s. & $+0.08$ n.s. & $+0.84$ [0.66, 1.01] (0.14 $\to$ 0.98) \\
 \end{tabular}
 \end{ruledtabular}
 \caption{Cross-fitted incremental \rtwo{} with rule-bootstrap $95\%$ CIs
 (radius-two held-out rules), and the full stacked-model \rtwo{} in parentheses
 (base $\to$ stacked). ``n.s.'': CI includes $0$ or increment below the
-registered $0.02$ margin.}
+registered $0.02$ margin. Percentile intervals of an increment may exceed
+$1$ when a bootstrap draw's base \rtwo{} is negative.}
 \label{tab:stacking}
 \end{table*}
 
@@ -436,7 +437,10 @@ rule-provision interventions that would test it are future work
 
 The mechanistic route is only as good as its observation model, so we mapped
 its failure surface [exploratory, rev.~8]. Figure~\ref{fig:ident} sweeps, on
-the radius-two held-out rules, four observation axes; per setting it reports
+a fixed-seed $80$-rule subsample of the $160$ radius-two held-out rules (a
+compute constraint; the same panel is used throughout
+Secs.~\ref{sec:identifiability}--\ref{sec:frontier}), four observation axes;
+per setting it reports
 table coverage, exact-reconstruction rate, and the median held-out \rtwo{} of
 the mechanistic estimator, the five statistics, and the \emph{frozen} CNN (no
 retraining; axes that change the input geometry omit the CNN, as noted).
@@ -491,7 +495,10 @@ and the label axis are exploratory.}
 \label{fig:frontier}
 \end{figure*}
 
-\emph{Estimators for the degraded regime.} The natural repairs are a
+\subsection{Estimators for the degraded regime: the frontier race}
+\label{sec:frontier}
+
+The natural repairs are a
 rule-\emph{posterior} simulator in the intermediate regime and a learned
 rule-reader beyond it, and we benchmark both [registered numbers-free as
 rev.~9 before measurement; the Bayesian estimator is post-hoc confirmatory on
@@ -523,7 +530,7 @@ the only estimator that does not collapse in the dead zone
 (Fig.~\ref{fig:frontier}): from $7.5$ to $20\%$ noise it is the best of all
 eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
 accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
-and the frozen CNN to $-1.1$; from $5\%$ it beats the inverter by the
+and the frozen CNN to $-0.93$; from $5\%$ it beats the inverter by the
 registered rule at every cell. The registered hypothesis that the reader
 extends beyond the posterior is thus confirmed on the noise axis only in a
 weak sense---it moves the frontier without restoring identification---and is
@@ -581,7 +588,7 @@ resolution.
 statistics over $3000$ uniformly sampled canonical rules give
 Fig.~\ref{fig:landscape}: $7.8\%$ (Wilson $95\%$ CI $[6.9,8.8]\%$) of rules
 satisfy the registered damage-signature criterion (persistent, sub-ballistic,
-sparse-cone damage), versus $2/88$ elementary orbits. We emphasize what this
+sparse-cone damage), versus $3/88$ elementary orbits. We emphasize what this
 is: the prevalence of a \emph{finite-horizon damage-signature criterion} under
 the stated sampling distribution---not a validated glider census. On ECA,
 where literature ground truth exists, the signature earns considerable trust:
@@ -606,7 +613,7 @@ sample). Red: rules satisfying the registered damage-signature
 criterion---persistent, sub-ballistic damage in a sparse cone; they form a band
 between the ordered arm and the chaotic bulk, and the embedded class-IV ECAs
 $54$ and $110$ (stars) land in it. The criterion is met by $7.8\%$ (Wilson
-$95\%$ CI $[6.9,8.8]\%$) of the sample versus $2/88$ elementary orbits. The red
+$95\%$ CI $[6.9,8.8]\%$) of the sample versus $3/88$ elementary orbits. The red
 band is \emph{not} an independently validated glider region
 (Sec.~\ref{sec:constructive}): on ECA the signature matches the literature
 class-IV set exactly up to the borderline rule $106$, but the independent
