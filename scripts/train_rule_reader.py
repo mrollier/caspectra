@@ -107,7 +107,7 @@ def main() -> None:
     Y = torch.from_numpy(bits)
     # Validation on held-in rules' held-out diagrams is unnecessary; the F3 grid
     # is the real test. A small train-split tail monitors optimisation only.
-    n_val = max(64, len(X) // 20)
+    n_val = min(512, max(64, len(X) // 20))
     perm = torch.randperm(len(X), generator=torch.Generator().manual_seed(args.seed))
     X, Y = X[perm], Y[perm]
     Xv, Yv, X, Y = X[:n_val], Y[:n_val], X[n_val:], Y[n_val:]
@@ -142,8 +142,12 @@ def main() -> None:
             n_batches += 1
         model.eval()
         with torch.no_grad():
-            val_logits = model(Xv.to(device))
-            val_bits = (torch.sigmoid(val_logits) >= 0.5).float().cpu()
+            # Chunked: a single full-set forward allocates O(n_val * C * H * W)
+            # activations (~15 GiB at 2k diagrams), which MPS cannot buffer.
+            chunks = []
+            for s in range(0, len(Xv), args.batch_size):
+                chunks.append(model(Xv[s : s + args.batch_size].to(device)).cpu())
+            val_bits = (torch.sigmoid(torch.cat(chunks)) >= 0.5).float()
             bit_acc = float((val_bits == Yv).float().mean())
             exact = float((val_bits == Yv).all(dim=1).float().mean())
         dt = time.perf_counter() - t0
