@@ -424,7 +424,14 @@ on any target in either space favours a direct method over it.
 
 The cross-fitted stacking test [registered, rev.~7] asks the sharper question:
 does one method's prediction explain held-out residual variance beyond
-another's? The answer is target-specific (Table~\ref{tab:stacking}). Adding the
+another's? The answer is target-specific (Table~\ref{tab:stacking}). The base
+model here is \emph{not} the boosted baseline of record: for incremental
+\rtwo{} to be well defined the stack must be cross-fitted, so the base is a
+repeated-$K$-fold out-of-fold ridge on the five statistics, refit within the
+held-out panel---weaker by construction than Table~\ref{tab:r2}'s boosted
+column (survival $0.56$ versus $0.81$, cone fill $0.14$ versus $0.60$), and
+every increment in Table~\ref{tab:stacking} is an increment over that
+cross-fitted base. Adding the
 CNN's predictions to the five statistics yields a large, significant increment
 on damage survival ($+0.32$, CI $[+0.23,+0.48]$)---raising the stacked model
 from $0.56$ to $0.88$---with small significant increments on fraction and rate
@@ -498,7 +505,9 @@ retraining; axes that change the input geometry omit the CNN, as noted).
 \centering
 \includegraphics[width=\columnwidth]{figures/identifiability.pdf}
 \caption{Identifiability of the local rule at radius two ($80$ held-out rules;
-median held-out \rtwo{}). (a) Observed rows: a $127$-wide diagram identifies
+median held-out \rtwo{}; sweep simulations at $n_{\mathrm{pairs}}=64$ per
+cell versus $256$ for the production targets, so the sweep is slightly
+noisier than Table~\ref{tab:r2}). (a) Observed rows: a $127$-wide diagram identifies
 the table from as few as $4$ rows (the CNN, trained at fixed geometry, is not
 comparable on this axis and is omitted). (b) Bit-flip observation noise: exact
 reconstruction (dotted) collapses immediately and the mechanistic estimate
@@ -538,7 +547,10 @@ Bayesian posterior extends the deterministic inverter's tolerance from
 ${\sim}25\%$ to $50\%$ of cells hidden. At extreme initial-condition density
 (bottom left) the posterior rescues under-exercised tables. Under label-polarity
 flips (bottom right) the read-then-simulate family is exactly invariant while
-the direct CNN and the stack degrade. Registered numbers-free as rev.~9: the
+the direct CNN and the stack degrade. Grid simulations at
+$n_{\mathrm{pairs}}=48$ with $8$ posterior-table samples per diagram (versus
+$256$ pairs for the production targets); the rule-reader is a single training
+seed. Registered numbers-free as rev.~9: the
 posterior on the noise/mask/density axes is post-hoc confirmatory; the reader
 and the label axis are exploratory.}
 \label{fig:frontier}
@@ -571,7 +583,9 @@ We also quantified the known-radius assumption: selecting the radius by a
 smallest-consistent rule costs ${\sim}0.12$ median \rtwo{} on clean diagrams
 and degrades under noise (neighbourhood detection is itself a studied
 identification subproblem~\cite{yangbillings2000}). \emph{(ii) Learned rule-reader:} a small
-($3\times10^4$-parameter) network trained on training-split rules to predict
+($3\times10^4$-parameter) network---trained once, on one seed, per the
+registered gating; seed variance at this capacity is untested---on
+training-split rules to predict
 table bits from degradation-augmented diagrams, feeding the exact simulator
 either its thresholded (MAP) table or an average over tables sampled from its
 per-bit probabilities. On held-out rules the reader recovers $0.73$ of table
@@ -785,11 +799,30 @@ the word ``pre-registered'': \emph{registered} (rule committed numbers-free
 before measurement): the damage-signature criterion, holdout split, paired
 inference and TOST margins, stacking margin, reliability design, mechanistic
 estimator and completion policy, probe design, detector-validation design,
-map ground-truth design; \emph{post-hoc confirmatory} (analysis added at
-revision, on data or rules not used to tune it): the replicate-agreement
-correction, the large-simulation reference, confusion-matrix reporting, TOST
-margin sensitivity; \emph{exploratory}: the identifiability phase diagram and
-the accuracy--compute curve. One deviation from the original registration is
+map ground-truth design, and---for the frontier of
+Sec.~\ref{sec:frontier}---the grid design, estimator definitions, verdict
+rules, and the three hypotheses below (rev.~9); \emph{post-hoc confirmatory}
+(analysis added at revision, on data or rules not used to tune it): the
+replicate-agreement correction, the large-simulation reference,
+confusion-matrix reporting, TOST margin sensitivity, and the Bayesian
+rule-posterior evaluated on the pre-existing noise/mask/density axes;
+\emph{exploratory}: the identifiability phase diagram, the accuracy--compute
+curve, the learned rule-reader, and the label-noise and unknown-radius axes.
+
+The three frontier hypotheses were registered verbatim before measurement,
+with the verdicts reported as earned: \emph{(i)} the Bayesian posterior
+dominates the deterministic inverter in the intermediate-noise regime and
+degrades gracefully---\emph{confirmed}; \emph{(ii)} the learned reader
+extends further into the degraded regime than the posterior---\emph{split}:
+confirmed on the noise axis only in the weak frontier-moving sense, refuted
+under masking; \emph{(iii)} at no grid cell with high per-bit table recovery
+does a direct amortizer beat the best read-then-simulate
+estimator---\emph{confirmed, zero violations}. One registered reporting item
+was outstanding at the previous round and is completed in this revision: the
+calibration of the posterior's nominal $1\sigma$ predictive intervals
+(Sec.~\ref{sec:frontier}).
+
+One deviation from the original registration is
 disclosed: an early implementation seeded target streams by panel position
 rather than rule identity (cross-panel drift up to $0.05$--$0.08$ on
 borderline-survival rules); it was replaced by identity keying and the drift
