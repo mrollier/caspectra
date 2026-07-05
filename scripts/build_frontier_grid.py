@@ -107,6 +107,14 @@ def parse_args() -> argparse.Namespace:
         "matches the canonical run, so the recomputed medians double as a bit-exact "
         "reproduction check of the released grid.",
     )
+    p.add_argument(
+        "--rule-subsample",
+        choices=("seed0", "complement"),
+        default="seed0",
+        help="Rev-11 M7: 'seed0' is the canonical fixed-seed frontier subsample; "
+        "'complement' evaluates the held-out rules that subsample excluded (an "
+        "independent rule panel at identical budgets, for replication).",
+    )
     return p.parse_args()
 
 
@@ -120,6 +128,8 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
         default_out = f"{cfg.train.output_dir}/frontier_grid_calibration"
     else:
         default_out = f"{cfg.train.output_dir}/frontier_grid"
+    if args.rule_subsample == "complement":
+        default_out += "_complement"  # never clobber a canonical-panel artifact
     out = ensure_dir(args.output_dir or default_out)
     lean_mode = args.direct_only or args.calibrate_f1
     set_seed(cfg.seed)
@@ -148,7 +158,13 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     train_rules = [r for r in rules if r not in set(held)]
     if args.max_rules and len(held) > args.max_rules:
         # Same subsample rule as the rev-8 identifiability run (fixed seed 0).
-        held = sorted(np.random.default_rng(0).choice(held, args.max_rules, replace=False).tolist())
+        sub = sorted(np.random.default_rng(0).choice(held, args.max_rules, replace=False).tolist())
+        if args.rule_subsample == "complement":
+            # Rev-11 M7: the excluded rules form an independent replication panel
+            # (per-rule RNG streams are identity-keyed, so budgets match exactly).
+            held = sorted(set(held) - set(sub))[: args.max_rules]
+        else:
+            held = sub
     held_diag = {r: images[np.flatnonzero(reps == r)[0]] for r in held}
     true_held = np.stack([true_by_rule[r] for r in held])
     true_tables = {r: np.array([(r >> k) & 1 for k in range(1 << (2 * radius + 1))]) for r in held}
@@ -489,6 +505,7 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
         "radius": radius,
         "width": width,
         "n_held": len(held),
+        "rule_subsample": args.rule_subsample,
         "n_pairs": args.n_pairs,
         "n_samples": args.n_samples,
         "reader_checkpoint": args.reader_checkpoint,
