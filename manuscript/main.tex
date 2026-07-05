@@ -1,6 +1,6 @@
 % Manuscript for Chaos: An Interdisciplinary Journal of Nonlinear Science
 % (AIP), REVTeX 4.2 with the AIP `cha` journal option.
-\documentclass[aip,cha,amsmath,amssymb,reprint]{revtex4-2}
+\documentclass[aip,cha,amsmath,amssymb,reprint,floatfix]{revtex4-2}
 
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -612,20 +612,20 @@ read-then-simulate estimator. These curves are the paper's scope statement
 in graphical form; Table~\ref{tab:guidance} states it as practitioner
 guidance.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \begin{ruledtabular}
-\begin{tabular}{lll}
-observation regime & use & median \rtwo{} evidence \\
+\begin{tabular}{llll}
+observation regime & use & median \rtwo{} evidence & \\
 \colrule
-matched (clean, full, known $r$) & exact inversion & simulation-limited \\
-noise $\lesssim3\%$ & Bayes posterior & $0.55$ vs det $0.38$ ($2\%$) \\
-noise $5$--$20\%$ & sampled reader & only one $>-0.05$; $\le0.17$ \\
-masking $\lesssim25\%$ & exact inversion & $0.89$ at $25\%$ \\
-masking $25$--$50\%$ & Bayes posterior & $0.85$ ($40\%$), $0.59$ ($50\%$) \\
-extreme IC density & Bayes posterior & $0.77$ vs det $0.08$ ($0.1$) \\
-polarity freedom & read family & exactly invariant ($0.99$) \\
-unknown radius & consistency selection & ${\sim}0.12$ cost, clean \\
+matched (clean, full, known $r$) & exact inversion & simulation-limited & Tables~\ref{tab:eca}--\ref{tab:r2} \\
+noise $\lesssim3\%$ & Bayesian posterior & $0.55$ vs det $0.38$ at $2\%$ & Fig.~\ref{fig:frontier} \\
+noise $5$--$20\%$ & sampled learned reader & only estimator above $-0.05$; never above $0.17$ & Fig.~\ref{fig:frontier} \\
+masking $\lesssim25\%$ & exact inversion & $0.89$ at $25\%$ & Fig.~\ref{fig:frontier} \\
+masking $25$--$50\%$ & Bayesian posterior & $0.85$ at $40\%$, $0.59$ at $50\%$ & Fig.~\ref{fig:frontier} \\
+extreme IC density & Bayesian posterior & $0.77$ vs det $0.08$ at density $0.1$ & Fig.~\ref{fig:frontier} \\
+polarity freedom & any read-then-simulate & exactly invariant ($0.99$) & Fig.~\ref{fig:frontier} \\
+unknown radius & smallest-consistent selection & ${\sim}0.12$ cost on clean diagrams & Sec.~\ref{sec:frontier} \\
 \end{tabular}
 \end{ruledtabular}
 \caption{Practitioner guidance across the identifiability frontier (radius
@@ -633,7 +633,7 @@ two, $80$-rule panel; every cell from the registered rev.-9 grid of
 Fig.~\ref{fig:frontier}). Beyond $50\%$ masking and beyond $20\%$ noise no
 current estimator is reliable.}
 \label{tab:guidance}
-\end{table}
+\end{table*}
 
 \subsection{Cost: accuracy versus compute}
 \label{sec:compute}
@@ -663,8 +663,8 @@ the network's case must rest on degraded-observation regimes
 \emph{Phenotype maps for non-uniform CA.} Because the statistics are locally
 predictable, sliding the pretrained five-statistic regressor over a composed
 (two-rule) diagram yields an interpretable phenotype map with no additional
-training at deployment (the regressor itself is trained once; we do not call
-this training-free). Spatially resolved phenotype fields for CA are an
+training at deployment (the regressor is trained once; not
+``training-free''). Spatially resolved phenotype fields for CA are an
 established instrument---the local statistical-complexity filters of
 computational mechanics~\cite{shalizi2006}; ours differs in predicting a
 perturbation-defined quantity rather than structural complexity. Scored against an independent location-resolved ground
