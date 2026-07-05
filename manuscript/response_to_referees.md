@@ -253,3 +253,35 @@ spatial-map verdict with full protocol disclosure; C8 the accuracy–compute
 Pareto analysis. The manuscript was rewritten around rule identifiability and
 simulation-limited prediction, with every neural claim scoped to the tested
 architecture and every analysis labelled by its registration status.
+
+## Addendum held for round 3 (rev-9 identifiability frontier; not part of the round-2 response)
+
+Prepared on branch `rev9-frontier` after the round-2 revision was frozen, in
+anticipation of a further exchange; pre-registered numbers-free as
+EVALUATION_CRITERIA.md rev 9 before measurement.
+
+The referee three times asked what a *learned* rule-reader would do where
+exact inversion fails. We benchmarked it, together with a Bayesian
+rule-posterior simulator, across the degradation grid of Fig. 2 plus two new
+axes (label-polarity flips, unknown radius), all eight estimators on the same
+80 held-out radius-2 rules:
+
+- **Bayesian rule-posterior (no training)**: restores identification across
+  the intermediate band — masking tolerance extended from ~25% to 50% of
+  cells, IC-density extremes rescued, exact polarity invariance — and is best
+  of all methods up to ~3% bit-flip noise. Self-estimated noise rate matches
+  the supplied-rate variant throughout.
+- **Learned rule-reader (30k parameters, trained on training-split rules
+  with registered degradation augmentation)**: its MAP table fails everywhere
+  (per-bit accuracy 0.73 never yields an exact table, and one mostly-right
+  table is a badly wrong dynamical system); *sampling* its per-bit posterior
+  is the only estimator that does not collapse beyond 5% noise (median R²
+  ≈ 0 out to 20%, all others −1 to −5.6). It moves the frontier without
+  restoring identification; under masking it adds nothing.
+- Registered hypothesis verdicts reported as registered, including the
+  refuted half of (ii); nowhere with high table recovery does any direct
+  amortizer beat read-then-simulate (hypothesis (iii), 0 violations).
+
+New Fig. 3 (estimator race), new results text in Sec. IV E, updated
+Discussion. RESULTS.md 2026-07-05 records every number with CIs and a
+provenance note on a discarded wrong-checkpoint run (fully re-measured).
