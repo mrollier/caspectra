@@ -5,7 +5,7 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
-## 2026-07-05 — Identifiability frontier (rev 9; F1–F3, in progress)
+## 2026-07-05 — Identifiability frontier (rev 9; F1–F3)
 
 Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 9
 (commit 8f5cb56) **before** any number below. Question: where exact rule
@@ -38,10 +38,66 @@ intermediate band (noise ≲3%, mask ≲50%, density extremes); above ~5% noise
 no read-then-simulate estimator survives and the frozen CNN is merely least
 bad (negative R²) — the open slot F2 addresses.
 
-### F2 — learned rule-reader→simulator
-Training approved (user, 2026-07-05; range-2, 1 seed, 15 epochs, ~30k params,
-train-split rules only, registered degradation augmentation). *Grid results
-pending — appended below when measured.*
+### F2 — learned rule-reader→simulator (exploratory)
+Training approved (user, 2026-07-05; range-2, 1 seed, 15 epochs, 29,664
+params, train-split rules only, registered degradation augmentation;
+`runs/m4_range2/rule_reader_seed0.pt`). Training: BCE 0.664→0.527, monitor
+bit-acc 0.759 (train-split tail). On the 80-rule held-out panel (clean
+diagrams): **per-bit accuracy 0.734, exact-table rate 0.000** — at this
+capacity the reader never reconstructs a full 32-bit table.
+
+Grid, noise axis (median held-out R²; F2-sampled = averaging simulations of
+8 tables drawn from the predicted per-bit probabilities):
+
+| noise | best F1 | F2-MAP | F2-sampled [CI95] | frozen CNN | det |
+|---|---|---|---|---|---|
+| 3% | **0.38** | −3.62 | 0.09 [−0.45, 0.36] | 0.36 | 0.09 |
+| 5% | −0.84 | −3.46 | −0.02 [−0.57, 0.28] | **0.13** (stack 0.14) | −1.07 |
+| 7.5% | −1.46 | −3.75 | **0.02** [−0.50, 0.27] | −0.09 | −1.60 |
+| 10% | −2.11 | −3.86 | **0.17** [−0.35, 0.37] | −0.34 | −2.02 |
+| 15% | −3.42 | −3.60 | **−0.04** [−0.46, 0.15] | −0.73 | −3.42 |
+| 20% | −5.33 | −2.59 | **0.12** [−0.22, 0.27] | −1.09 | −5.61 |
+
+- **F2-MAP fails everywhere** (median R² −2.2 … −24.9 across all axes; exact
+  0.000): thresholding 0.73-accurate bit probabilities into a single table
+  concentrates the errors. All the salvageable signal is in the *sampled*
+  variant — posterior averaging over the reader's uncertainty.
+- **F2-sampled is the only estimator that does not collapse in the dead
+  zone**: it beats F1 at every noise cell ≥5% (Δ vs best-F1 +0.8 to +5.5),
+  is the best of *all* estimators from 7.5% on (at 5% the direct family is
+  still marginally positive: stack 0.14, CNN 0.13), and satisfies the
+  registered beats-the-inverter rule at every cell ≥5% (bootstrap CI_low >
+  det point value). But its absolute level (median ≤0.17, CI spanning 0)
+  is nowhere near simulation-limited — it holds the line at ~zero, flat in
+  noise (bit-acc 0.73→0.70 from 0→20%: the augmentation made it corruption-
+  robust at a low ceiling).
+- **On masking F2 adds nothing**: F1 holds to 50% (0.59); F2-sampled never
+  rises above 0.09 anywhere and is −1.8/−2.4 at 75/90%. Same on density
+  (≤ −0.09) and label flips (−0.49 at 100%; read-then-simulate stays 0.99).
+
+### F3 — registered hypothesis verdicts (rev 9)
+- **(i) confirmed** (see F1 above): the Bayesian posterior dominates the
+  deterministic inverter across the intermediate band and degrades gracefully.
+- **(ii) split verdict, reported as registered**: F2 *does* extend further
+  into the degraded regime than F1 on the noise axis (beats F1 at every cell
+  ≥5%, best overall from 7.5%, registered rule satisfied) — but only in the
+  weak sense of moving the frontier, not restoring identification (median
+  ≤0.17). On the masking axis the hypothesis is **refuted**: F1 extends
+  further, F2 never leaves zero.
+- **(iii) confirmed, 0 violations**: at no grid cell where read-family table
+  recovery is high (bit accuracy ≥0.95) does any direct amortizer (CNN, GBM,
+  stack) beat the best read-then-simulate estimator (point above its CI_high).
+
+**Provenance note.** The first F2-inclusive grid run was launched with a
+non-canonical direct-CNN checkpoint (`runs/m4_range2/checkpoint_final.pt`
+instead of the rev-8 canonical `runs/m4_range2_seed0/checkpoint_final.pt`);
+its cnn/stack columns were therefore inconsistent with every committed rev-8/9
+number. The run was discarded and fully re-measured with the canonical
+checkpoint. Audit: the F1-only grid summary is preserved as
+`runs/m4_range2/frontier_grid/summary_f1only.json`; the final run reproduces
+every shared estimator column bit-exactly (checked programmatically), incl.
+cnn/stack. Figure: `runs/m4_range2/frontier_grid/frontier.pdf` =
+`manuscript/figures/identifiability_v2.pdf`.
 
 ---
 

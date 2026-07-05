@@ -469,12 +469,73 @@ falls below zero while the frozen CNN retains $0.09$--$0.43$; under masking the
 crossover sits near $40\%$; at density $0.1$ all methods fail but none
 catastrophically like the inverter under noise. The boundary is sharp because a
 deterministic table has no noise model---one corrupted transition flips an
-entry. A rule-\emph{posterior} simulator (our posterior-averaged variant with a
-transition-error likelihood) is the natural extension in the intermediate
-regime, and a learned rule-reader may be the natural one beyond it; neither is
-benchmarked here. These curves are the paper's scope statement in graphical
-form: the recommendation to read the rule holds \emph{inside} panel (a)'s
-regime and is explicitly not asserted outside it.
+entry.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/identifiability_v2.pdf}
+\caption{The estimator race across the identifiability frontier (radius two,
+$80$ held-out rules; median held-out \rtwo{}; curves leaving the bottom of a
+panel are negative). Solid/dashed pairs: the Bayesian rule-posterior with
+$\varepsilon$ supplied/self-estimated (red triangles), the learned reader's
+MAP/sampled variants (purple diamonds). Under bit-flip noise (top left) every
+estimator except the sampled reader collapses by $5$--$7.5\%$; the sampled
+reader alone holds near zero out to $20\%$. Under masking (top right) the
+Bayesian posterior extends the deterministic inverter's tolerance from
+${\sim}25\%$ to $50\%$ of cells hidden. At extreme initial-condition density
+(bottom left) the posterior rescues under-exercised tables. Under label-polarity
+flips (bottom right) the read-then-simulate family is exactly invariant while
+the direct CNN and the stack degrade. Registered numbers-free as rev.~9: the
+posterior on the noise/mask/density axes is post-hoc confirmatory; the reader
+and the label axis are exploratory.}
+\label{fig:frontier}
+\end{figure*}
+
+\emph{Estimators for the degraded regime.} The natural repairs are a
+rule-\emph{posterior} simulator in the intermediate regime and a learned
+rule-reader beyond it, and we benchmark both [registered numbers-free as
+rev.~9 before measurement; the Bayesian estimator is post-hoc confirmatory on
+these axes, the learned reader exploratory]. \emph{(i) Bayesian
+rule-posterior:} placing a per-entry Binomial likelihood under a bit-flip
+noise model $\varepsilon$ on the observed transition counts (with
+$\varepsilon$ either supplied or estimated from observation self-consistency
+over a fixed grid) and simulating tables sampled from the resulting posterior
+\emph{restores identification across the intermediate band}: at $40\%$ masking
+its median \rtwo{} is $0.85$ against the deterministic inverter's $0.24$; at
+$50\%$, $0.59$ against $-0.77$; at IC density $0.1$, $0.77$ against $0.08$;
+and it is exactly polarity-invariant where the frozen CNN loses accuracy under
+label flips ($0.99$ vs $0.59$). Self-consistency estimation of $\varepsilon$
+matches the supplied-$\varepsilon$ variant throughout (it captures the
+\emph{effective} corruption, including input-side flips). On the noise axis
+its advantage is real but bounded: best of all methods up to ${\sim}3\%$
+($0.55$ vs $0.38$ at $2\%$), collapsing like the inverter beyond ${\sim}5\%$.
+We also quantified the known-radius assumption: selecting the radius by a
+smallest-consistent rule costs ${\sim}0.12$ median \rtwo{} on clean diagrams
+and degrades under noise. \emph{(ii) Learned rule-reader:} a small
+($3\times10^4$-parameter) network trained on training-split rules to predict
+table bits from degradation-augmented diagrams, feeding the exact simulator
+either its thresholded (MAP) table or an average over tables sampled from its
+per-bit probabilities. On held-out rules the reader recovers $0.73$ of table
+bits and never a full table exactly, and the MAP variant fails everywhere
+(median \rtwo{} $\le -2.2$): a single mostly-right table is a badly wrong
+dynamical system. Sampling is what salvages the signal. The sampled variant is
+the only estimator that does not collapse in the dead zone
+(Fig.~\ref{fig:frontier}): from $7.5$ to $20\%$ noise it is the best of all
+eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
+accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
+and the frozen CNN to $-1.1$; from $5\%$ it beats the inverter by the
+registered rule at every cell. The registered hypothesis that the reader
+extends beyond the posterior is thus confirmed on the noise axis only in a
+weak sense---it moves the frontier without restoring identification---and is
+refuted under masking, where the posterior holds to $50\%$ and the reader
+never leaves zero. Consistent with the third registered hypothesis, at no
+grid cell with high table recovery does any direct amortizer beat the best
+read-then-simulate estimator. These curves are the paper's scope statement in
+graphical form: the recommendation to read the rule holds \emph{inside} panel
+(a)'s regime of Fig.~\ref{fig:ident}; in the intermediate band the Bayesian
+posterior extends it; and beyond ${\sim}5\%$ noise learned system
+identification is the only estimator class that retains any signal, though at
+this capacity it holds the line near zero rather than restoring accuracy.
 
 \subsection{Cost: accuracy versus compute}
 \label{sec:compute}
@@ -576,13 +637,14 @@ incremental survival information ($+0.32$)---is real, is exactly where texture
 is least informative, and survives cross-fitting. We do not conclude that deep
 networks cannot close the gap. The probes show rule information is accessible
 to the network; whether exploiting it is an architecture, objective, or
-optimization question is open, and the natural next comparators are learned
-system identifiers---a rule-table prediction head feeding a differentiable or
-exact simulator---plus rule-scrubbing and rule-provision interventions to test
-causality, and evaluation in the degraded-observation regimes of
-Fig.~\ref{fig:ident} where exact inversion is unavailable and a learned reader
-would compete against a rule-posterior simulator rather than against a solved
-problem.
+optimization question is open. A first learned system identifier---the
+$3\times10^4$-parameter rule reader of Sec.~\ref{sec:identifiability}---sharpens that
+question: in the degraded regimes where exact inversion is unavailable it is
+the only estimator that retains signal, but it plateaus at $0.73$ per-bit
+accuracy and \rtwo{}${\approx}0$. Whether a larger reader, a differentiable
+simulator in the loop, or joint reader--simulator training closes the gap to
+simulation-limited accuracy is now a concrete, measurable open problem, next
+to rule-scrubbing and rule-provision interventions to test causality.
 
 Every claim is bounded by the protocol tuple (Bernoulli$(1/2)$ ICs, ring
 $127$, radius-aware horizon): the statistics are finite-horizon and
@@ -590,10 +652,11 @@ measure-dependent by construction~\cite{gilman1987,culikyu1988}, and
 Fig.~\ref{fig:ident}(d) exhibits that dependence directly. Within that scope
 the practical guidance is plain and now carries its price tag
 (Sec.~\ref{sec:compute}): if the observation model is matched, read the rule
-and simulate; if observations are noisy, partial, or off-distribution, the
-identification shortcut degrades sharply and learned estimators---including
-hybrid statistics-plus-network stacks for survival-like targets---are the live
-option. For the broader program of behaviour-first (phenotype) analysis of
+and simulate; under moderate corruption, read it \emph{probabilistically}---the
+Bayesian posterior holds to ${\sim}3\%$ noise, $50\%$ masking, and extreme
+densities at no training cost; beyond that no current estimator is accurate,
+and the least-bad options are learned---the sampled rule-reader under heavy
+noise, hybrid statistics-plus-network stacks for survival-like targets. For the broader program of behaviour-first (phenotype) analysis of
 CA~\cite{wolfram2002,lipackard1990,israeli2006}, the damage-signature
 landscape and the composed-system maps stand as usable, independently
 validated artefacts, described at the strength the validation supports and no
