@@ -563,10 +563,11 @@ The natural repairs are a
 rule-\emph{posterior} simulator in the intermediate regime and a learned
 rule-reader beyond it, and we benchmark both [registered numbers-free as
 rev.~9 before measurement; the Bayesian estimator is post-hoc confirmatory on
-these axes, the learned reader exploratory]. \emph{(i) Bayesian
-rule-posterior}---the probabilistic move of the identification
-programme~\cite{adamatzky1994,yangbillings2000}: placing a per-entry Binomial
-likelihood under a bit-flip
+these axes, the learned reader exploratory].
+
+\emph{(i) Bayesian rule-posterior}---the probabilistic move of the
+identification programme~\cite{adamatzky1994,yangbillings2000}: placing a
+per-entry Binomial likelihood under a bit-flip
 noise model $\varepsilon$ on the observed transition counts (with
 $\varepsilon$ either supplied or estimated from observation self-consistency
 over a fixed grid) and simulating tables sampled from the resulting posterior
@@ -582,7 +583,9 @@ its advantage is real but bounded: best of all methods up to ${\sim}3\%$
 We also quantified the known-radius assumption: selecting the radius by a
 smallest-consistent rule costs ${\sim}0.12$ median \rtwo{} on clean diagrams
 and degrades under noise (neighbourhood detection is itself a studied
-identification subproblem~\cite{yangbillings2000}). \emph{(ii) Learned rule-reader:} a small
+identification subproblem~\cite{yangbillings2000}).
+
+\emph{(ii) Learned rule-reader:} a small
 ($3\times10^4$-parameter) network---trained once, on one seed, per the
 registered gating; seed variance at this capacity is untested---on
 training-split rules to predict
@@ -597,18 +600,40 @@ the only estimator that does not collapse in the dead zone
 eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
 accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
 and the frozen CNN to $-0.93$; from $5\%$ it beats the inverter by the
-registered rule at every cell. The registered hypothesis that the reader
-extends beyond the posterior is thus confirmed on the noise axis only in a
+registered rule at every cell.
+
+\emph{Verdicts.} The registered hypothesis that the reader
+extends beyond the posterior is confirmed on the noise axis only in a
 weak sense---it moves the frontier without restoring identification---and is
 refuted under masking, where the posterior holds to $50\%$ and the reader
 never leaves zero. Consistent with the third registered hypothesis, at no
 grid cell with high table recovery does any direct amortizer beat the best
-read-then-simulate estimator. These curves are the paper's scope statement in
-graphical form: the recommendation to read the rule holds \emph{inside} panel
-(a)'s regime of Fig.~\ref{fig:ident}; in the intermediate band the Bayesian
-posterior extends it; and beyond ${\sim}5\%$ noise learned system
-identification is the only estimator class that retains any signal, though at
-this capacity it holds the line near zero rather than restoring accuracy.
+read-then-simulate estimator. These curves are the paper's scope statement
+in graphical form; Table~\ref{tab:guidance} states it as practitioner
+guidance.
+
+\begin{table}[t]
+\centering
+\begin{ruledtabular}
+\begin{tabular}{lll}
+observation regime & use & median \rtwo{} evidence \\
+\colrule
+matched (clean, full, known $r$) & exact inversion & simulation-limited \\
+noise $\lesssim3\%$ & Bayes posterior & $0.55$ vs det $0.38$ ($2\%$) \\
+noise $5$--$20\%$ & sampled reader & only one $>-0.05$; $\le0.17$ \\
+masking $\lesssim25\%$ & exact inversion & $0.89$ at $25\%$ \\
+masking $25$--$50\%$ & Bayes posterior & $0.85$ ($40\%$), $0.59$ ($50\%$) \\
+extreme IC density & Bayes posterior & $0.77$ vs det $0.08$ ($0.1$) \\
+polarity freedom & read family & exactly invariant ($0.99$) \\
+unknown radius & consistency selection & ${\sim}0.12$ cost, clean \\
+\end{tabular}
+\end{ruledtabular}
+\caption{Practitioner guidance across the identifiability frontier (radius
+two, $80$-rule panel; every cell from the registered rev.-9 grid of
+Fig.~\ref{fig:frontier}). Beyond $50\%$ masking and beyond $20\%$ noise no
+current estimator is reliable.}
+\label{tab:guidance}
+\end{table}
 
 \subsection{Cost: accuracy versus compute}
 \label{sec:compute}
@@ -780,6 +805,32 @@ CA~\cite{wolfram2002,lipackard1990,israeli2006}, the damage-signature
 landscape and the composed-system maps stand as usable, independently
 validated artefacts, described at the strength the validation supports and no
 stronger~\cite{kleinberg2002,mitchell1993}.
+
+\begin{acknowledgments}
+We thank the anonymous referees, whose two reports directly shaped
+revisions~7--10 of the registered evaluation criteria and the controls
+reported here.
+% TODO(user): add funding sources before submission.
+\end{acknowledgments}
+
+\section*{Author declarations}
+
+\emph{Conflict of interest.} The authors have no conflicts to disclose.
+
+\emph{Author contributions.} \textbf{Michiel Rollier}: conceptualization,
+methodology, software, investigation, writing---original draft.
+\textbf{Jan M.~Baetens}: conceptualization, methodology, supervision,
+writing---review \& editing.
+% TODO(user): confirm CRediT roles before submission.
+
+\section*{Data availability}
+
+The complete pipeline, the pre-registered decision rules with their full
+git revision history (revisions~2--10), the measured record, the run
+artifacts backing every number in this article, and a programmatic audit
+that re-derives the quoted values from those artifacts are released with
+the article as a timestamped repository archive.
+% TODO(user): mint the archive DOI on acceptance and insert it here.
 
 \appendix
 
