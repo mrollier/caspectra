@@ -167,7 +167,7 @@ density, and an estimator race across that frontier
 owns the intermediate masking and density band, and the noise band beyond
 ${\sim}3\%$ belongs to whichever estimator is trained for the
 corruption---with matched adaptation budgets a degradation-augmented direct
-network is strongest there (median \rtwo{} $0.55$--$0.62$ out to $15\%$
+network is strongest there (median \rtwo{} $0.51$--$0.62$ out to $15\%$
 noise), while wherever the rule is recoverable no direct estimator beats
 reading it, not even an unconstrained network $354\times$ larger. The
 frontier, not the matched-regime verdict, is what transfers: it maps which
@@ -616,9 +616,9 @@ per-bit probabilities. On held-out rules the reader recovers $0.73$ of table
 bits and never a full table exactly, and the MAP variant fails everywhere
 (median \rtwo{} $\le -2.2$): a single mostly-right table is a badly wrong
 dynamical system. Sampling is what salvages the signal. The sampled variant is
-the only estimator that does not collapse in the dead zone
-(Fig.~\ref{fig:frontier}): from $7.5$ to $20\%$ noise it is the best of all
-eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
+the only one of the eight rev-9 estimators that does not collapse in the dead
+zone (Fig.~\ref{fig:frontier}): from $7.5$ to $20\%$ noise it is the best of
+those eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
 accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
 and the frozen CNN to $-0.93$; from $5\%$ it beats the inverter by the
 registered rule at every cell.
@@ -633,7 +633,7 @@ reader's registered degradation augmentation, and an unconstrained
 $354\times$ the constrained CNN; clean-trained). The result overturns one
 rev-9 conclusion and confirms the other. The noise ``dead zone'' was an
 adaptation artifact, not an estimator-family boundary: the
-degradation-trained direct CNN holds median \rtwo{} $0.55$--$0.62$ from $3\%$
+degradation-trained direct CNN holds median \rtwo{} $0.51$--$0.62$ from $3\%$
 to $15\%$ noise---where no previously tested estimator exceeded
 $0.17$---meeting the registered extension rule (bootstrap CI excluding the
 sampled reader's point value from below) at every noise cell up to $15\%$;
@@ -671,7 +671,7 @@ observation regime & use & median \rtwo{} evidence & \\
 \colrule
 matched (clean, full, known $r$) & exact inversion & simulation-limited & Tables~\ref{tab:eca}--\ref{tab:r2} \\
 noise $\lesssim2\%$ & Bayesian posterior & $0.55$ vs det $0.38$ at $2\%$ & Fig.~\ref{fig:frontier} \\
-noise $3$--$15\%$ & degradation-trained direct CNN & $0.55$--$0.62$; every alternative $\le0.27$ & Sec.~\ref{sec:frontier}(iii) \\
+noise $3$--$15\%$ & degradation-trained direct CNN & $0.51$--$0.62$; every alternative $\le0.27$ & Sec.~\ref{sec:frontier}(iii) \\
 noise $20\%$ & none reliable & CNN $0.17\approx$ reader $0.12$, CIs span $0$ & Sec.~\ref{sec:frontier}(iii) \\
 masking $\lesssim25\%$ & exact inversion & $0.89$ at $25\%$ & Fig.~\ref{fig:frontier} \\
 masking $25$--$50\%$ & Bayesian posterior & $0.85$ at $40\%$, $0.59$ at $50\%$ & Fig.~\ref{fig:frontier} \\
@@ -821,7 +821,7 @@ to the network; whether exploiting it is an architecture, objective, or
 optimization question is open. The rev-9 rule reader and the rev-10
 degradation-trained control together sharpen that question: in the noise
 band beyond ${\sim}3\%$ the strongest estimator is the direct network
-trained for the corruption (median \rtwo{} $0.55$--$0.62$ to $15\%$ noise),
+trained for the corruption (median \rtwo{} $0.51$--$0.62$ to $15\%$ noise),
 the sampled reader holds \rtwo{}${\approx}0$ to $20\%$, and neither
 approaches simulation-limited accuracy; under masking and extreme densities
 the Bayesian posterior, not either learned route, extends the mechanistic
@@ -860,7 +860,7 @@ and simulate; under moderate corruption, read it \emph{probabilistically}---the
 Bayesian posterior holds to ${\sim}3\%$ noise, $50\%$ masking, and extreme
 densities at no training cost, with calibrated intervals exactly where it is
 recommended; beyond that, train for the corruption you expect---the
-degradation-augmented direct network holds median \rtwo{} $0.55$--$0.62$
+degradation-augmented direct network holds median \rtwo{} $0.51$--$0.62$
 across $3$--$15\%$ noise at a ${\sim}0.14$ clean-diagram cost, and at $20\%$
 noise or past $50\%$ masking no current estimator is reliable
 (Table~\ref{tab:guidance}). For the broader program of behaviour-first (phenotype) analysis of
@@ -915,11 +915,13 @@ inference and TOST margins, stacking margin, reliability design, mechanistic
 estimator and completion policy, probe design, detector-validation design,
 map ground-truth design, and---for the frontier of
 Sec.~\ref{sec:frontier}---the grid design, estimator definitions, verdict
-rules, and the three hypotheses below (rev.~9); \emph{post-hoc confirmatory}
+rules, the three hypotheses below (rev.~9), and the two fairness controls
+with their verdict rules (rev.~10); \emph{post-hoc confirmatory}
 (analysis added at revision, on data or rules not used to tune it): the
 replicate-agreement correction, the large-simulation reference,
-confusion-matrix reporting, TOST margin sensitivity, and the Bayesian
-rule-posterior evaluated on the pre-existing noise/mask/density axes;
+confusion-matrix reporting, TOST margin sensitivity, the Bayesian
+rule-posterior evaluated on the pre-existing noise/mask/density axes, and
+the headline-base stacking variant (rev.~10);
 \emph{exploratory}: the identifiability phase diagram, the accuracy--compute
 curve, the learned rule-reader, and the label-noise and unknown-radius axes.
 

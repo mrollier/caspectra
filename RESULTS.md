@@ -43,7 +43,7 @@ Noise axis, median held-out R² [CI95] (reference columns from the rev-9 grid):
 | 20% | 0.17 [−0.05, 0.37] | −0.60 | F2-s 0.12 |
 
 - **The noise dead zone was an adaptation artifact, not an estimator-family
-  boundary.** C-i holds median R² 0.55–0.62 from 3% to 15% noise — where the
+  boundary.** C-i holds median R² 0.51–0.62 from 3% to 15% noise — where the
   best previously tested estimator (F2-sampled) never exceeded 0.17 — and
   satisfies the registered dead-zone rule (CI_low > F2-sampled point) at every
   noise cell up to 15% (not at 20%, where they are comparable: 0.17 vs 0.12).

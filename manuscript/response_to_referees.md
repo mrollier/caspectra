@@ -326,7 +326,7 @@ against, whose motivating claim round 2 retired.
 The controls changed one conclusion and confirmed the other, and we report
 both plainly. **Changed:** the noise "dead zone" was an adaptation artifact,
 not an estimator-family boundary — the degradation-trained direct CNN holds
-median R² 0.55–0.62 across 3–15% noise, where no previously tested estimator
+median R² 0.51–0.62 across 3–15% noise, where no previously tested estimator
 exceeded 0.17; our earlier statement that learned system identification is
 the only class retaining signal there is withdrawn and replaced by the
 measured one (what decides the noise band is training for the corruption,

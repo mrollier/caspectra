@@ -27,16 +27,26 @@ RATE, FILL = 2, 3
 d = np.load(ROOT / "cache" / "s4_landscape.npz")
 t, mask = d["targets"], d["mask"].astype(bool)
 anchors = {  # embedded-ECA (rate, fill), from the S4 run
-    "204": (0.008, 1.0), "184": (0.048, 1.0), "30": (0.307, 0.529),
-    "90": (0.492, 0.271), "54": (0.225, 0.494), "110": (0.214, 0.569),
+    "204": (0.008, 1.0),
+    "184": (0.048, 1.0),
+    "30": (0.307, 0.529),
+    "90": (0.492, 0.271),
+    "54": (0.225, 0.494),
+    "110": (0.214, 0.569),
 }
 fig, ax = plt.subplots(figsize=(5.4, 4.2))
 ax.scatter(t[~mask, RATE], t[~mask, FILL], s=7, alpha=0.25, c="steelblue", label="ordinary")
 # "damage signature", not "complex": the registered criterion is a
 # finite-horizon damage signature, deliberately not promoted to a class label
 # (manuscript Sec. IV G; rule_labels_PROVENANCE.md).
-ax.scatter(t[mask, RATE], t[mask, FILL], s=14, alpha=0.7, c="crimson",
-           label=f"damage signature ({mask.sum()}/{len(mask)} = {mask.mean():.1%})")
+ax.scatter(
+    t[mask, RATE],
+    t[mask, FILL],
+    s=14,
+    alpha=0.7,
+    c="crimson",
+    label=f"damage signature ({mask.sum()}/{len(mask)} = {mask.mean():.1%})",
+)
 for name, (r, f) in anchors.items():
     ax.scatter([r], [f], marker="*", s=150, c="gold", edgecolor="k", zorder=5)
     ax.annotate(name, (r, f), textcoords="offset points", xytext=(4, 3), fontsize=8)

@@ -24,6 +24,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SUMMARY = REPO / "runs" / "m4_range2" / "frontier_grid" / "summary.json"
+CONTROLS = REPO / "runs" / "m4_range2" / "frontier_grid_controls" / "summary.json"
+CALIBRATION = REPO / "runs" / "m4_range2" / "frontier_grid_calibration" / "summary.json"
 MAIN_TEX = REPO / "manuscript" / "main.tex"
 RESULTS = REPO / "RESULTS.md"
 
@@ -115,6 +117,29 @@ def build_checks(grid: dict) -> list[Check]:
     ]
 
 
+def build_rev10_checks(controls: dict, calibration: dict) -> list[Check]:
+    """Numbers quoted from the rev-10 controls and the F1 calibration report."""
+    band = [_median(controls, "noise", v, "degaug_cnn") for v in (0.03, 0.05, 0.075, 0.1, 0.15)]
+
+    def _cov(axis: str, value: float) -> float:
+        return _cell(calibration, axis, value, "f1_eps_estimated")["interval_coverage_1sigma"]
+
+    return [
+        Check("degaug band low edge (3-15% noise)", 0.51, min(band)),
+        Check("degaug band high edge (3-15% noise)", 0.62, max(band)),
+        Check("degaug at 20% noise", 0.17, _median(controls, "noise", 0.2, "degaug_cnn")),
+        Check("degaug at 40% masking", 0.48, _median(controls, "mask", 0.4, "degaug_cnn")),
+        Check("degaug at density 0.1", 0.20, _median(controls, "density", 0.1, "degaug_cnn")),
+        Check("resnet clean grid cell", 0.55, _median(controls, "noise", 0.0, "resnet_cnn")),
+        Check("resnet at 20% noise", -0.60, _median(controls, "noise", 0.2, "resnet_cnn")),
+        Check("calibration: clean coverage", 0.86, _cov("mask", 0.0)),
+        Check("calibration: 50% masking coverage", 0.74, _cov("mask", 0.5)),
+        Check("calibration: 2% noise coverage", 0.58, _cov("noise", 0.02)),
+        Check("calibration: 5% noise coverage", 0.45, _cov("noise", 0.05)),
+        Check("calibration: 20% noise coverage", 0.13, _cov("noise", 0.2)),
+    ]
+
+
 def text_guards() -> list[tuple[str, bool]]:
     """Literal-string guards: the corrected values are present, stale ones gone."""
     tex = MAIN_TEX.read_text()
@@ -134,8 +159,14 @@ def text_guards() -> list[tuple[str, bool]]:
 
 def main() -> int:
     grid = json.loads(SUMMARY.read_text())["grid"]
+    checks = build_checks(grid)
+    if CONTROLS.exists() and CALIBRATION.exists():
+        checks += build_rev10_checks(
+            json.loads(CONTROLS.read_text())["grid"],
+            json.loads(CALIBRATION.read_text())["grid"],
+        )
     failures = 0
-    for check in build_checks(grid):
+    for check in checks:
         status = "ok " if check.ok else "FAIL"
         if not check.ok:
             failures += 1
