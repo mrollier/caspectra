@@ -254,34 +254,129 @@ Pareto analysis. The manuscript was rewritten around rule identifiability and
 simulation-limited prediction, with every neural claim scoped to the tested
 architecture and every analysis labelled by its registration status.
 
-## Addendum held for round 3 (rev-9 identifiability frontier; not part of the round-2 response)
+---
 
-Prepared on branch `rev9-frontier` after the round-2 revision was frozen, in
-anticipation of a further exchange; pre-registered numbers-free as
-EVALUATION_CRITERIA.md rev 9 before measurement.
+# Round-3 supplement (prepared in advance; folded into the concern structure)
 
-The referee three times asked what a *learned* rule-reader would do where
-exact inversion fails. We benchmarked it, together with a Bayesian
-rule-posterior simulator, across the degradation grid of Fig. 2 plus two new
-axes (label-polarity flips, unknown radius), all eight estimators on the same
-80 held-out radius-2 rules:
+Everything below was produced after the round-2 revision was frozen, on a
+separate branch so the submitted PDF is untouched; each block is filed under
+the round-2 concern it continues. Decision rules were committed numbers-free
+before each measurement (repository revisions 9 and 10; the full
+registration-history extract is Appendix L1 of this letter).
+
+## Cross-reference: concern → response → manuscript location
+
+| Concern | Round-2 response | Round-3 continuation | Manuscript |
+|---|---|---|---|
+| 1 narrative consistency | §1 (retired, C1) | — | §IV.A–B, Table I |
+| 2 reliability ceiling | §2 (C2) | — | §II.C |
+| 3 assumptions + identifiability | §3 (C3, C4) | frontier estimators + the two axes deferred at round 2 (→ §3-bis) | §IV.D–E, Figs. 2–3 |
+| 4 mechanism not proven | §4 | — | §IV.D |
+| 5 probe definitions | §5 | — | §IV.D |
+| 6 statistics incomplete | §6 (C5) | — | Tables II–III |
+| 7 one constrained CNN | §7 | learned rule-reader + two fairness controls (→ §7-bis) | §III(iii), §IV.E |
+| 8 spatial map | §8 (C7) | — | §IV.G |
+| 9 landscape naming | §9 (C6) | — | §IV.G, Fig. 4 |
+| 10 registration auditability | §10 | corrected access rationale + attached history (→ §10-bis) | App. A |
+| 11 compute | §11 (C8) | — | §IV.F |
+| 12 methods detail | §12 | — | App. B |
+
+## §3-bis. The identifiability frontier, completed (continues concern 3)
+
+Round 2 deferred two axes ("we did not sweep … label noise or unknown radius
+this round"). Both are now measured, together with the estimators the phase
+diagram called for, pre-registered numbers-free as revision 9 with three
+hypotheses whose verdicts are reported as earned (one split, one refuted in
+half — manuscript Appendix A enumerates them):
 
 - **Bayesian rule-posterior (no training)**: restores identification across
   the intermediate band — masking tolerance extended from ~25% to 50% of
   cells, IC-density extremes rescued, exact polarity invariance — and is best
   of all methods up to ~3% bit-flip noise. Self-estimated noise rate matches
   the supplied-rate variant throughout.
-- **Learned rule-reader (30k parameters, trained on training-split rules
-  with registered degradation augmentation)**: its MAP table fails everywhere
-  (per-bit accuracy 0.73 never yields an exact table, and one mostly-right
-  table is a badly wrong dynamical system); *sampling* its per-bit posterior
-  is the only estimator that does not collapse beyond 5% noise (median R²
-  ≈ 0 out to 20%, all others −1 to −5.6). It moves the frontier without
-  restoring identification; under masking it adds nothing.
-- Registered hypothesis verdicts reported as registered, including the
-  refuted half of (ii); nowhere with high table recovery does any direct
-  amortizer beat read-then-simulate (hypothesis (iii), 0 violations).
+- **Label-polarity axis**: the read-then-simulate family is exactly
+  invariant; the frozen CNN and the stack degrade.
+- **Unknown-radius axis**: smallest-consistent selection costs ~0.12 median
+  R² on clean diagrams and degrades under noise — the known-radius
+  assumption now carries a measured price.
+- The registered calibration of the posterior's 1σ predictive intervals is
+  reported per cell (manuscript §IV.E), completing the one reporting item
+  that was outstanding from the rev-9 registration.
 
-New Fig. 3 (estimator race), new results text in Sec. IV E, updated
-Discussion. RESULTS.md 2026-07-05 records every number with CIs and a
-provenance note on a discarded wrong-checkpoint run (fully re-measured).
+## §7-bis. The learned rule-reader and two fairness controls (continues concern 7)
+
+The referee three times asked what a *learned* rule-reader would do where
+exact inversion fails. We benchmarked it (registered as exploratory, gated
+single-seed training): its MAP table fails everywhere (per-bit accuracy 0.73
+never yields an exact table, and one mostly-right table is a badly wrong
+dynamical system), while *sampling* its per-bit posterior is the only
+estimator that does not collapse beyond 5% noise (median R² ≈ 0 out to 20%,
+all others −1 to −5.6). It moves the frontier without restoring
+identification; under masking it adds nothing.
+
+Because the reader is degradation-trained while the direct CNN of the
+submitted manuscript is clean-trained and architecturally constrained, we
+also ran the two symmetric controls this comparison owes the reader of the
+degraded-regime guidance (pre-registered as revision 10 before measurement):
+**(C-i)** the same direct CNN retrained with the reader's registered
+degradation augmentation, and **(C-ii)** an unconstrained same-budget
+`resnet18` CNN — the architecture the anti-shortcut constraint was designed
+against, whose motivating claim round 2 retired.
+[REV10-RESULTS-PLACEHOLDER]
+
+## §10-bis. Registration auditability, corrected (continues concern 10)
+
+Two updates. First, our round-2 rationale for the private repository
+("to protect anonymity") was wrong and we withdraw it: the byline is signed
+and the manuscript cites our own group, so anonymity was never the
+constraint. The repository is private because it is the submission history
+of an unpublished article; that is a choice, and it does limit auditability
+during review. Second, instead of offering an archive "on request", we now
+attach the registration evidence directly: Appendix L1 reproduces the
+complete commit history of the criteria file (revision, timestamp, subject),
+so the numbers-free-before-measurement ordering for every load-bearing
+revision is checkable from this letter alone, and the full timestamped
+repository is released with the article.
+
+One honest caveat belongs in this list: for criterion 7 (the nuCA
+validation, a by-product) the registration and the measurement were
+committed together, so for that one criterion the ordering is attested
+rather than git-auditable. Every criterion the paper's claims rest on
+(revisions 7–10) has the committed numbers-free ordering shown in
+Appendix L1.
+
+## Correction disclosed (found by internal audit, fixed at the source)
+
+An internal pre-submission audit found that one manuscript number and six
+cells of the internal measured record still carried values from the
+discarded wrong-checkpoint frontier run that RESULTS.md itself documents
+(the run was re-measured with the canonical checkpoint before any rev-9
+number was reported, but the in-session reproduction check covered the
+shared columns, not those six cells). The manuscript value "frozen CNN to
+−1.1" is corrected to the canonical −0.93; no bolded comparison, verdict, or
+conclusion changes. A programmatic audit
+(`scripts/audit_manuscript_numbers.py`) now re-derives every §IV.E prose and
+table number from the released artifact and fails on mismatch; it runs clean
+on the revised manuscript.
+
+## Appendix L1 — registration-history extract (EVALUATION_CRITERIA.md)
+
+Complete `git log --follow` of the criteria file (newest first). Each
+revision commit is numbers-free; measurements follow in separate commits.
+
+| Commit | Timestamp | Subject |
+|---|---|---|
+| c16cc2b | 2026-07-05 20:26 | Pre-register round-3 fairness controls + reporting completions (rev 10) |
+| 8f5cb56 | 2026-07-05 01:43 | Pre-register identifiability-frontier controls (rev 9) |
+| 75e1d42 | 2026-07-04 20:40 | Pre-register round-2 review-response controls (rev 8) |
+| a809b2a | 2026-07-04 14:27 | Pre-registration rev 7: review-response controls (numbers-free) |
+| 516866b | 2026-07-04 01:21 | Pre-register rev 6: baseline & robustness controls (S1–S3), numbers-free |
+| e2dd185 | 2026-07-04 00:15 | Pre-register M4 (criterion 9) + range-2 harness, no measured numbers |
+| ead0fcf | 2026-07-03 18:58 | Pre-register criterion 8: stripe resolution (8a) + alloy transfer (8b) |
+| c2b99cb | 2026-07-03 01:52 | nuCA validation: criterion 7 pre-registered, measured, and passed (registration and measurement in one commit — the caveat disclosed in §10-bis) |
+| a7789b4 | 2026-07-02 11:21 | (pre-criteria bootstrap) |
+
+First measurement commits following each load-bearing revision: rev 8 →
+fa994da (2026-07-05 00:52); rev 9 → 111e3df (2026-07-05 10:00) and 0f8e691
+(2026-07-05 14:04); rev 10 → the control-training commits recorded in the
+repository history accompanying this revision.
