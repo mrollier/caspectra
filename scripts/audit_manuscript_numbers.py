@@ -67,7 +67,10 @@ def build_checks(grid: dict) -> list[Check]:
     dead_zone = [0.075, 0.1, 0.15, 0.2]
     sampled = [_median(grid, "noise", v, "f2_sampled") for v in dead_zone]
     map_worst_case = max(
-        _median(grid, ax, c["value"], "f2_map") for ax in grid for c in grid[ax] if "f2_map" in c["estimators"]
+        _median(grid, ax, c["value"], "f2_map")
+        for ax in grid
+        for c in grid[ax]
+        if "f2_map" in c["estimators"]
     )
     radius_cost = _median(grid, "radius", 0.0, "det_radius_known") - _median(
         grid, "radius", 0.0, "det_radius_selected"
@@ -85,8 +88,16 @@ def build_checks(grid: dict) -> list[Check]:
         Check("noise 2%: posterior", 0.55, _median(grid, "noise", 0.02, "f1_eps_estimated")),
         Check("noise 2%: det inverter", 0.38, _median(grid, "noise", 0.02, "det")),
         Check("radius-selection cost (clean)", 0.12, radius_cost),
-        Check("reader bit accuracy (clean)", 0.73, _cell(grid, "noise", 0.0, "f2_sampled")["bit_accuracy"]),
-        Check("reader bit accuracy (20% noise)", 0.70, _cell(grid, "noise", 0.2, "f2_sampled")["bit_accuracy"]),
+        Check(
+            "reader bit accuracy (clean)",
+            0.73,
+            _cell(grid, "noise", 0.0, "f2_sampled")["bit_accuracy"],
+        ),
+        Check(
+            "reader bit accuracy (20% noise)",
+            0.70,
+            _cell(grid, "noise", 0.2, "f2_sampled")["bit_accuracy"],
+        ),
         Check("F2-MAP everywhere below", -2.2, map_worst_case),
         Check("dead-zone sampled band, low edge", -0.04, min(sampled)),
         Check("dead-zone sampled band, high edge", 0.17, max(sampled)),
@@ -110,8 +121,14 @@ def text_guards() -> list[tuple[str, bool]]:
     results = RESULTS.read_text()
     return [
         ("main.tex quotes the canonical frozen-CNN value (-0.93)", "frozen CNN to $-0.93$" in tex),
-        ("main.tex no longer quotes the discarded-run value (-1.1)", "frozen CNN to $-1.1$" not in tex),
-        ("RESULTS.md F2 table has no discarded-run cnn cell", not re.search(r"\|\s*-1\.09\s*\|", results)),
+        (
+            "main.tex no longer quotes the discarded-run value (-1.1)",
+            "frozen CNN to $-1.1$" not in tex,
+        ),
+        (
+            "RESULTS.md F2 table has no discarded-run cnn cell",
+            not re.search(r"\|\s*-1\.09\s*\|", results),
+        ),
     ]
 
 
@@ -122,7 +139,9 @@ def main() -> int:
         status = "ok " if check.ok else "FAIL"
         if not check.ok:
             failures += 1
-        print(f"[{status}] {check.label}: quoted {check.quoted:+.3g}, artifact {check.derived:+.4f}")
+        print(
+            f"[{status}] {check.label}: quoted {check.quoted:+.3g}, artifact {check.derived:+.4f}"
+        )
     for label, ok in text_guards():
         print(f"[{'ok ' if ok else 'FAIL'}] {label}")
         failures += 0 if ok else 1

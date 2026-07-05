@@ -45,6 +45,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--device", default="mps")
     p.add_argument("--n-boot", type=int, default=10000)
     p.add_argument("--output-dir", default=None, help="Default <train.output_dir>/stacking.")
+    p.add_argument(
+        "--gbm-base",
+        action="store_true",
+        help="Rev-10 post-hoc confirmatory variant (DA M2): the same cross-fitted "
+        "stacking protocol with the boosted baseline-of-record's held-out predictions "
+        "as the base regressors instead of the raw five statistics — 'the increment "
+        "under the headline protocol'. Writes to <output_dir>/../stacking_gbm_base so "
+        "the registered rev-7 artifact is never overwritten.",
+    )
     return p.parse_args()
 
 
@@ -76,7 +85,12 @@ def _incremental_r2(base_pred, aug_pred, y, boot_idx):
 def main() -> None:
     args = parse_args()
     cfg = ExperimentConfig.from_yaml(args.config)
-    out = ensure_dir(args.output_dir or f"{cfg.train.output_dir}/stacking")
+    default_out = (
+        f"{cfg.train.output_dir}/stacking_gbm_base"
+        if args.gbm_base
+        else f"{cfg.train.output_dir}/stacking"
+    )
+    out = ensure_dir(args.output_dir or default_out)
     set_seed(cfg.seed)
 
     hop = collect_held_out_predictions(cfg, args.checkpoint, device=args.device)
@@ -91,11 +105,21 @@ def main() -> None:
     boot_idx = rng.integers(0, N, size=(args.n_boot, N))
 
     # Regressor blocks for each "does A add value over B?" question.
-    blocks = {
-        "cnn_over_features": (X_base, np.hstack([X_base, X_cnn])),
-        "features_over_cnn": (X_cnn, np.hstack([X_cnn, X_base])),
-        "mechanistic_over_features": (X_base, np.hstack([X_base, X_mech])),
-    }
+    if args.gbm_base:
+        # Base = the train-fitted boosted baseline's held-out predictions (the
+        # baseline of record, Table III), so the base-model R^2 matches the
+        # headline column up to ridge recalibration.
+        X_gbm = hop.preds["gbm"]  # (N, 4)
+        blocks = {
+            "cnn_over_gbm": (X_gbm, np.hstack([X_gbm, X_cnn])),
+            "mechanistic_over_gbm": (X_gbm, np.hstack([X_gbm, X_mech])),
+        }
+    else:
+        blocks = {
+            "cnn_over_features": (X_base, np.hstack([X_base, X_cnn])),
+            "features_over_cnn": (X_cnn, np.hstack([X_cnn, X_base])),
+            "mechanistic_over_features": (X_base, np.hstack([X_base, X_mech])),
+        }
 
     def _r2(pred: np.ndarray, y: np.ndarray) -> float:
         tot = float(np.sum((y - y.mean()) ** 2))

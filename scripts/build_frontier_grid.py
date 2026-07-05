@@ -78,13 +78,50 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--axes", nargs="*", default=["noise", "mask", "density", "label", "radius"])
     p.add_argument("--output-dir", default=None)
     p.add_argument("--write-figure", action="store_true", help="Write manuscript figure.")
+    p.add_argument(
+        "--extra-cnn",
+        action="append",
+        default=[],
+        metavar="NAME=CKPT",
+        help="Additional frozen direct-CNN checkpoint (rev-10 control) evaluated per cell; "
+        "its architecture is read from the config.yaml saved next to the checkpoint.",
+    )
+    p.add_argument(
+        "--direct-only",
+        action="store_true",
+        help="Rev-10 fast path: evaluate only the --extra-cnn estimators (no read-family "
+        "re-simulation; the degraded diagrams are regenerated identically from the same "
+        "seeds). Verdicts are joined against --reference-summary.",
+    )
+    p.add_argument(
+        "--reference-summary",
+        default=None,
+        help="Canonical grid summary.json; supplies the read-family cells for the "
+        "rev-10 verdict joins in --direct-only mode.",
+    )
+    p.add_argument(
+        "--calibrate-f1",
+        action="store_true",
+        help="Rev-9 outstanding reporting item: per-cell empirical coverage of the "
+        "eps-estimated posterior's nominal 1-sigma predictive interval. Tag arithmetic "
+        "matches the canonical run, so the recomputed medians double as a bit-exact "
+        "reproduction check of the released grid.",
+    )
     return p.parse_args()
 
 
 def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     args = parse_args()
     cfg = ExperimentConfig.from_yaml(args.config)
-    out = ensure_dir(args.output_dir or f"{cfg.train.output_dir}/frontier_grid")
+    # The rev-10 modes must never clobber the canonical released artifact.
+    if args.direct_only:
+        default_out = f"{cfg.train.output_dir}/frontier_grid_controls"
+    elif args.calibrate_f1:
+        default_out = f"{cfg.train.output_dir}/frontier_grid_calibration"
+    else:
+        default_out = f"{cfg.train.output_dir}/frontier_grid"
+    out = ensure_dir(args.output_dir or default_out)
+    lean_mode = args.direct_only or args.calibrate_f1
     set_seed(cfg.seed)
     radius, width = cfg.data.radius, cfg.data.grid_size
     density0 = cfg.targets.ic_density
@@ -127,14 +164,44 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     model = model.to(device).eval()
     s_mean, s_std = state["scaler_mean"], state["scaler_std"]
 
-    feats_all = compute_baseline_features(images, radius=radius)
+    # Rev-10 control checkpoints: independent scalers, architecture from the
+    # config saved in each run dir. Evaluated as frozen forward passes only.
+    from pathlib import Path
+
+    extra_cnns: dict[str, tuple] = {}
+    for spec in args.extra_cnn:
+        name, ckpt = spec.split("=", 1)
+        e_state = torch.load(ckpt, map_location="cpu", weights_only=False)
+        e_cfg = ExperimentConfig.from_yaml(str(Path(ckpt).parent / "config.yaml"))
+        e_model = build_model(e_cfg.model)
+        e_model.load_state_dict(e_state["model_state"])
+        extra_cnns[name] = (
+            e_model.to(device).eval(),
+            e_state["scaler_mean"],
+            e_state["scaler_std"],
+        )
+        if sorted(int(r) for r in e_state["holdout_rules"]) != sorted(
+            int(r) for r in state["holdout_rules"]
+        ):
+            raise SystemExit(f"control {name!r} was trained on a different holdout split")
+
+    @torch.no_grad()
+    def extra_cnn_preds(e_model, e_mean, e_std, diagrams: dict[int, np.ndarray]) -> np.ndarray:
+        outp = []
+        for r in held:
+            b = torch.from_numpy(diagrams[r].astype(np.float32))[None, None].to(device)
+            outp.append(e_model(b).cpu().numpy()[0] * e_std + e_mean)
+        return np.stack(outp)
+
+    feats_all = compute_baseline_features(images, radius=radius) if not lean_mode else None
     tr = np.isin(reps, train_rules)
-    scaler = StandardScaler().fit(feats_all[tr])
-    y = np.stack([true_by_rule[int(r)] for r in reps])
-    gbms = [
-        GradientBoostingRegressor(random_state=0).fit(scaler.transform(feats_all[tr]), y[tr, j])
-        for j in range(len(TARGET_NAMES))
-    ]
+    if not lean_mode:
+        scaler = StandardScaler().fit(feats_all[tr])
+        y = np.stack([true_by_rule[int(r)] for r in reps])
+        gbms = [
+            GradientBoostingRegressor(random_state=0).fit(scaler.transform(feats_all[tr]), y[tr, j])
+            for j in range(len(TARGET_NAMES))
+        ]
 
     @torch.no_grad()
     def cnn_preds(diagrams: dict[int, np.ndarray]) -> np.ndarray:
@@ -151,13 +218,16 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
         return np.stack([g.predict(f) for g in gbms], axis=1)
 
     # Stats+CNN stack, fitted on TRAIN rules' clean diagrams only (deployable hybrid).
-    with torch.no_grad():
-        cnn_tr = []
-        for i in np.flatnonzero(tr):
-            b = torch.from_numpy(images[i].astype(np.float32))[None, None].to(device)
-            cnn_tr.append(model(b).cpu().numpy()[0] * s_std + s_mean)
-    stack_X_tr = np.hstack([scaler.transform(feats_all[tr]), np.stack(cnn_tr)])
-    stack_models = [Ridge(alpha=1.0).fit(stack_X_tr, y[tr, j]) for j in range(len(TARGET_NAMES))]
+    if not lean_mode:
+        with torch.no_grad():
+            cnn_tr = []
+            for i in np.flatnonzero(tr):
+                b = torch.from_numpy(images[i].astype(np.float32))[None, None].to(device)
+                cnn_tr.append(model(b).cpu().numpy()[0] * s_std + s_mean)
+        stack_X_tr = np.hstack([scaler.transform(feats_all[tr]), np.stack(cnn_tr)])
+        stack_models = [
+            Ridge(alpha=1.0).fit(stack_X_tr, y[tr, j]) for j in range(len(TARGET_NAMES))
+        ]
 
     def stack_preds(diagrams: dict[int, np.ndarray]) -> np.ndarray:
         f = scaler.transform(
@@ -203,8 +273,8 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
             preds.append(simulate(rule, radius, _rng(r, tag)))
         return np.stack(preds), {"exact": float(np.mean(exact))}
 
-    def f1_estimate(diagrams, masks, tag, eps=None):
-        preds, exact, bitacc = [], [], []
+    def f1_estimate(diagrams, masks, tag, eps=None, calibrate=False):
+        preds, exact, bitacc, covered = [], [], [], []
         for r in held:
             ones, total = masked_transition_counts(diagrams[r], radius, masks.get(r))
             if eps is None:
@@ -228,11 +298,25 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
             for _ in range(args.n_samples):
                 tbl = (gen.random(p_bits.shape[0]) < p_bits).astype(np.uint8)
                 sims.append(simulate(table_to_rule(tbl), radius, gen))
-            preds.append(np.mean(sims, axis=0))
-        return np.stack(preds), {
+            arr = np.stack(sims)
+            preds.append(arr.mean(axis=0))
+            if calibrate:
+                # Rev-9 registered reporting: does the nominal 1-sigma
+                # predictive interval (posterior-sample spread) cover the
+                # production target the estimator is scored against?
+                sigma = arr.std(axis=0, ddof=0)
+                covered.append(np.abs(true_by_rule[r] - arr.mean(axis=0)) <= sigma)
+        diag = {
             "exact": float(np.mean(exact)),
             "bit_accuracy": float(np.mean(bitacc)),
         }
+        if calibrate:
+            cov = np.stack(covered)
+            diag["interval_coverage_1sigma"] = round(float(cov.mean()), 4)
+            diag["interval_coverage_per_target"] = {
+                n: round(float(v), 4) for n, v in zip(TARGET_NAMES, cov.mean(axis=0))
+            }
+        return np.stack(preds), diag
 
     def f2_estimate(diagrams, tag, sampled: bool):
         assert reader is not None
@@ -321,7 +405,12 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
             cell["estimators"]["f1_radius_selected"] = {**score(preds), **diag}
             preds, diag = det_estimate(diagrams, masks, cell_tag + 2)
             cell["estimators"]["det_radius_known"] = {**score(preds), **diag}
-        else:
+        elif args.calibrate_f1:
+            # Same tag as the canonical run's eps-estimated pass, so the
+            # medians reproduce the released grid bit-exactly.
+            preds, diag = f1_estimate(diagrams, masks, cell_tag + 2, eps=None, calibrate=True)
+            cell["estimators"]["f1_eps_estimated"] = {**score(preds), **diag}
+        elif not args.direct_only:
             preds, diag = det_estimate(diagrams, masks, cell_tag)
             cell["estimators"]["det"] = {**score(preds), **diag}
             eps_known = value if axis in ("noise",) else 0.0
@@ -334,10 +423,13 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
                 cell["estimators"]["f2_map"] = {**score(preds), **diag}
                 preds, diag = f2_estimate(diagrams, cell_tag + 4, sampled=True)
                 cell["estimators"]["f2_sampled"] = {**score(preds), **diag}
-        if include_direct:
+        if include_direct and not lean_mode:
             cell["estimators"]["cnn"] = score(cnn_preds(diagrams))
             cell["estimators"]["gbm"] = score(gbm_preds(diagrams))
             cell["estimators"]["stack"] = score(stack_preds(diagrams))
+        if include_direct and not radius_axis:
+            for name, (e_model, e_mean, e_std) in extra_cnns.items():
+                cell["estimators"][name] = score(extra_cnn_preds(e_model, e_mean, e_std, diagrams))
         best = max(cell["estimators"].items(), key=lambda kv: kv[1]["median_r2"])
         cell["best"] = best[0]
         print(
@@ -400,13 +492,68 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
         "n_pairs": args.n_pairs,
         "n_samples": args.n_samples,
         "reader_checkpoint": args.reader_checkpoint,
+        "extra_cnns": {s.split("=", 1)[0]: s.split("=", 1)[1] for s in args.extra_cnn},
         "grid": grid,
     }
+
+    # Rev-10 verdict joins: control cells against the canonical read-family
+    # record. A hypothesis-(iii) violation = control point above the best
+    # read-family estimator's CI_high at a cell with per-bit recovery >= 0.95;
+    # dead-zone extension = control CI_low above the F2-sampled point value.
+    if args.direct_only and args.reference_summary:
+        import json
+
+        ref = json.loads(open(args.reference_summary).read())["grid"]
+        read_family = ("det", "f1_eps_known", "f1_eps_estimated", "f2_map", "f2_sampled")
+        verdicts: dict[str, list] = {"h3_violations": [], "dead_zone": []}
+        for axis_name, cells in grid.items():
+            for cell in cells:
+                ref_cell = next(
+                    (c for c in ref.get(axis_name, []) if c["value"] == cell["value"]), None
+                )
+                if ref_cell is None:
+                    continue
+                ests = ref_cell["estimators"]
+                reads = {k: v for k, v in ests.items() if k in read_family}
+                if not reads:
+                    continue
+                best_name, best_read = max(reads.items(), key=lambda kv: kv[1]["median_r2"])
+                bitacc = ests.get("f1_eps_estimated", {}).get("bit_accuracy")
+                for name in extra_cnns:
+                    ctrl = cell["estimators"][name]
+                    if bitacc is not None and bitacc >= 0.95:
+                        if ctrl["median_r2"] > best_read["median_ci95"][1]:
+                            verdicts["h3_violations"].append(
+                                {
+                                    "axis": axis_name,
+                                    "value": cell["value"],
+                                    "control": name,
+                                    "control_median": ctrl["median_r2"],
+                                    "best_read": best_name,
+                                    "best_read_ci_high": best_read["median_ci95"][1],
+                                }
+                            )
+                    f2s = ests.get("f2_sampled")
+                    if axis_name == "noise" and f2s is not None:
+                        verdicts["dead_zone"].append(
+                            {
+                                "value": cell["value"],
+                                "control": name,
+                                "extends": bool(ctrl["median_ci95"][0] > f2s["median_r2"]),
+                                "control_ci_low": ctrl["median_ci95"][0],
+                                "f2_sampled_median": f2s["median_r2"],
+                            }
+                        )
+        summary["rev10_verdicts"] = verdicts
+        n_viol = len(verdicts["h3_violations"])
+        n_ext = sum(1 for d in verdicts["dead_zone"] if d["extends"])
+        print(f"[f3] rev-10 verdicts: h3 violations={n_viol}, dead-zone extensions={n_ext}")
+
     save_json(summary, out / "summary.json")
 
     # Figure: one panel per continuous axis, one curve per estimator.
     panels = [a for a in ("noise", "mask", "density", "label") if a in grid]
-    if panels:
+    if panels and not lean_mode:
         ncol = 2
         nrow = int(np.ceil(len(panels) / ncol))
         fig, axes_arr = plt.subplots(nrow, ncol, figsize=(9.5, 3.4 * nrow), squeeze=False)
