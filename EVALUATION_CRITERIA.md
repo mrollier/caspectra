@@ -5,6 +5,86 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 11 (2026-07-06) — changelog
+
+Added **before any round-4 review-response measurement**, numbers-free. The
+third review (`manuscript/reviews/paper_third_review.md`, verdict: major
+revision) accepts the science as "plausible and potentially useful" but
+demands (C1) a budget-indexed statement of the central dominance claim, (C2)
+an explicit evaluation unit, (C3) decomposition of the enriched radius-two
+panel, (C5) a paired equivalence analysis behind "statistically
+indistinguishable", (C6/C8) seed and rule-panel stability of the frontier
+guidance, and (C7) the deployment status of the stacking result. Rev 11
+registers the seven analyses below. No change to criteria 1–9 or any
+rev-2…10 threshold or verdict rule; the two M5 trainings are gated (63 px
+smoke precedes each full run); all outcomes are reported regardless of
+direction, with the manuscript wording downgrades pre-specified here.
+
+1. **M1 — reference-scored direct estimators (post-hoc confirmatory).** Every
+   estimator with cached held-out predictions (mechanistic, five-statistic
+   ridge and boosted baselines, constrained CNN, and the rev-10 controls) is
+   rescored against the existing large-simulation reference targets (the
+   rev-8 C2.3 protocol: same rules, much larger `n_pairs`, decorrelated
+   seed), alongside the cached-target scores, in one table per panel.
+   Reporting rule (fixed here): a fresh-simulation estimator is expected to
+   rise from the replicate-agreement benchmark toward ICC; a direct
+   estimator rises only to the extent it estimates the latent mean. No
+   pass/fail gate; both ceilings are printed next to both scores.
+2. **M2 — paired equivalence for the "simulation-limited" claim (post-hoc
+   confirmatory).** The K-replicate target matrix is regenerated bit-exactly
+   from its registered seed protocol (`reliability.py: base_seed 1000+k`,
+   per-rule `SeedSequence([seed, rule, radius])`) on the exact held-out
+   panels (radius two primary; ECA where cached predictions exist). A joint
+   rule-bootstrap resamples the same rules for both quantities and reports,
+   per target, the 95% CI of R²_mechanistic − R²_replicate-agreement.
+   *Equivalence margin (fixed here, before measurement):* margin_t =
+   max(0.01, 1 − ICC_t), with ICC_t the per-target latent reliability
+   already published under rev 8 — the maximal noisy-score headroom any
+   estimator has over the replicate benchmark. *Wording rule:*
+   "statistically indistinguishable" survives per target iff the 95% CI lies
+   within ±margin_t; otherwise the manuscript downgrades to "consistent
+   with" and prints the CI.
+3. **M3 — enriched-panel decomposition (post-hoc confirmatory).** Held-out
+   radius-two results reported separately for the force-held signature
+   subpanel and the stratified-random remainder, plus a post-stratified
+   pooled estimate: group-weighted SS_res/SS_tot with weights matching each
+   group's prevalence in the 800-rule sampling universe (the paper's stated
+   rule distribution) rather than its share of the enriched panel.
+   Disclosure attached (fixed here): signature membership was computed from
+   the same seed-0 target cache later used for evaluation labels, by the
+   registered criterion-9 thresholds; the forced rules were never trained
+   on.
+4. **M4 — per-diagram reconstruction audit (post-hoc confirmatory).** Over
+   every held-out diagram (not only the first per rule): table-coverage
+   histogram and per-diagram exact-reconstruction rate, reported next to the
+   per-rule numbers so the "single diagram" claim is auditable at both
+   units. Descriptive; no gate.
+5. **M5 — seed replication of the degradation-trained control (gated
+   training ×2).** The rev-10 C-i configuration retrained with two new seeds
+   (all else identical, 63 px smoke first); each is scored on the clean
+   held-out panel (Table III protocol) and the frontier noise axis
+   (direct-only evaluation, same cells/budgets as rev 10). *Stability rule
+   (fixed here):* the noise-band claim keeps its current wording iff each
+   new seed's per-cell median falls inside the seed-0 cell's rule-bootstrap
+   95% CI at every noise cell in the recommended band; otherwise the band is
+   reported as a per-seed range and Table V is re-worded accordingly.
+6. **M6 — deployment-style stack (post-hoc confirmatory).** A ridge
+   meta-model over [five statistics + CNN predictions] fit **only on
+   training rules**, evaluated once on the untouched held-out panel;
+   reported next to the rev-7 cross-fitted diagnostic (which keeps its own
+   label). The registered rev-7 adds-value margin (0.02, CI excluding 0) is
+   reused for interpretation; neither result overwrites the other.
+7. **M7 — independent-panel replication of the frontier noise axis
+   (post-hoc confirmatory).** The noise-axis cells re-simulated on the
+   complementary half of the held-out panel (the rules the fixed-seed
+   frontier subsample excluded), same budgets and estimator set
+   (deterministic inverter, both posterior variants, sampled reader, frozen
+   CNN, degradation-trained seed-0 CNN). *Verdict rule (fixed here,
+   mirroring rev 9/10):* a cell's winner is re-stated only if, on the
+   complementary panel, a different estimator's rule-bootstrap CI_low
+   exceeds the original winner's CI_high; agreement within CIs is reported
+   as replication.
+
 ## Revision 10 (2026-07-05) — changelog
 
 Added **before any round-3 fairness-control measurement**, numbers-free. The
