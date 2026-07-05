@@ -5,6 +5,118 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-07-05 — Round-3 fairness controls + reporting completions (rev 10)
+
+Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 10
+(commit c16cc2b) **before** any number below. Questions: (C-i) does the
+degraded-regime guidance survive when the direct family receives exactly the
+adaptation the rev-9 reader received, and (C-ii) is the matched-regime
+negative result an artifact of the anti-shortcut constraint? Plus two
+registered reporting completions (F1 interval calibration; stacking under the
+headline base).
+
+### Training (gated; 63 px smokes first; single seed 0, disclosed)
+- **C-i degaug CNN**: canonical architecture (31,524 params), rev-9 registered
+  degradation augmentation on training batches (`caspectra/degradation.py`),
+  60 epochs; wall-clock 30:03 (vs ~22 min clean — augmentation overhead).
+  `runs/m4_range2_degaug/`.
+- **C-ii resnet18**: 11,172,292 params (354× the constrained CNN),
+  clean-trained, identical data/split/targets/epochs/batch/optimizer;
+  wall-clock 1:29:09. `runs/m4_range2_resnet/`.
+
+### Frontier (same 80-rule panel and cells as the rev-9 grid, regenerated from
+the same seeds; controls evaluated as frozen forwards via `--direct-only`;
+`runs/m4_range2/frontier_grid_controls/summary.json`, verdicts joined against
+the canonical grid)
+
+Noise axis, median held-out R² [CI95] (reference columns from the rev-9 grid):
+
+| noise | C-i degaug | C-ii resnet | best rev-9 estimator |
+|---|---|---|---|
+| 0% | 0.51 [0.25, 0.64] | 0.55 [0.40, 0.69] | F1 0.99 |
+| 2% | 0.52 [0.31, 0.63] | 0.59 [0.45, 0.74] | F1 **0.55** |
+| 3% | **0.55** [0.36, 0.65] | 0.59 [0.46, 0.73] | F1 0.27 |
+| 5% | **0.59** [0.38, 0.68] | 0.54 [0.42, 0.64] | CNN 0.15 |
+| 7.5% | **0.61** [0.41, 0.70] | 0.48 | F2-s 0.02 |
+| 10% | **0.62** [0.44, 0.70] | 0.25 | F2-s 0.17 |
+| 15% | **0.51** [0.34, 0.60] | −0.19 | F2-s −0.04 |
+| 20% | 0.17 [−0.05, 0.37] | −0.60 | F2-s 0.12 |
+
+- **The noise dead zone was an adaptation artifact, not an estimator-family
+  boundary.** C-i holds median R² 0.55–0.62 from 3% to 15% noise — where the
+  best previously tested estimator (F2-sampled) never exceeded 0.17 — and
+  satisfies the registered dead-zone rule (CI_low > F2-sampled point) at every
+  noise cell up to 15% (not at 20%, where they are comparable: 0.17 vs 0.12).
+  Rev-9's "learned system identification is the only estimator class that
+  retains signal beyond ~5%" is **overturned as an estimator-class claim**: it
+  was true only among degradation-naive direct estimators. What decides the
+  noise band is *training for the corruption*, not the estimator family.
+- **Robustness tax**: C-i pays ~0.14 on clean diagrams (0.51 vs the canonical
+  constrained CNN's 0.65) and is nowhere near simulation-limited anywhere.
+- **Masking/density: the Bayesian posterior still owns the intermediate
+  band** — 0.85/0.59 at 40/50% masking vs C-i 0.48/0.48; density 0.1
+  posterior 0.77 vs C-ii 0.46 / C-i 0.20. Beyond 50% masking every estimator
+  fails (≤ −1.0). Polarity: read family exactly invariant, unchanged.
+- **Hypothesis (iii) re-test with both controls in the direct family: 0
+  violations** — at every high-table-recovery cell (per-bit ≥ 0.95) the best
+  read-then-simulate estimator remains unbeaten. The matched-regime
+  recommendation stands, now against a 354×-larger unconstrained control and
+  a degradation-trained control.
+- **C-ii does not rescue direct amortization**: on clean cells the
+  unconstrained resnet18 is no better than the 31k constrained CNN (0.55
+  [0.40, 0.69] vs canonical 0.65 [0.51, 0.76]) and degrades much faster under
+  noise (−0.60 at 20%). The matched-regime negative result is not an artifact
+  of the anti-shortcut constraint.
+
+### Clean-protocol (160-rule panel, registered Table-III machinery reapplied
+via `analyze_paired_stats.py` on each control's checkpoint; same split)
+
+Per-target held-out R² (rule-level means):
+
+| method | survival | fraction | rate | cone fill | median |
+|---|---|---|---|---|---|
+| constrained CNN (canonical ref) | 0.888 | 0.869 | 0.849 | 0.384 | 0.859 |
+| **C-i degaug CNN** | 0.793 | 0.799 | 0.780 | 0.373 | 0.786 |
+| **C-ii resnet18** | 0.850 | 0.846 | 0.819 | 0.696 | 0.833 |
+| GBM (ref) | 0.809 | 0.909 | 0.880 | 0.596 | 0.845 |
+| mechanistic (ref) | 0.977 | 0.997 | 0.997 | 0.985 | 0.991 |
+
+- **Matched-regime verdict unchanged** (registered rule: a control changes
+  the verdict only if its per-target CI reaches the replicate-agreement
+  band — survival 0.974, fraction/rate 0.997, cone 0.959): the mechanistic
+  estimator is A_superior over C-ii on **all four** targets (ΔR² +0.13
+  [+0.06,+0.36] … +0.29 [+0.18,+0.48]) and over C-i on all four (+0.18 …
+  +0.61). Neither control approaches the band anywhere.
+- **C-ii trades targets rather than winning**: cone fill up (0.696 vs 0.384),
+  survival/fraction/rate down, median 0.833 vs 0.859; against the GBM all
+  four paired contrasts are *inconclusive*. 354× the parameters at the same
+  budget changes no verdict.
+- **C-i clean cost** on this panel: ~0.07–0.09 per target (median 0.786);
+  vs GBM: fraction/rate/cone B_superior, survival inconclusive — the
+  robustness that wins the noise band is paid for on clean diagrams.
+- Artifacts: `runs/m4_range2_{degaug,resnet}/paired_stats/summary.json`.
+
+### Reporting completions
+- **F1 1σ predictive-interval calibration** (rev-9 outstanding item;
+  `runs/m4_range2/frontier_grid_calibration/`): empirical coverage vs the
+  nominal ~68.3% — **at or above nominal across the recommended masking band**
+  (0.86 clean → 0.79 at 25% → 0.77 at 40% → 0.74 at 50%), conservative on
+  clean diagrams, **degrading along the noise axis** (0.67 at 1%, 0.58 at 2%,
+  0.45 at 5%, 0.13 at 20%): beyond its ~3% range the posterior is not merely
+  inaccurate, its intervals are overconfident. The recomputation reproduced
+  all 17 released grid medians **bit-exactly** (identical RNG tags) — a
+  by-product reproduction audit of the released artifact.
+- **Stacking under the headline base** (post-hoc confirmatory;
+  `runs/m4_range2/stacking_gbm_base/`): CNN-over-GBM survival increment
+  **+0.080 CI[+0.019, +0.176]** (clears the registered 0.02 margin; base
+  0.802 → 0.883); fraction +0.010, rate +0.017, cone fill +0.123 — all n.s.
+  Mechanistic-over-GBM adds value on all four targets (+0.089 … +0.526,
+  stacked 0.976–0.995). The rev-7 headline +0.32 is therefore specific to the
+  cross-fitted five-statistic ridge base; under the headline protocol the
+  survival increment is +0.08 — still real, much smaller.
+
+---
+
 ## 2026-07-05 — Identifiability frontier (rev 9; F1–F3)
 
 Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 9

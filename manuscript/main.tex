@@ -36,21 +36,22 @@ benchmark that task, with decision rules committed in advance, over the $88$
 elementary-CA orbits and $800$ sampled radius-two rules, for fully observed,
 noiseless, deterministic, synchronous,
 binary diagrams of known radius. Under these matched assumptions a single
-$127$-cell diagram identifies the entire rule table for $100\%$ (elementary)
+$127$-cell diagram identifies the rule table for $100\%$ (elementary)
 and $97.5\%$ (radius-two) of held-out rules, and reconstructing the rule and
 re-running the perturbation experiment predicts all four statistics at the
-accuracy of an independent Monte-Carlo replicate of the target itself. We
+accuracy of an independent Monte-Carlo replicate of the target. We
 distinguish this
 simulation-limited benchmark ($2\,\mathrm{ICC}-1$) from the latent-reliability
-ceiling (ICC) with which it is easily conflated. Two direct learned estimators
-fall far short of the benchmark on damage survival, the target least visible
-in texture, though the network carries survival information the five cheap
+ceiling (ICC) it is easily conflated with. Two direct learned estimators
+fall far short of the benchmark on damage survival,
+though the network carries survival information the cheap
 statistics miss (incremental \rtwo{} $+0.32$). An identifiability frontier
 then maps where rule reading fails and what replaces it: a Bayesian rule
 posterior restores accuracy to $50\%$ masking, extreme initial densities, and
-${\sim}3\%$ noise; beyond ${\sim}5\%$ noise every estimator collapses except a
-degradation-trained learned rule-reader. The degraded regime thus belongs to
-probabilistic and learned system identification, not direct amortization.
+${\sim}3\%$ noise; the noise band beyond belongs to training for the
+corruption---a degradation-augmented direct network is
+strongest there, while wherever the rule is recoverable nothing direct beats
+reading it, not even an unconstrained network $354\times$ larger.
 When the observation encodes the generator, system identification in some
 form is the baseline to beat.
 \end{abstract}
@@ -69,7 +70,8 @@ perturbation experiment, and compare. Under a matched observation model this
 transparent route is statistically indistinguishable from re-measuring the
 ground truth, while two learned models fall well short of it; degrading the
 observation then reveals an orderly frontier where exact reconstruction
-fails and probabilistic or learned variants of the same idea take over. The
+fails, probabilistic variants extend it, and beyond them the race is won by
+whichever estimator was trained for the corruption at hand. The
 result is a calibrated, pre-registered template for fair baselines in
 data-driven analysis of dynamical systems---and a map of when each strategy
 is the right one.
@@ -161,13 +163,15 @@ mechanistic route is brittle outside its assumptions: an identifiability phase
 diagram (Sec.~\ref{sec:identifiability}) shows exact reconstruction collapsing
 under modest observation noise, heavy masking, or extreme initial-condition
 density, and an estimator race across that frontier
-(Sec.~\ref{sec:frontier}) shows that most of the lost ground is recovered not
-by the frozen direct network but by probabilistic and learned variants of
-identification itself: a Bayesian rule posterior owns the intermediate band,
-and a degradation-trained rule-reader is the only estimator retaining signal
-beyond ${\sim}5\%$ noise. The frontier, not the matched-regime verdict, is
-what transfers: it maps which estimator class earns its keep in each
-observation regime.
+(Sec.~\ref{sec:frontier}) shows what replaces it: a Bayesian rule posterior
+owns the intermediate masking and density band, and the noise band beyond
+${\sim}3\%$ belongs to whichever estimator is trained for the
+corruption---with matched adaptation budgets a degradation-augmented direct
+network is strongest there (median \rtwo{} $0.55$--$0.62$ out to $15\%$
+noise), while wherever the rule is recoverable no direct estimator beats
+reading it, not even an unconstrained network $354\times$ larger. The
+frontier, not the matched-regime verdict, is what transfers: it maps which
+estimator earns its keep in each observation regime.
 
 We committed decision rules, margins, and rule panels to a timestamped
 repository before the corresponding measurements; Appendix~\ref{app:repro}
@@ -289,7 +293,10 @@ not about deep networks as a class: we did not run an architecture search, and
 Sec.~\ref{sec:discussion} names the learned system-identification pipelines
 that remain untested. The ``anti-shortcut'' first layer is an architectural
 intent only---Sec.~\ref{sec:probes} shows the rule remains decodable from the
-trained bottleneck.
+trained bottleneck. Two registered controls (rev.~10) bound what the
+constraint and the clean training cost: an unconstrained \texttt{resnet18}
+at the same budget, and the same CNN retrained with the rule-reader's
+degradation augmentation (Sec.~\ref{sec:frontier}).
 
 \emph{Statistical protocol.} Results are reported per target (never only as a
 four-target median), with the held-out \emph{rule} as the unit of resampling.
@@ -435,7 +442,13 @@ cross-fitted base. Adding the
 CNN's predictions to the five statistics yields a large, significant increment
 on damage survival ($+0.32$, CI $[+0.23,+0.48]$)---raising the stacked model
 from $0.56$ to $0.88$---with small significant increments on fraction and rate
-and none on cone fill; the reverse direction adds nothing. The
+and none on cone fill; the reverse direction adds nothing. Re-run with the
+boosted baseline of record supplying the base predictions [post-hoc
+confirmatory, rev.~10], the survival increment remains significant but
+smaller ($+0.08$, CI $[+0.02,+0.18]$, base $0.80\to0.88$); no other target
+clears the margin, so the $+0.32$ headline is specific to the five-statistic
+base and the base-independent statement is that the network carries survival
+information both bases miss. The
 network therefore extracts real survival information that texture statistics
 miss---exactly the target where both direct methods sit farthest below the
 reliability benchmark, and the concrete reason a learned representation cannot
@@ -580,6 +593,14 @@ matches the supplied-$\varepsilon$ variant throughout (it captures the
 \emph{effective} corruption, including input-side flips). On the noise axis
 its advantage is real but bounded: best of all methods up to ${\sim}3\%$
 ($0.55$ vs $0.38$ at $2\%$), collapsing like the inverter beyond ${\sim}5\%$.
+The registered calibration of its nominal $1\sigma$ predictive intervals
+(the reporting item outstanding from rev.~9, completed here; the
+recomputation reproduces every released grid median bit-exactly) tells the
+same story: empirical coverage holds at or above the nominal ${\sim}68\%$
+across the masking band where the posterior is recommended ($0.86$
+clean to $0.74$ at $50\%$ masking) but degrades along the noise axis
+($0.58$ at $2\%$, $0.45$ at $5\%$, $0.13$ at $20\%$)---beyond its range the
+posterior is not merely inaccurate, its intervals are overconfident.
 We also quantified the known-radius assumption: selecting the radius by a
 smallest-consistent rule costs ${\sim}0.12$ median \rtwo{} on clean diagrams
 and degrades under noise (neighbourhood detection is itself a studied
@@ -602,11 +623,41 @@ accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
 and the frozen CNN to $-0.93$; from $5\%$ it beats the inverter by the
 registered rule at every cell.
 
-\emph{Verdicts.} The registered hypothesis that the reader
+\emph{(iii) Fairness controls} [registered numbers-free as rev.~10 before
+measurement]. The comparison above hands the read-then-simulate family two
+estimators adapted for degradation while the direct CNN stays clean-trained
+and architecturally constrained, so we ran the two symmetric controls, each
+a single seed on the identical grid cells: the same CNN retrained with the
+reader's registered degradation augmentation, and an unconstrained
+\texttt{resnet18} at the same budget ($1.1\times10^{7}$ parameters,
+$354\times$ the constrained CNN; clean-trained). The result overturns one
+rev-9 conclusion and confirms the other. The noise ``dead zone'' was an
+adaptation artifact, not an estimator-family boundary: the
+degradation-trained direct CNN holds median \rtwo{} $0.55$--$0.62$ from $3\%$
+to $15\%$ noise---where no previously tested estimator exceeded
+$0.17$---meeting the registered extension rule (bootstrap CI excluding the
+sampled reader's point value from below) at every noise cell up to $15\%$;
+at $20\%$ the two are comparable ($0.17$ vs $0.12$) and nothing is reliable.
+It pays a robustness tax of ${\sim}0.14$ median \rtwo{} on clean diagrams
+and does not approach the posterior under masking ($0.48$ vs $0.85$ at
+$40\%$) or extreme density ($0.20$ vs $0.77$). Meanwhile the third
+registered hypothesis survives the controls: at every cell with per-bit
+table recovery ${\ge}0.95$ the best read-then-simulate estimator remains
+unbeaten---zero violations---and the unconstrained network is no better on
+the grid's clean cells than the $31$k constrained one ($0.55$ vs $0.65$)
+while degrading faster under noise ($-0.60$ at $20\%$); on the full
+$160$-rule clean protocol it trades cone fill up for survival down at a
+slightly lower median, and every mechanistic superiority verdict survives.
+The matched-regime
+negative result is not an artifact of the anti-shortcut constraint.
+
+\emph{Verdicts.} The registered rev-9 hypothesis that the reader
 extends beyond the posterior is confirmed on the noise axis only in a
 weak sense---it moves the frontier without restoring identification---and is
 refuted under masking, where the posterior holds to $50\%$ and the reader
-never leaves zero. Consistent with the third registered hypothesis, at no
+never leaves zero; the rev-10 controls then supersede the reader in the
+noise band entirely. Consistent with the third registered hypothesis,
+re-tested with both controls included, at no
 grid cell with high table recovery does any direct amortizer beat the best
 read-then-simulate estimator. These curves are the paper's scope statement
 in graphical form; Table~\ref{tab:guidance} states it as practitioner
@@ -619,8 +670,9 @@ guidance.
 observation regime & use & median \rtwo{} evidence & \\
 \colrule
 matched (clean, full, known $r$) & exact inversion & simulation-limited & Tables~\ref{tab:eca}--\ref{tab:r2} \\
-noise $\lesssim3\%$ & Bayesian posterior & $0.55$ vs det $0.38$ at $2\%$ & Fig.~\ref{fig:frontier} \\
-noise $5$--$20\%$ & sampled learned reader & only estimator above $-0.05$; never above $0.17$ & Fig.~\ref{fig:frontier} \\
+noise $\lesssim2\%$ & Bayesian posterior & $0.55$ vs det $0.38$ at $2\%$ & Fig.~\ref{fig:frontier} \\
+noise $3$--$15\%$ & degradation-trained direct CNN & $0.55$--$0.62$; every alternative $\le0.27$ & Sec.~\ref{sec:frontier}(iii) \\
+noise $20\%$ & none reliable & CNN $0.17\approx$ reader $0.12$, CIs span $0$ & Sec.~\ref{sec:frontier}(iii) \\
 masking $\lesssim25\%$ & exact inversion & $0.89$ at $25\%$ & Fig.~\ref{fig:frontier} \\
 masking $25$--$50\%$ & Bayesian posterior & $0.85$ at $40\%$, $0.59$ at $50\%$ & Fig.~\ref{fig:frontier} \\
 extreme IC density & Bayesian posterior & $0.77$ vs det $0.08$ at density $0.1$ & Fig.~\ref{fig:frontier} \\
@@ -629,9 +681,9 @@ unknown radius & smallest-consistent selection & ${\sim}0.12$ cost on clean diag
 \end{tabular}
 \end{ruledtabular}
 \caption{Practitioner guidance across the identifiability frontier (radius
-two, $80$-rule panel; every cell from the registered rev.-9 grid of
-Fig.~\ref{fig:frontier}). Beyond $50\%$ masking and beyond $20\%$ noise no
-current estimator is reliable.}
+two, $80$-rule panel; cells from the registered rev.-9 grid of
+Fig.~\ref{fig:frontier} and the rev.-10 controls). Beyond $50\%$ masking and
+beyond $20\%$ noise no current estimator is reliable.}
 \label{tab:guidance}
 \end{table*}
 
@@ -755,20 +807,28 @@ constructed explicitly and calibrated against replicate reliability.
 The neural results are deliberately scoped. For \emph{this} constrained
 architecture at \emph{this} training budget, direct regression neither reaches
 the reliability benchmark nor dominates five cheap statistics, and the two
-trade places by target; the network's one demonstrated edge---substantial
-incremental survival information ($+0.32$)---is real, is exactly where texture
-is least informative, and survives cross-fitting. We do not conclude that deep
+trade places by target; the rev-10 unconstrained control shows this is not
+the constraint's doing (an architecture $354\times$ larger at the same
+budget changes no verdict: it trades cone fill up for survival down at a
+slightly lower median, and the mechanistic estimator stays superior on all
+four targets). The network's one demonstrated
+edge---incremental survival information, $+0.32$ over the five-statistic
+base and $+0.08$ over the boosted baseline of record---is real, is exactly
+where texture is least informative, and survives cross-fitting. We do not
+conclude that deep
 networks cannot close the gap. The probes show rule information is accessible
 to the network; whether exploiting it is an architecture, objective, or
-optimization question is open. A first learned system identifier---the
-$3\times10^4$-parameter rule reader of Sec.~\ref{sec:frontier}---sharpens that
-question: beyond ${\sim}5\%$ observation noise, where exact and posterior
-inversion collapse alike, it is the only estimator of any family that retains
-signal, but it plateaus at $0.73$ per-bit accuracy and \rtwo{}${\approx}0$
-(under masking and extreme densities it is the Bayesian posterior, not the
-reader, that extends the mechanistic route). Whether a larger reader, a differentiable
-simulator in the loop, or joint reader--simulator training closes the gap to
-simulation-limited accuracy is now a concrete, measurable open problem, next
+optimization question is open. The rev-9 rule reader and the rev-10
+degradation-trained control together sharpen that question: in the noise
+band beyond ${\sim}3\%$ the strongest estimator is the direct network
+trained for the corruption (median \rtwo{} $0.55$--$0.62$ to $15\%$ noise),
+the sampled reader holds \rtwo{}${\approx}0$ to $20\%$, and neither
+approaches simulation-limited accuracy; under masking and extreme densities
+the Bayesian posterior, not either learned route, extends the mechanistic
+route. Whether a larger reader, a differentiable
+simulator in the loop, joint reader--simulator training, or
+corruption-trained direct networks at scale close that gap
+is now a concrete, measurable open problem, next
 to rule-scrubbing and rule-provision interventions to test causality.
 
 How far does the frontier itself travel beyond binary deterministic CA? Each
@@ -776,8 +836,8 @@ axis has a named analogue in the fields the lesson addresses, and we mark
 what is measured here versus conjectured. Observation noise maps to
 measurement noise in equation discovery, where recovery is likewise
 noise-brittle~\cite{brunton2016}: the collapse is measured here; the repair
-ordering (exact, then Bayesian, then learned identification) is established
-for CA only. Masking maps to missing sensors and partial observation:
+ordering (exact, then Bayesian, then corruption-trained learned estimators)
+is established for CA only. Masking maps to missing sensors and partial observation:
 measured here, transfer conjectured. Initial-condition density maps to
 insufficient excitation---the persistency-of-excitation condition of
 classical system identification, of which our under-exercised rule tables
@@ -798,9 +858,12 @@ the practical guidance is plain and now carries its price tag
 (Sec.~\ref{sec:compute}): if the observation model is matched, read the rule
 and simulate; under moderate corruption, read it \emph{probabilistically}---the
 Bayesian posterior holds to ${\sim}3\%$ noise, $50\%$ masking, and extreme
-densities at no training cost; beyond that no current estimator is accurate,
-and the least-bad options are learned---the sampled rule-reader under heavy
-noise, hybrid statistics-plus-network stacks for survival-like targets. For the broader program of behaviour-first (phenotype) analysis of
+densities at no training cost, with calibrated intervals exactly where it is
+recommended; beyond that, train for the corruption you expect---the
+degradation-augmented direct network holds median \rtwo{} $0.55$--$0.62$
+across $3$--$15\%$ noise at a ${\sim}0.14$ clean-diagram cost, and at $20\%$
+noise or past $50\%$ masking no current estimator is reliable
+(Table~\ref{tab:guidance}). For the broader program of behaviour-first (phenotype) analysis of
 CA~\cite{wolfram2002,lipackard1990,israeli2006}, the damage-signature
 landscape and the composed-system maps stand as usable, independently
 validated artefacts, described at the strength the validation supports and no

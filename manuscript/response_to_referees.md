@@ -322,7 +322,25 @@ degraded-regime guidance (pre-registered as revision 10 before measurement):
 degradation augmentation, and **(C-ii)** an unconstrained same-budget
 `resnet18` CNN — the architecture the anti-shortcut constraint was designed
 against, whose motivating claim round 2 retired.
-[REV10-RESULTS-PLACEHOLDER]
+
+The controls changed one conclusion and confirmed the other, and we report
+both plainly. **Changed:** the noise "dead zone" was an adaptation artifact,
+not an estimator-family boundary — the degradation-trained direct CNN holds
+median R² 0.55–0.62 across 3–15% noise, where no previously tested estimator
+exceeded 0.17; our earlier statement that learned system identification is
+the only class retaining signal there is withdrawn and replaced by the
+measured one (what decides the noise band is training for the corruption,
+at a ~0.14 clean-diagram cost). **Confirmed:** at every grid cell where the
+rule is recoverable (per-bit ≥ 0.95), the best read-then-simulate estimator
+remains unbeaten with both controls included — zero violations of the
+registered hypothesis — and the unconstrained 11.2M-parameter network is no
+better on clean diagrams than the 31k constrained one (0.55 vs 0.65) while
+degrading faster under noise, so the matched-regime negative result is not
+an artifact of the constraint. The Bayesian posterior still owns the
+intermediate masking and density band against both controls. Manuscript:
+Sec. IV E(iii), Table V, Discussion; measured record: RESULTS.md rev-10
+section with artifacts under `runs/m4_range2_degaug/`,
+`runs/m4_range2_resnet/`, and `runs/m4_range2/frontier_grid_controls/`.
 
 ## §10-bis. Registration auditability, corrected (continues concern 10)
 
