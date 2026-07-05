@@ -5,6 +5,46 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-07-05 — Identifiability frontier (rev 9; F1–F3, in progress)
+
+Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 9
+(commit 8f5cb56) **before** any number below. Question: where exact rule
+reading fails (rev-8 C4), do a Bayesian rule-posterior simulator (F1) and a
+learned rule-reader→simulator (F2) restore simulation-limited accuracy?
+Primary panel = the rev-8 identifiability panel (80 held-out range-2 rules,
+fixed seed); grid at n_pairs=48, n_samples=8 (`runs/m4_range2/frontier_grid/`).
+
+### F1 — Bayesian rule-posterior simulator (post-hoc confirmatory axes)
+Median held-out R², F1(ε-estimated) vs deterministic inverter vs frozen CNN:
+
+| axis | F1 | det | CNN | reading |
+|---|---|---|---|---|
+| noise 0.5% | **0.86** | 0.79 | 0.61 | F1 > det everywhere on 0–3% |
+| noise 2% | **0.55** | 0.38 | 0.44 | hypothesis (i) confirmed |
+| noise 3% | 0.27 (ε-known **0.38**) | 0.09 | 0.25 | F1's last stand |
+| noise ≥5% | ≤ −0.84 | ≤ −1.07 | **0.15 → −0.93** | crossover: nothing works well — F2's target zone |
+| mask 40% | **0.85** | 0.24 | −0.03 | F1 extends masking tolerance ~2× |
+| mask 50% | **0.59** | −0.77 | −0.03 | |
+| density 0.1 | **0.77** | 0.08 | 0.38 | posterior rescues under-exercised tables |
+| label flips 100% | **0.99** | 0.94 | 0.59 | mechanistic family polarity-invariant, as predicted; GBM exactly invariant (0.75) |
+
+ε self-consistency estimation ≈ matches ε-known (within ~0.1 R² everywhere;
+sometimes better — it captures the *effective* corruption incl. input-side
+flips). **Unknown-radius axis:** parsimony selection costs ~0.12 R² at zero
+noise (det-selected 0.83 vs det-known 0.95) and degrades under noise (0.37 vs
+0.41 at 2%) — radius knowledge is a real, now-quantified assumption.
+**Verdict per registered rule:** F1 "restores identification" on the
+intermediate band (noise ≲3%, mask ≲50%, density extremes); above ~5% noise
+no read-then-simulate estimator survives and the frozen CNN is merely least
+bad (negative R²) — the open slot F2 addresses.
+
+### F2 — learned rule-reader→simulator
+Training approved (user, 2026-07-05; range-2, 1 seed, 15 epochs, ~30k params,
+train-split rules only, registered degradation augmentation). *Grid results
+pending — appended below when measured.*
+
+---
+
 ## 2026-07-04 — Round-2 review-response results (rev 8; C1–C8)
 
 Measured after the second referee report returned **major revision**
