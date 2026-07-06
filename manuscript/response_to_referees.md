@@ -615,7 +615,7 @@ simulation for verdicts nobody contests.
 5. Sampling measure stated exactly (Appendix B "Data"; orbit-size-biased).
 6. Every interval/± now names its uncertainty source (captions, Tables I–III).
 7. Compute vignette: same-core CPU timings for both methods added (the CNN
-   is 1.2 ms on the same core that gives the mechanistic estimator 283 ms;
+   is 1.0 ms on the same core that gives the mechanistic estimator 283 ms;
    the GPU number is retained as deployment context); framed explicitly as
    a vignette, not a hardware-neutral study.
 8. Radius-selection procedure: candidates, criterion, margin, tie-break —
@@ -625,6 +625,14 @@ simulation for verdicts nobody contests.
 10. "Signature-complex" defined as a criterion label at first use.
 11. Rhetorical absolutes tightened ("almost always possible", "textbook
     instance", "nothing direct beats", "unambiguous", "none reliable").
+    A subsequent global condensation pass additionally shortened the
+    manuscript from 15 to 14 pages (~700 words): duplicated expositions
+    (the budget-indexed-family argument, the coverage numbers, the frontier
+    guidance, the hypothesis verdicts) are now stated once with pointers,
+    and figure/table captions no longer repeat the adjacent text. No
+    registered number, verdict, margin, or disclosure changed; every
+    substantive cut is logged in `manuscript/trimmed_material.md` in the
+    released repository.
 12. Structured prior-work table added (new Appendix D), with three
     literature additions found in a fresh search (Sun–Rosin–Martin 2011;
     Elser 2021; Mordvintsev et al. 2020). We found no prior work measuring
