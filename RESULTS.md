@@ -5,6 +5,158 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-07-06 — Round-4 review-response analyses (rev 11; M1–M7)
+
+Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 11
+(commit a4ffef7) **before** any number below. Third review
+(`manuscript/reviews/paper_third_review.md`): C1 budget-indexed dominance
+claim, C2 evaluation unit, C3 enriched panel, C5 paired equivalence, C6/C8
+seed + panel stability, C7 stacking status.
+
+### M1 — reference-rescoring of every estimator
+(`runs/m4_range2/reference_rescore/summary.json`,
+`runs/lever_a_local/reference_rescore/summary.json`; cache vs the rev-8
+4096-pair reference, zero new simulation)
+
+| estimator (radius 2) | vs cache | vs reference | shift |
+|---|---|---|---|
+| mechanistic | 0.9907 | **0.9952** | +0.0045 |
+| deep CNN (seed 0) | 0.8589 | 0.8586 | −0.0003 |
+| boosted baseline | 0.8445 | 0.8518 | +0.0073 |
+| ridge | 0.7092 | 0.7100 | +0.0008 |
+| degaug CNN | 0.7864 | 0.7879 | +0.0015 |
+| resnet18 | 0.8325 | 0.8346 | +0.0021 |
+
+ECA: mechanistic 0.9991→0.9996; CNN 0.8495→0.8507; gbm 0.9266→0.9246.
+**Reading (registered rule):** the fresh-simulation estimator rises to the
+ICC ceiling; every direct estimator's score is unchanged within ~0.007 — the
+direct shortfall is estimator error, not label noise. Answers reviewer Q8;
+empirically closes the C1 headroom scenario for the estimators tested.
+
+### M2 — paired equivalence for "simulation-limited"
+(`runs/*/paired_equivalence/summary.json`; K=20 replicates regenerated
+bit-exactly from registered seeds on the exact held-out panels; margin_t =
+max(0.01, 1−ICC_t))
+
+| target | panel | paired diff | CI95 | margin | equivalent |
+|---|---|---|---|---|---|
+| survival | r2 | +0.0007 | [−0.0081, +0.0093] | ±0.0130 | **yes** |
+| fraction | r2 | −0.0000 | [−0.0009, +0.0008] | ±0.0100 | **yes** |
+| rate | r2 | −0.0004 | [−0.0014, +0.0004] | ±0.0100 | **yes** |
+| cone fill | r2 | +0.0059 | [−0.0086, +0.0217] | ±0.0204 | no (favourable side) |
+| survival | ECA | +0.0003 | [−0.0157, +0.0151] | ±0.0100 | no (N=18 resolution) |
+| fraction | ECA | +0.0002 | [−0.0000, +0.0035] | ±0.0100 | **yes** |
+| rate | ECA | +0.0001 | [−0.0000, +0.0045] | ±0.0100 | **yes** |
+| cone fill | ECA | −0.0004 | [−0.0045, +0.0015] | ±0.0100 | **yes** |
+
+**Registered wording rule applied:** 6/8 formally equivalent;
+"statistically indistinguishable" replaced by the precise per-target
+statement in §IV.A; the two failures are CI-width failures (ECA survival:
+18 rules; r2 cone fill: overshoot only on the side where the mechanistic
+estimator *beats* the replicate).
+
+### M3 — enriched-panel decomposition
+(`runs/m4_range2/panel_decomposition/summary.json`; 57 forced signature +
+103 stratified-random; universe share 57/800 = 7.1%, panel share 35.6%)
+
+| method | signature | random | enriched (published) | post-stratified |
+|---|---|---|---|---|
+| mechanistic | 0.9823 | 0.9948 | 0.9907 | **0.9940** |
+| deep CNN (seed 0) | 0.8663 | 0.8212 | 0.8589 | 0.8296 |
+| boosted | 0.7946 | 0.8489 | 0.8445 | 0.8488 |
+| ridge | 0.6768 | 0.7094 | 0.7092 | 0.7100 |
+
+**Reading:** the enrichment is *conservative* for the paper's claim —
+representative reweighting raises the mechanistic median and lowers the
+CNN's, widening the gap (0.132 → 0.164). Disclosure attached in the artifact:
+signature membership derives from the same seed-0 target cache used for
+evaluation labels (registered criterion-9 thresholds; forced rules never
+trained on).
+
+### M4 — per-diagram reconstruction audit
+(`runs/*/per_diagram_audit/summary.json`)
+
+- Radius 2, all 10,240 held-out diagrams: per-diagram exact reconstruction
+  **0.9904**, full-coverage share 0.9696, median coverage 1.0; per rule:
+  first-diagram full coverage 0.9750 (= the published 156/160), union
+  coverage 1.0000, all-64-diagrams-exact share 0.8125.
+- ECA, all 4,608 held-out diagrams: every rate 1.0000.
+
+### M6 — deployment-style stack (train-rules-fitted ridge over stats+CNN)
+(`runs/m4_range2/deployment_stack/summary.json`)
+
+Stack median 0.8835 CI[0.779, 0.910] vs CNN alone 0.8589. Stack-over-CNN:
+survival **+0.0005** [−0.013, +0.019] n.s.; fraction +0.021 (adds value);
+rate +0.030 (adds value); cone fill +0.044 n.s. **Reading:** the rev-7
+cross-fitted survival complementarity (+0.32 diagnostic) does *not* deploy
+via a train-once linear meta-model — the reviewer's C7 distinction is
+empirically real and now stated in §IV.C.
+
+### M7 — complement-panel replication of the frontier noise axis
+(`runs/m4_range2/frontier_grid_complement/summary.json`; the 80 held-out
+rules the canonical subsample excluded; identical budgets/estimators)
+
+| noise | det | F1(est) | F2-s | frozen CNN | degaug CNN |
+|---|---|---|---|---|---|
+| 0% | 0.978 | 0.996 | 0.02 | 0.845 | 0.681 |
+| 2% | 0.744 | 0.757 | 0.03 | 0.466 | 0.704 |
+| 3% | 0.737 | **0.792** | 0.09 | 0.415 | 0.705 |
+| 5% | 0.665 | 0.700 | 0.20 | 0.340 | **0.710** |
+| 7.5% | 0.587 | 0.611 | 0.14 | 0.202 | **0.695** |
+| 10% | 0.329 | 0.365 | 0.20 | 0.049 | **0.641** |
+| 15% | −0.294 | −0.185 | 0.22 | −0.262 | **0.351** |
+| 20% | −1.124 | −0.994 | 0.08 | −0.495 | 0.090 (CI spans 0) |
+
+**Registered verdict rule:** no cell winner re-stated (no alternative's
+CI_low clears the original winner's CI_high anywhere). Family structure
+replicates; two measured panel sensitivities: (a) degaug band 0.35–0.71 here
+vs 0.51–0.62 canonical; (b) the pseudo-posterior's collapse point moves
+(holds 0.79/0.70/0.61 at 3/5/7.5% here vs collapsed by 5% canonically) — the
+posterior→network crossover is a panel-dependent band ~3–7.5%, now stated as
+such in §IV.F and Table V. Registered dead-zone extension rule on this
+panel: met at 3–10%; at 15% narrowly not (degaug CI_low 0.210 vs reader
+point 0.218; met canonically).
+
+### M5 — seed replication of the degradation-trained control
+(gated; 63 px smoke passed; seeds 1, 2 trained with `--seed`, all else
+identical; noise-axis evals `runs/m4_range2/frontier_grid_degaug_seed{1,2}/`,
+clean-panel `runs/m4_range2/reference_rescore_seedrep/`)
+
+Canonical-panel noise cells, median held-out R² (seed-0 CI from rev-10):
+
+| noise | seed 0 [CI] | seed 1 | seed 2 | in seed-0 CI? (s1/s2) | best read point |
+|---|---|---|---|---|---|
+| 3% | 0.554 [0.36, 0.65] | 0.296 | 0.486 | ✗ / ✓ | 0.377 |
+| 5% | 0.585 [0.38, 0.68] | 0.271 | 0.548 | ✗ / ✓ | −0.019 |
+| 7.5% | 0.610 [0.41, 0.70] | 0.264 | 0.545 | ✗ / ✓ | 0.024 |
+| 10% | 0.619 [0.44, 0.70] | 0.240 | 0.548 | ✗ / ✓ | 0.166 |
+| 15% | 0.511 [0.34, 0.60] | 0.331 | 0.557 | ✗ / ✓ | −0.036 |
+| 20% | 0.169 [−0.05, 0.37] | **0.307** [0.06, 0.43] | **0.428** [0.25, 0.52] | — | 0.122 |
+
+Clean 160-rule panel (rule-level median): seed 0 **0.786**, seed 1 **0.590**,
+seed 2 **0.730** (clean-trained CNN 0.859). Grid clean cell: 0.510 / 0.288 /
+0.368 (frozen CNN 0.654) → robustness tax 0.14–0.37 across seeds.
+
+**Registered stability rule: FAILS** (seed 2 passes every band cell; seed 1
+falls below the seed-0 CI at every band cell, at 15% by 0.012). Training
+converged identically (train MSE
+0.61→0.31 both seeds); epoch-to-epoch validation swings of ±0.2 under
+augmentation implicate final-epoch selection variance. Per the registered
+rule the manuscript now reports the band as a **per-seed range**: 0.24–0.62
+(two of three seeds: 0.49–0.62).
+
+**What is seed-stable:** at every cell 5–20% noise, *every* seed's point
+median exceeds the best read-then-simulate estimator's; rev-10 CI extension
+rule met by seed 0 at 3–15%, seed 2 at 5–15%, seed 1 at 15% only. At 20%
+noise reliability itself is seed-dependent: seeds 1 and 2 clear zero
+(0.31/0.43) where seed 0 (0.17, CI spans 0) and the complement-panel
+evaluation (0.09) do not — Table V's 20% row re-worded accordingly. The
+corruption-adaptation conclusion (rev-10) stands at the family level; the
+level a practitioner gets from one training run at this budget varies by
+~2×. Reviewer C6's single-seed concern is thereby *vindicated and priced*.
+
+---
+
 ## 2026-07-05 — Round-3 fairness controls + reporting completions (rev 10)
 
 Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 10

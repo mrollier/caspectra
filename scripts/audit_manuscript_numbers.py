@@ -26,6 +26,16 @@ REPO = Path(__file__).resolve().parents[1]
 SUMMARY = REPO / "runs" / "m4_range2" / "frontier_grid" / "summary.json"
 CONTROLS = REPO / "runs" / "m4_range2" / "frontier_grid_controls" / "summary.json"
 CALIBRATION = REPO / "runs" / "m4_range2" / "frontier_grid_calibration" / "summary.json"
+COMPLEMENT = REPO / "runs" / "m4_range2" / "frontier_grid_complement" / "summary.json"
+SEED1 = REPO / "runs" / "m4_range2" / "frontier_grid_degaug_seed1" / "summary.json"
+SEED2 = REPO / "runs" / "m4_range2" / "frontier_grid_degaug_seed2" / "summary.json"
+SEEDREP = REPO / "runs" / "m4_range2" / "reference_rescore_seedrep" / "summary.json"
+RESCORE = REPO / "runs" / "m4_range2" / "reference_rescore" / "summary.json"
+EQUIV = REPO / "runs" / "m4_range2" / "paired_equivalence" / "summary.json"
+EQUIV_ECA = REPO / "runs" / "lever_a_local" / "paired_equivalence" / "summary.json"
+DECOMP = REPO / "runs" / "m4_range2" / "panel_decomposition" / "summary.json"
+PERDIAG = REPO / "runs" / "m4_range2" / "per_diagram_audit" / "summary.json"
+DEPLOY = REPO / "runs" / "m4_range2" / "deployment_stack" / "summary.json"
 MAIN_TEX = REPO / "manuscript" / "main.tex"
 RESULTS = REPO / "RESULTS.md"
 
@@ -140,6 +150,116 @@ def build_rev10_checks(controls: dict, calibration: dict) -> list[Check]:
     ]
 
 
+def build_rev11_checks() -> list[Check]:
+    """Numbers quoted from the rev-11 review-response analyses (M1-M7)."""
+    checks: list[Check] = []
+    if RESCORE.exists():
+        m = json.loads(RESCORE.read_text())["methods"]
+        checks += [
+            Check("M1 cnn vs cache", 0.859, m["cnn"]["vs_cache"]["median_r2"]),
+            Check("M1 cnn reference shift", -0.000, m["cnn"]["median_shift"]),
+            Check("M1 gbm vs cache", 0.845, m["gbm"]["vs_cache"]["median_r2"]),
+            Check("M1 gbm reference shift", 0.007, m["gbm"]["median_shift"]),
+            Check("M1 mech vs reference", 0.995, m["mechanistic"]["vs_reference"]["median_r2"]),
+        ]
+    if EQUIV.exists():
+        e = json.loads(EQUIV.read_text())["per_target"]
+        checks += [
+            Check("M2 r2 survival diff", 0.001, e["damage_survival"]["paired_diff"]),
+            Check("M2 r2 survival CI low", -0.008, e["damage_survival"]["diff_ci95"][0]),
+            Check("M2 r2 survival CI high", 0.009, e["damage_survival"]["diff_ci95"][1]),
+            Check("M2 r2 survival margin", 0.013, e["damage_survival"]["margin"]),
+            Check("M2 r2 cone diff", 0.006, e["cone_fill"]["paired_diff"]),
+            Check("M2 r2 cone CI high", 0.022, e["cone_fill"]["diff_ci95"][1]),
+            Check("M2 r2 cone margin", 0.020, e["cone_fill"]["margin"]),
+        ]
+    if EQUIV_ECA.exists():
+        e = json.loads(EQUIV_ECA.read_text())["per_target"]
+        checks += [
+            Check("M2 eca survival diff", 0.0003, e["damage_survival"]["paired_diff"]),
+            Check("M2 eca survival CI high", 0.015, e["damage_survival"]["diff_ci95"][1]),
+        ]
+    if DECOMP.exists():
+        d = json.loads(DECOMP.read_text())
+        mm = d["methods"]["mechanistic"]
+        mc = d["methods"]["cnn"]
+        checks += [
+            Check("M3 mech random subpanel", 0.995, mm["random_subpanel"]["median_r2"]),
+            Check("M3 mech signature subpanel", 0.982, mm["signature_subpanel"]["median_r2"]),
+            Check("M3 mech post-stratified", 0.994, mm["post_stratified"]["median_r2"]),
+            Check("M3 cnn random subpanel", 0.821, mc["random_subpanel"]["median_r2"]),
+            Check("M3 cnn post-stratified", 0.830, mc["post_stratified"]["median_r2"]),
+            Check("M3 signature panel share", 0.356, d["signature_share_panel"]),
+            Check("M3 signature universe share", 0.071, d["signature_share_universe"]),
+        ]
+    if PERDIAG.exists():
+        p = json.loads(PERDIAG.read_text())
+        checks += [
+            Check("M4 per-diagram exact", 0.990, p["per_diagram"]["exact_reconstruction_rate"]),
+            Check(
+                "M4 first-diagram coverage",
+                0.975,
+                p["per_rule"]["first_diagram_full_coverage_share"],
+            ),
+        ]
+    if DEPLOY.exists():
+        d = json.loads(DEPLOY.read_text())
+        checks += [
+            Check("M6 stack median", 0.88, d["stack"]["median_r2"]),
+            Check(
+                "M6 survival increment",
+                0.001,
+                d["stack_over_cnn"]["damage_survival"]["incremental_r2_over_cnn"],
+            ),
+        ]
+    if SEED1.exists() and SEED2.exists() and CONTROLS.exists():
+        band_cells = (0.03, 0.05, 0.075, 0.1, 0.15)
+        g1 = json.loads(SEED1.read_text())["grid"]
+        g2 = json.loads(SEED2.read_text())["grid"]
+        g0 = json.loads(CONTROLS.read_text())["grid"]
+        b1 = [_median(g1, "noise", v, "degaug_seed1") for v in band_cells]
+        b2 = [_median(g2, "noise", v, "degaug_seed2") for v in band_cells]
+        b0 = [_median(g0, "noise", v, "degaug_cnn") for v in band_cells]
+        clean0 = _median(g0, "noise", 0.0, "degaug_cnn")
+        clean1 = _median(g1, "noise", 0.0, "degaug_seed1")
+        clean2 = _median(g2, "noise", 0.0, "degaug_seed2")
+        frozen_clean = _median(json.loads(SUMMARY.read_text())["grid"], "noise", 0.0, "cnn")
+        checks += [
+            Check("M5 per-seed band low (all seeds)", 0.24, min(b0 + b1 + b2)),
+            Check("M5 per-seed band high (all seeds)", 0.62, max(b0 + b1 + b2)),
+            Check("M5 two-of-three band low", 0.49, min(b0 + b2)),
+            Check("M5 two-of-three band high", 0.62, max(b0 + b2)),
+            Check("M5 seed1 band low", 0.24, min(b1)),
+            Check("M5 seed1 band high", 0.33, max(b1)),
+            Check("M5 seed1 at 20%", 0.31, _median(g1, "noise", 0.2, "degaug_seed1")),
+            Check("M5 seed2 at 20%", 0.43, _median(g2, "noise", 0.2, "degaug_seed2")),
+            Check("M5 tax low edge", 0.14, frozen_clean - max(clean0, clean1, clean2)),
+            Check("M5 tax high edge", 0.37, frozen_clean - min(clean0, clean1, clean2)),
+        ]
+    if SEEDREP.exists():
+        m = json.loads(SEEDREP.read_text())["methods"]
+        checks += [
+            Check("M5 seed1 clean panel", 0.59, m["degaug_seed1"]["vs_cache"]["median_r2"]),
+            Check("M5 seed2 clean panel", 0.73, m["degaug_seed2"]["vs_cache"]["median_r2"]),
+        ]
+    if COMPLEMENT.exists():
+        grid = json.loads(COMPLEMENT.read_text())["grid"]
+        band = [_median(grid, "noise", v, "degaug_cnn") for v in (0.03, 0.05, 0.075, 0.1, 0.15)]
+        checks += [
+            Check("M7 degaug 7.5%", 0.70, _median(grid, "noise", 0.075, "degaug_cnn")),
+            Check("M7 degaug 10%", 0.64, _median(grid, "noise", 0.1, "degaug_cnn")),
+            Check("M7 degaug 15%", 0.35, _median(grid, "noise", 0.15, "degaug_cnn")),
+            Check("M7 f1est 3%", 0.79, _median(grid, "noise", 0.03, "f1_eps_estimated")),
+            Check("M7 f1est 5%", 0.70, _median(grid, "noise", 0.05, "f1_eps_estimated")),
+            Check("M7 f1est 7.5%", 0.61, _median(grid, "noise", 0.075, "f1_eps_estimated")),
+            Check("M7 f1est 10%", 0.37, _median(grid, "noise", 0.1, "f1_eps_estimated")),
+            Check("M7 f1est 15%", -0.19, _median(grid, "noise", 0.15, "f1_eps_estimated")),
+            Check("M7 complement band low", 0.35, min(band)),
+            Check("M7 complement band high", 0.71, max(band)),
+        ]
+    return checks
+
+
 def text_guards() -> list[tuple[str, bool]]:
     """Literal-string guards: the corrected values are present, stale ones gone."""
     tex = MAIN_TEX.read_text()
@@ -165,6 +285,7 @@ def main() -> int:
             json.loads(CONTROLS.read_text())["grid"],
             json.loads(CALIBRATION.read_text())["grid"],
         )
+    checks += build_rev11_checks()
     failures = 0
     for check in checks:
         status = "ok " if check.ok else "FAIL"
