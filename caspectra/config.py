@@ -94,6 +94,10 @@ class TrainConfig:
     checkpoint_every: int = 10
     num_workers: int = 2
     output_dir: str = "runs/exp"
+    # Rev-10 C-i fairness control: apply the rev-9 reader's registered
+    # input-degradation augmentation (caspectra.degradation) to training
+    # batches. Validation and evaluation always see clean diagrams.
+    degradation_augment: bool = False
     # Leave-rules-out split (regressor only; criterion 6). Class IV has two
     # members: 110 is forced out / 54 forced in per the 2026-07-02 decision;
     # swap the two lists for the robustness-check variant.

@@ -30,6 +30,7 @@ import torch  # noqa: E402
 from torch.utils.data import DataLoader  # noqa: E402
 
 from caspectra.config import TrainConfig  # noqa: E402
+from caspectra.degradation import degrade_batch  # noqa: E402
 from caspectra.utils import ensure_dir  # noqa: E402
 
 __all__ = ["RegressionTrainer", "r2_per_feature"]
@@ -102,6 +103,14 @@ class RegressionTrainer:
             for rule, vec in targets_by_rule.items()
         }
 
+        # Rev-10 C-i: dedicated stream so the degradation draw is reproducible
+        # given the (globally seeded) batch order; validation stays clean.
+        self._degrade_rng = (
+            np.random.default_rng(np.random.SeedSequence([20260705]))
+            if config.degradation_augment
+            else None
+        )
+
         self.history: list[float] = []
         self.val_r2_history: list[np.ndarray] = []
 
@@ -113,6 +122,8 @@ class RegressionTrainer:
         self.model.train()
         running, n_batches = 0.0, 0
         for image, metadata in self.train_loader:
+            if self._degrade_rng is not None:
+                image = degrade_batch(image, self._degrade_rng)
             predictions = self.model(image.to(self.device))
             loss = torch.nn.functional.mse_loss(predictions, self._batch_targets(metadata))
             self.optimizer.zero_grad()

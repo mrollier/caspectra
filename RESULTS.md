@@ -5,6 +5,378 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-07-06 — Round-4 review-response analyses (rev 11; M1–M7)
+
+Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 11
+(commit a4ffef7) **before** any number below. Third review
+(`manuscript/reviews/paper_third_review.md`): C1 budget-indexed dominance
+claim, C2 evaluation unit, C3 enriched panel, C5 paired equivalence, C6/C8
+seed + panel stability, C7 stacking status.
+
+### M1 — reference-rescoring of every estimator
+(`runs/m4_range2/reference_rescore/summary.json`,
+`runs/lever_a_local/reference_rescore/summary.json`; cache vs the rev-8
+4096-pair reference, zero new simulation)
+
+| estimator (radius 2) | vs cache | vs reference | shift |
+|---|---|---|---|
+| mechanistic | 0.9907 | **0.9952** | +0.0045 |
+| deep CNN (seed 0) | 0.8589 | 0.8586 | −0.0003 |
+| boosted baseline | 0.8445 | 0.8518 | +0.0073 |
+| ridge | 0.7092 | 0.7100 | +0.0008 |
+| degaug CNN | 0.7864 | 0.7879 | +0.0015 |
+| resnet18 | 0.8325 | 0.8346 | +0.0021 |
+
+ECA: mechanistic 0.9991→0.9996; CNN 0.8495→0.8507; gbm 0.9266→0.9246.
+**Reading (registered rule):** the fresh-simulation estimator rises to the
+ICC ceiling; every direct estimator's score is unchanged within ~0.007 — the
+direct shortfall is estimator error, not label noise. Answers reviewer Q8;
+empirically closes the C1 headroom scenario for the estimators tested.
+
+### M2 — paired equivalence for "simulation-limited"
+(`runs/*/paired_equivalence/summary.json`; K=20 replicates regenerated
+bit-exactly from registered seeds on the exact held-out panels; margin_t =
+max(0.01, 1−ICC_t))
+
+| target | panel | paired diff | CI95 | margin | equivalent |
+|---|---|---|---|---|---|
+| survival | r2 | +0.0007 | [−0.0081, +0.0093] | ±0.0130 | **yes** |
+| fraction | r2 | −0.0000 | [−0.0009, +0.0008] | ±0.0100 | **yes** |
+| rate | r2 | −0.0004 | [−0.0014, +0.0004] | ±0.0100 | **yes** |
+| cone fill | r2 | +0.0059 | [−0.0086, +0.0217] | ±0.0204 | no (favourable side) |
+| survival | ECA | +0.0003 | [−0.0157, +0.0151] | ±0.0100 | no (N=18 resolution) |
+| fraction | ECA | +0.0002 | [−0.0000, +0.0035] | ±0.0100 | **yes** |
+| rate | ECA | +0.0001 | [−0.0000, +0.0045] | ±0.0100 | **yes** |
+| cone fill | ECA | −0.0004 | [−0.0045, +0.0015] | ±0.0100 | **yes** |
+
+**Registered wording rule applied:** 6/8 formally equivalent;
+"statistically indistinguishable" replaced by the precise per-target
+statement in §IV.A; the two failures are CI-width failures (ECA survival:
+18 rules; r2 cone fill: overshoot only on the side where the mechanistic
+estimator *beats* the replicate).
+
+### M3 — enriched-panel decomposition
+(`runs/m4_range2/panel_decomposition/summary.json`; 57 forced signature +
+103 stratified-random; universe share 57/800 = 7.1%, panel share 35.6%)
+
+| method | signature | random | enriched (published) | post-stratified |
+|---|---|---|---|---|
+| mechanistic | 0.9823 | 0.9948 | 0.9907 | **0.9940** |
+| deep CNN (seed 0) | 0.8663 | 0.8212 | 0.8589 | 0.8296 |
+| boosted | 0.7946 | 0.8489 | 0.8445 | 0.8488 |
+| ridge | 0.6768 | 0.7094 | 0.7092 | 0.7100 |
+
+**Reading:** the enrichment is *conservative* for the paper's claim —
+representative reweighting raises the mechanistic median and lowers the
+CNN's, widening the gap (0.132 → 0.164). Disclosure attached in the artifact:
+signature membership derives from the same seed-0 target cache used for
+evaluation labels (registered criterion-9 thresholds; forced rules never
+trained on).
+
+### M4 — per-diagram reconstruction audit
+(`runs/*/per_diagram_audit/summary.json`)
+
+- Radius 2, all 10,240 held-out diagrams: per-diagram exact reconstruction
+  **0.9904**, full-coverage share 0.9696, median coverage 1.0; per rule:
+  first-diagram full coverage 0.9750 (= the published 156/160), union
+  coverage 1.0000, all-64-diagrams-exact share 0.8125.
+- ECA, all 4,608 held-out diagrams: every rate 1.0000.
+
+### M6 — deployment-style stack (train-rules-fitted ridge over stats+CNN)
+(`runs/m4_range2/deployment_stack/summary.json`)
+
+Stack median 0.8835 CI[0.779, 0.910] vs CNN alone 0.8589. Stack-over-CNN:
+survival **+0.0005** [−0.013, +0.019] n.s.; fraction +0.021 (adds value);
+rate +0.030 (adds value); cone fill +0.044 n.s. **Reading:** the rev-7
+cross-fitted survival complementarity (+0.32 diagnostic) does *not* deploy
+via a train-once linear meta-model — the reviewer's C7 distinction is
+empirically real and now stated in §IV.C.
+
+### M7 — complement-panel replication of the frontier noise axis
+(`runs/m4_range2/frontier_grid_complement/summary.json`; the 80 held-out
+rules the canonical subsample excluded; identical budgets/estimators)
+
+| noise | det | F1(est) | F2-s | frozen CNN | degaug CNN |
+|---|---|---|---|---|---|
+| 0% | 0.978 | 0.996 | 0.02 | 0.845 | 0.681 |
+| 2% | 0.744 | 0.757 | 0.03 | 0.466 | 0.704 |
+| 3% | 0.737 | **0.792** | 0.09 | 0.415 | 0.705 |
+| 5% | 0.665 | 0.700 | 0.20 | 0.340 | **0.710** |
+| 7.5% | 0.587 | 0.611 | 0.14 | 0.202 | **0.695** |
+| 10% | 0.329 | 0.365 | 0.20 | 0.049 | **0.641** |
+| 15% | −0.294 | −0.185 | 0.22 | −0.262 | **0.351** |
+| 20% | −1.124 | −0.994 | 0.08 | −0.495 | 0.090 (CI spans 0) |
+
+**Registered verdict rule:** no cell winner re-stated (no alternative's
+CI_low clears the original winner's CI_high anywhere). Family structure
+replicates; two measured panel sensitivities: (a) degaug band 0.35–0.71 here
+vs 0.51–0.62 canonical; (b) the pseudo-posterior's collapse point moves
+(holds 0.79/0.70/0.61 at 3/5/7.5% here vs collapsed by 5% canonically) — the
+posterior→network crossover is a panel-dependent band ~3–7.5%, now stated as
+such in §IV.F and Table V. Registered dead-zone extension rule on this
+panel: met at 3–10%; at 15% narrowly not (degaug CI_low 0.210 vs reader
+point 0.218; met canonically).
+
+### M5 — seed replication of the degradation-trained control
+(gated; 63 px smoke passed; seeds 1, 2 trained with `--seed`, all else
+identical; noise-axis evals `runs/m4_range2/frontier_grid_degaug_seed{1,2}/`,
+clean-panel `runs/m4_range2/reference_rescore_seedrep/`)
+
+Canonical-panel noise cells, median held-out R² (seed-0 CI from rev-10):
+
+| noise | seed 0 [CI] | seed 1 | seed 2 | in seed-0 CI? (s1/s2) | best read point |
+|---|---|---|---|---|---|
+| 3% | 0.554 [0.36, 0.65] | 0.296 | 0.486 | ✗ / ✓ | 0.377 |
+| 5% | 0.585 [0.38, 0.68] | 0.271 | 0.548 | ✗ / ✓ | −0.019 |
+| 7.5% | 0.610 [0.41, 0.70] | 0.264 | 0.545 | ✗ / ✓ | 0.024 |
+| 10% | 0.619 [0.44, 0.70] | 0.240 | 0.548 | ✗ / ✓ | 0.166 |
+| 15% | 0.511 [0.34, 0.60] | 0.331 | 0.557 | ✗ / ✓ | −0.036 |
+| 20% | 0.169 [−0.05, 0.37] | **0.307** [0.06, 0.43] | **0.428** [0.25, 0.52] | — | 0.122 |
+
+Clean 160-rule panel (rule-level median): seed 0 **0.786**, seed 1 **0.590**,
+seed 2 **0.730** (clean-trained CNN 0.859). Grid clean cell: 0.510 / 0.288 /
+0.368 (frozen CNN 0.654) → robustness tax 0.14–0.37 across seeds.
+
+**Registered stability rule: FAILS** (seed 2 passes every band cell; seed 1
+falls below the seed-0 CI at every band cell, at 15% by 0.012). Training
+converged identically (train MSE
+0.61→0.31 both seeds); epoch-to-epoch validation swings of ±0.2 under
+augmentation implicate final-epoch selection variance. Per the registered
+rule the manuscript now reports the band as a **per-seed range**: 0.24–0.62
+(two of three seeds: 0.49–0.62).
+
+**What is seed-stable:** at every cell 5–20% noise, *every* seed's point
+median exceeds the best read-then-simulate estimator's; rev-10 CI extension
+rule met by seed 0 at 3–15%, seed 2 at 5–15%, seed 1 at 15% only. At 20%
+noise reliability itself is seed-dependent: seeds 1 and 2 clear zero
+(0.31/0.43) where seed 0 (0.17, CI spans 0) and the complement-panel
+evaluation (0.09) do not — Table V's 20% row re-worded accordingly. The
+corruption-adaptation conclusion (rev-10) stands at the family level; the
+level a practitioner gets from one training run at this budget varies by
+~2×. Reviewer C6's single-seed concern is thereby *vindicated and priced*.
+
+---
+
+## 2026-07-05 — Round-3 fairness controls + reporting completions (rev 10)
+
+Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 10
+(commit c16cc2b) **before** any number below. Questions: (C-i) does the
+degraded-regime guidance survive when the direct family receives exactly the
+adaptation the rev-9 reader received, and (C-ii) is the matched-regime
+negative result an artifact of the anti-shortcut constraint? Plus two
+registered reporting completions (F1 interval calibration; stacking under the
+headline base).
+
+### Training (gated; 63 px smokes first; single seed 0, disclosed)
+- **C-i degaug CNN**: canonical architecture (31,524 params), rev-9 registered
+  degradation augmentation on training batches (`caspectra/degradation.py`),
+  60 epochs; wall-clock 30:03 (vs ~22 min clean — augmentation overhead).
+  `runs/m4_range2_degaug/`.
+- **C-ii resnet18**: 11,172,292 params (354× the constrained CNN),
+  clean-trained, identical data/split/targets/epochs/batch/optimizer;
+  wall-clock 1:29:09. `runs/m4_range2_resnet/`.
+
+### Frontier (same 80-rule panel and cells as the rev-9 grid, regenerated from
+the same seeds; controls evaluated as frozen forwards via `--direct-only`;
+`runs/m4_range2/frontier_grid_controls/summary.json`, verdicts joined against
+the canonical grid)
+
+Noise axis, median held-out R² [CI95] (reference columns from the rev-9 grid):
+
+| noise | C-i degaug | C-ii resnet | best rev-9 estimator |
+|---|---|---|---|
+| 0% | 0.51 [0.25, 0.64] | 0.55 [0.40, 0.69] | F1 0.99 |
+| 2% | 0.52 [0.31, 0.63] | 0.59 [0.45, 0.74] | F1 **0.55** |
+| 3% | **0.55** [0.36, 0.65] | 0.59 [0.46, 0.73] | F1 0.27 |
+| 5% | **0.59** [0.38, 0.68] | 0.54 [0.42, 0.64] | CNN 0.15 |
+| 7.5% | **0.61** [0.41, 0.70] | 0.48 | F2-s 0.02 |
+| 10% | **0.62** [0.44, 0.70] | 0.25 | F2-s 0.17 |
+| 15% | **0.51** [0.34, 0.60] | −0.19 | F2-s −0.04 |
+| 20% | 0.17 [−0.05, 0.37] | −0.60 | F2-s 0.12 |
+
+- **The noise dead zone was an adaptation artifact, not an estimator-family
+  boundary.** C-i holds median R² 0.51–0.62 from 3% to 15% noise — where the
+  best previously tested estimator (F2-sampled) never exceeded 0.17 — and
+  satisfies the registered dead-zone rule (CI_low > F2-sampled point) at every
+  noise cell up to 15% (not at 20%, where they are comparable: 0.17 vs 0.12).
+  Rev-9's "learned system identification is the only estimator class that
+  retains signal beyond ~5%" is **overturned as an estimator-class claim**: it
+  was true only among degradation-naive direct estimators. What decides the
+  noise band is *training for the corruption*, not the estimator family.
+- **Robustness tax**: C-i pays ~0.14 on clean diagrams (0.51 vs the canonical
+  constrained CNN's 0.65) and is nowhere near simulation-limited anywhere.
+- **Masking/density: the Bayesian posterior still owns the intermediate
+  band** — 0.85/0.59 at 40/50% masking vs C-i 0.48/0.48; density 0.1
+  posterior 0.77 vs C-ii 0.46 / C-i 0.20. Beyond 50% masking every estimator
+  fails (≤ −1.0). Polarity: read family exactly invariant, unchanged.
+- **Hypothesis (iii) re-test with both controls in the direct family: 0
+  violations** — at every high-table-recovery cell (per-bit ≥ 0.95) the best
+  read-then-simulate estimator remains unbeaten. The matched-regime
+  recommendation stands, now against a 354×-larger unconstrained control and
+  a degradation-trained control.
+- **C-ii does not rescue direct amortization**: on clean cells the
+  unconstrained resnet18 is no better than the 31k constrained CNN (0.55
+  [0.40, 0.69] vs canonical 0.65 [0.51, 0.76]) and degrades much faster under
+  noise (−0.60 at 20%). The matched-regime negative result is not an artifact
+  of the anti-shortcut constraint.
+
+### Clean-protocol (160-rule panel, registered Table-III machinery reapplied
+via `analyze_paired_stats.py` on each control's checkpoint; same split)
+
+Per-target held-out R² (rule-level means):
+
+| method | survival | fraction | rate | cone fill | median |
+|---|---|---|---|---|---|
+| constrained CNN (canonical ref) | 0.888 | 0.869 | 0.849 | 0.384 | 0.859 |
+| **C-i degaug CNN** | 0.793 | 0.799 | 0.780 | 0.373 | 0.786 |
+| **C-ii resnet18** | 0.850 | 0.846 | 0.819 | 0.696 | 0.833 |
+| GBM (ref) | 0.809 | 0.909 | 0.880 | 0.596 | 0.845 |
+| mechanistic (ref) | 0.977 | 0.997 | 0.997 | 0.985 | 0.991 |
+
+- **Matched-regime verdict unchanged** (registered rule: a control changes
+  the verdict only if its per-target CI reaches the replicate-agreement
+  band — survival 0.974, fraction/rate 0.997, cone 0.959): the mechanistic
+  estimator is A_superior over C-ii on **all four** targets (ΔR² +0.13
+  [+0.06,+0.36] … +0.29 [+0.18,+0.48]) and over C-i on all four (+0.18 …
+  +0.61). Neither control approaches the band anywhere.
+- **C-ii trades targets rather than winning**: cone fill up (0.696 vs 0.384),
+  survival/fraction/rate down, median 0.833 vs 0.859; against the GBM all
+  four paired contrasts are *inconclusive*. 354× the parameters at the same
+  budget changes no verdict.
+- **C-i clean cost** on this panel: ~0.07–0.09 per target (median 0.786);
+  vs GBM: fraction/rate/cone B_superior, survival inconclusive — the
+  robustness that wins the noise band is paid for on clean diagrams.
+- Artifacts: `runs/m4_range2_{degaug,resnet}/paired_stats/summary.json`.
+
+### Reporting completions
+- **F1 1σ predictive-interval calibration** (rev-9 outstanding item;
+  `runs/m4_range2/frontier_grid_calibration/`): empirical coverage vs the
+  nominal ~68.3% — **at or above nominal across the recommended masking band**
+  (0.86 clean → 0.79 at 25% → 0.77 at 40% → 0.74 at 50%), conservative on
+  clean diagrams, **degrading along the noise axis** (0.67 at 1%, 0.58 at 2%,
+  0.45 at 5%, 0.13 at 20%): beyond its ~3% range the posterior is not merely
+  inaccurate, its intervals are overconfident. The recomputation reproduced
+  all 17 released grid medians **bit-exactly** (identical RNG tags) — a
+  by-product reproduction audit of the released artifact.
+- **Stacking under the headline base** (post-hoc confirmatory;
+  `runs/m4_range2/stacking_gbm_base/`): CNN-over-GBM survival increment
+  **+0.080 CI[+0.019, +0.176]** (clears the registered 0.02 margin; base
+  0.802 → 0.883); fraction +0.010, rate +0.017, cone fill +0.123 — all n.s.
+  Mechanistic-over-GBM adds value on all four targets (+0.089 … +0.526,
+  stacked 0.976–0.995). The rev-7 headline +0.32 is therefore specific to the
+  cross-fitted five-statistic ridge base; under the headline protocol the
+  survival increment is +0.08 — still real, much smaller.
+
+---
+
+## 2026-07-05 — Identifiability frontier (rev 9; F1–F3)
+
+Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 9
+(commit 8f5cb56) **before** any number below. Question: where exact rule
+reading fails (rev-8 C4), do a Bayesian rule-posterior simulator (F1) and a
+learned rule-reader→simulator (F2) restore simulation-limited accuracy?
+Primary panel = the rev-8 identifiability panel (80 held-out range-2 rules,
+fixed seed); grid at n_pairs=48, n_samples=8 (`runs/m4_range2/frontier_grid/`).
+
+### F1 — Bayesian rule-posterior simulator (post-hoc confirmatory axes)
+Median held-out R², F1(ε-estimated) vs deterministic inverter vs frozen CNN:
+
+| axis | F1 | det | CNN | reading |
+|---|---|---|---|---|
+| noise 0.5% | **0.86** | 0.79 | 0.61 | F1 > det everywhere on 0–3% |
+| noise 2% | **0.55** | 0.38 | 0.44 | hypothesis (i) confirmed |
+| noise 3% | 0.27 (ε-known **0.38**) | 0.09 | 0.25 | F1's last stand |
+| noise ≥5% | ≤ −0.84 | ≤ −1.07 | **0.15 → −0.93** | crossover: nothing works well — F2's target zone |
+| mask 40% | **0.85** | 0.24 | −0.03 | F1 extends masking tolerance ~2× |
+| mask 50% | **0.59** | −0.77 | −0.03 | |
+| density 0.1 | **0.77** | 0.08 | 0.38 | posterior rescues under-exercised tables |
+| label flips 100% | **0.99** | 0.94 | 0.59 | mechanistic family polarity-invariant, as predicted; GBM exactly invariant (0.75) |
+
+ε self-consistency estimation ≈ matches ε-known (within ~0.1 R² everywhere;
+sometimes better — it captures the *effective* corruption incl. input-side
+flips). **Unknown-radius axis:** parsimony selection costs ~0.12 R² at zero
+noise (det-selected 0.83 vs det-known 0.95) and degrades under noise (0.37 vs
+0.41 at 2%) — radius knowledge is a real, now-quantified assumption.
+**Verdict per registered rule:** F1 "restores identification" on the
+intermediate band (noise ≲3%, mask ≲50%, density extremes); above ~5% noise
+no read-then-simulate estimator survives and the frozen CNN is merely least
+bad (negative R²) — the open slot F2 addresses.
+
+### F2 — learned rule-reader→simulator (exploratory)
+Training approved (user, 2026-07-05; range-2, 1 seed, 15 epochs, 29,664
+params, train-split rules only, registered degradation augmentation;
+`runs/m4_range2/rule_reader_seed0.pt`). Training: BCE 0.664→0.527, monitor
+bit-acc 0.759 (train-split tail). On the 80-rule held-out panel (clean
+diagrams): **per-bit accuracy 0.734, exact-table rate 0.000** — at this
+capacity the reader never reconstructs a full 32-bit table.
+
+Grid, noise axis (median held-out R²; F2-sampled = averaging simulations of
+8 tables drawn from the predicted per-bit probabilities):
+
+| noise | best F1 | F2-MAP | F2-sampled [CI95] | frozen CNN | det |
+|---|---|---|---|---|---|
+| 3% | **0.38** | −3.62 | 0.09 [−0.45, 0.36] | 0.25 | 0.09 |
+| 5% | −0.84 | −3.46 | −0.02 [−0.57, 0.28] | **0.15** (stack 0.10) | −1.07 |
+| 7.5% | −1.46 | −3.75 | **0.02** [−0.50, 0.27] | −0.13 | −1.60 |
+| 10% | −2.11 | −3.86 | **0.17** [−0.35, 0.37] | −0.25 | −2.02 |
+| 15% | −3.42 | −3.60 | **−0.04** [−0.46, 0.15] | −0.57 | −3.42 |
+| 20% | −5.33 | −2.59 | **0.12** [−0.22, 0.27] | −0.93 | −5.61 |
+
+- **F2-MAP fails everywhere** (median R² −2.2 … −24.9 across all axes; exact
+  0.000): thresholding 0.73-accurate bit probabilities into a single table
+  concentrates the errors. All the salvageable signal is in the *sampled*
+  variant — posterior averaging over the reader's uncertainty.
+- **F2-sampled is the only estimator that does not collapse in the dead
+  zone**: it beats F1 at every noise cell ≥5% (Δ vs best-F1 +0.8 to +5.5),
+  is the best of *all* estimators from 7.5% on (at 5% the direct family is
+  still marginally positive: CNN 0.15, stack 0.10), and satisfies the
+  registered beats-the-inverter rule at every cell ≥5% (bootstrap CI_low >
+  det point value). But its absolute level (median ≤0.17, CI spanning 0)
+  is nowhere near simulation-limited — it holds the line at ~zero, flat in
+  noise (bit-acc 0.73→0.70 from 0→20%: the augmentation made it corruption-
+  robust at a low ceiling).
+- **On masking F2 adds nothing**: F1 holds to 50% (0.59); F2-sampled never
+  rises above 0.09 anywhere and is −1.8/−2.4 at 75/90%. Same on density
+  (≤ −0.09) and label flips (−0.49 at 100%; read-then-simulate stays 0.99).
+
+### F3 — registered hypothesis verdicts (rev 9)
+- **(i) confirmed** (see F1 above): the Bayesian posterior dominates the
+  deterministic inverter across the intermediate band and degrades gracefully.
+- **(ii) split verdict, reported as registered**: F2 *does* extend further
+  into the degraded regime than F1 on the noise axis (beats F1 at every cell
+  ≥5%, best overall from 7.5%, registered rule satisfied) — but only in the
+  weak sense of moving the frontier, not restoring identification (median
+  ≤0.17). On the masking axis the hypothesis is **refuted**: F1 extends
+  further, F2 never leaves zero.
+- **(iii) confirmed, 0 violations**: at no grid cell where read-family table
+  recovery is high (bit accuracy ≥0.95) does any direct amortizer (CNN, GBM,
+  stack) beat the best read-then-simulate estimator (point above its CI_high).
+
+**Provenance note.** The first F2-inclusive grid run was launched with a
+non-canonical direct-CNN checkpoint (`runs/m4_range2/checkpoint_final.pt`
+instead of the rev-8 canonical `runs/m4_range2_seed0/checkpoint_final.pt`);
+its cnn/stack columns were therefore inconsistent with every committed rev-8/9
+number. The run was discarded and fully re-measured with the canonical
+checkpoint. Audit: the F1-only grid summary is preserved as
+`runs/m4_range2/frontier_grid/summary_f1only.json`; the final run reproduces
+every shared estimator column bit-exactly (checked programmatically), incl.
+cnn/stack. Figure: `runs/m4_range2/frontier_grid/frontier.pdf` =
+`manuscript/figures/identifiability_v2.pdf`.
+
+**Correction (2026-07-05, round-3 revision).** The F2 noise table above and
+its 5%-cell bullet were first written from the discarded run's cnn/stack
+cells (cnn 0.36 / 0.13 / −0.09 / −0.34 / −0.73 / −1.09; stack 0.14 at 5%) —
+the in-session reproduction audit covered the shared F1 columns but not these
+six cells, and the manuscript inherited "−1.1" from here. Found by the
+internal ARS review (`manuscript/reviews/simulated/r1_methodology.md` W1);
+re-derived from the canonical `summary.json` (cnn 0.25 / 0.15 / −0.13 /
+−0.25 / −0.57 / −0.93; stack 0.10 at 5%). Conclusion-preserving: no bolded
+best-of-row cell and no registered verdict changes.
+`scripts/audit_manuscript_numbers.py` now re-derives every §IV.E prose
+number and these table cells from the artifact and fails on mismatch.
+
+---
+
 ## 2026-07-04 — Round-2 review-response results (rev 8; C1–C8)
 
 Measured after the second referee report returned **major revision**

@@ -5,6 +5,187 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 11 (2026-07-06) — changelog
+
+Added **before any round-4 review-response measurement**, numbers-free. The
+third review (`manuscript/reviews/paper_third_review.md`, verdict: major
+revision) accepts the science as "plausible and potentially useful" but
+demands (C1) a budget-indexed statement of the central dominance claim, (C2)
+an explicit evaluation unit, (C3) decomposition of the enriched radius-two
+panel, (C5) a paired equivalence analysis behind "statistically
+indistinguishable", (C6/C8) seed and rule-panel stability of the frontier
+guidance, and (C7) the deployment status of the stacking result. Rev 11
+registers the seven analyses below. No change to criteria 1–9 or any
+rev-2…10 threshold or verdict rule; the two M5 trainings are gated (63 px
+smoke precedes each full run); all outcomes are reported regardless of
+direction, with the manuscript wording downgrades pre-specified here.
+
+1. **M1 — reference-scored direct estimators (post-hoc confirmatory).** Every
+   estimator with cached held-out predictions (mechanistic, five-statistic
+   ridge and boosted baselines, constrained CNN, and the rev-10 controls) is
+   rescored against the existing large-simulation reference targets (the
+   rev-8 C2.3 protocol: same rules, much larger `n_pairs`, decorrelated
+   seed), alongside the cached-target scores, in one table per panel.
+   Reporting rule (fixed here): a fresh-simulation estimator is expected to
+   rise from the replicate-agreement benchmark toward ICC; a direct
+   estimator rises only to the extent it estimates the latent mean. No
+   pass/fail gate; both ceilings are printed next to both scores.
+2. **M2 — paired equivalence for the "simulation-limited" claim (post-hoc
+   confirmatory).** The K-replicate target matrix is regenerated bit-exactly
+   from its registered seed protocol (`reliability.py: base_seed 1000+k`,
+   per-rule `SeedSequence([seed, rule, radius])`) on the exact held-out
+   panels (radius two primary; ECA where cached predictions exist). A joint
+   rule-bootstrap resamples the same rules for both quantities and reports,
+   per target, the 95% CI of R²_mechanistic − R²_replicate-agreement.
+   *Equivalence margin (fixed here, before measurement):* margin_t =
+   max(0.01, 1 − ICC_t), with ICC_t the per-target latent reliability
+   already published under rev 8 — the maximal noisy-score headroom any
+   estimator has over the replicate benchmark. *Wording rule:*
+   "statistically indistinguishable" survives per target iff the 95% CI lies
+   within ±margin_t; otherwise the manuscript downgrades to "consistent
+   with" and prints the CI.
+3. **M3 — enriched-panel decomposition (post-hoc confirmatory).** Held-out
+   radius-two results reported separately for the force-held signature
+   subpanel and the stratified-random remainder, plus a post-stratified
+   pooled estimate: group-weighted SS_res/SS_tot with weights matching each
+   group's prevalence in the 800-rule sampling universe (the paper's stated
+   rule distribution) rather than its share of the enriched panel.
+   Disclosure attached (fixed here): signature membership was computed from
+   the same seed-0 target cache later used for evaluation labels, by the
+   registered criterion-9 thresholds; the forced rules were never trained
+   on.
+4. **M4 — per-diagram reconstruction audit (post-hoc confirmatory).** Over
+   every held-out diagram (not only the first per rule): table-coverage
+   histogram and per-diagram exact-reconstruction rate, reported next to the
+   per-rule numbers so the "single diagram" claim is auditable at both
+   units. Descriptive; no gate.
+5. **M5 — seed replication of the degradation-trained control (gated
+   training ×2).** The rev-10 C-i configuration retrained with two new seeds
+   (all else identical, 63 px smoke first); each is scored on the clean
+   held-out panel (Table III protocol) and the frontier noise axis
+   (direct-only evaluation, same cells/budgets as rev 10). *Stability rule
+   (fixed here):* the noise-band claim keeps its current wording iff each
+   new seed's per-cell median falls inside the seed-0 cell's rule-bootstrap
+   95% CI at every noise cell in the recommended band; otherwise the band is
+   reported as a per-seed range and Table V is re-worded accordingly.
+6. **M6 — deployment-style stack (post-hoc confirmatory).** A ridge
+   meta-model over [five statistics + CNN predictions] fit **only on
+   training rules**, evaluated once on the untouched held-out panel;
+   reported next to the rev-7 cross-fitted diagnostic (which keeps its own
+   label). The registered rev-7 adds-value margin (0.02, CI excluding 0) is
+   reused for interpretation; neither result overwrites the other.
+7. **M7 — independent-panel replication of the frontier noise axis
+   (post-hoc confirmatory).** The noise-axis cells re-simulated on the
+   complementary half of the held-out panel (the rules the fixed-seed
+   frontier subsample excluded), same budgets and estimator set
+   (deterministic inverter, both posterior variants, sampled reader, frozen
+   CNN, degradation-trained seed-0 CNN). *Verdict rule (fixed here,
+   mirroring rev 9/10):* a cell's winner is re-stated only if, on the
+   complementary panel, a different estimator's rule-bootstrap CI_low
+   exceeds the original winner's CI_high; agreement within CIs is reported
+   as replication.
+
+## Revision 10 (2026-07-05) — changelog
+
+Added **before any round-3 fairness-control measurement**, numbers-free. The
+internal ARS panel review (`manuscript/reviews/simulated/`, editorial items
+R-6 and R-5; independently DA M1/M6 and R3 Q1, echoing the real referee's
+concern 7) identified an adaptation-budget asymmetry on the identifiability
+frontier: the read-then-simulate family fields two estimators purpose-built
+for degradation (Bayesian posterior; degradation-trained reader) while the
+direct family is represented only by a clean-trained, architecturally
+constrained CNN. Rev 10 registers the two symmetric controls and two
+outstanding reporting items. No change to criteria 1–9 or any rev-2…9
+threshold or verdict rule; single seed per control (disclosed limitation,
+matching the reader's gating); 63 px smoke precedes each full training.
+
+1. **C-i — degradation-augmented direct CNN (gated training).** The canonical
+   direct-CNN configuration (`configs/m4_range2.yaml` architecture, epochs,
+   batch size, optimizer, split, seed 0) retrained with the *reader's*
+   registered input-degradation augmentation applied to training diagrams —
+   the same families and ranges fixed for rev-9 F2 (bit-flip probability
+   ~ U(0, 0.15) and masking fraction ~ U(0, 0.5), each applied independently
+   with probability 1/2), targets unchanged. This gives the direct family
+   exactly the adaptation the reader received, nothing more.
+2. **C-ii — same-budget unconstrained CNN (gated training).** The expressive
+   `resnet18` encoder (the architecture the anti-shortcut constraint was
+   designed against), identical data, split, targets, epochs, batch size,
+   optimizer and seed as C-i's parent config, clean-trained (no degradation
+   augmentation); wall-clock and parameter count disclosed next to the
+   constrained CNN's. This tests whether the matched-regime negative result
+   is an artifact of the author-imposed first-layer constraint whose
+   motivating claim rev-8 retired.
+3. **Evaluation and verdict rules (fixed here, before measurement):**
+   - *Matched regime:* both controls are scored on the clean-protocol
+     held-out panel exactly as Table III (160 rules, production targets,
+     rule-bootstrap CIs). The rev-7/8 verdict machinery is reapplied
+     unchanged: a control "changes the matched-regime verdict" only if it
+     meets the registered simulation-limited test that the current direct
+     estimators fail (per-target R² CI reaching the replicate-agreement
+     benchmark band). Superiority/equivalence margins unchanged (0.10 / TOST
+     δ=0.05).
+   - *Frontier:* both controls are evaluated on the existing rev-9 grid
+     cells (noise, mask, density axes; same 80-rule panel, same n_pairs=48
+     protocol, CNN-family estimators only — the read-family cells are not
+     re-simulated). Rev-9 hypothesis (iii) is re-tested with the controls
+     added to the direct-amortizer family under its unchanged rule (a
+     violation = control's point estimate above the best read-family
+     estimator's bootstrap CI_high at a cell with per-bit table recovery
+     ≥ 0.95). C-i "extends into the dead zone" at a noise cell only where
+     its rule-bootstrap CI excludes the F2-sampled point value from below —
+     the same rule shape rev 9 used for F2-vs-F1.
+   - *Reporting:* all outcomes are reported regardless of direction. If
+     either control overturns the degraded-regime guidance or the
+     matched-regime scoping, the manuscript text is rewritten to the
+     measured result, not argued around; if the controls confirm the
+     guidance, the scoped-claim language ("adaptation-naive amortization")
+     is retained with the controls cited as evidence.
+4. **Outstanding reporting items completed under existing registrations:**
+   - *F1 predictive-interval calibration* (registered in rev 9, not yet
+     reported): empirical coverage of the posterior's nominal 1σ predictive
+     intervals per grid cell on the noise and mask axes, ε-estimated
+     variant, same panel and budgets as the rev-9 grid. Reporting only; no
+     pass/fail gate. Nominal coverage for a 1σ interval is ~68%; the
+     comparison is stated per cell.
+   - *Stacking under the headline base* (post-hoc confirmatory): the rev-7
+     stacking protocol rerun with cross-fitted out-of-fold predictions of
+     the boosted baseline (Table III's baseline of record) as the base
+     regressor, CNN augmentation as before; increment + rule-bootstrap CI
+     reported at the registered 0.02 margin. This answers "what is the
+     increment under the headline protocol" (DA M2) without replacing the
+     registered rev-7 result.
+
+## Revision 9 (2026-07-05) — changelog
+
+Added **before any identifiability-frontier measurement**, numbers-free. The
+round-2 manuscript's own Discussion poses the open question: where exact rule
+reading collapses (the rev-8 C4 phase diagram: bit-flip noise, heavy masking,
+extreme IC densities), do a **Bayesian rule-posterior simulator** (F1) and a
+**learned rule-reader→simulator** (F2, the referee's thrice-requested
+comparator) restore simulation-limited accuracy? Results are held as a
+**round-3 extension of the manuscript** (user decision 2026-07-05,
+DECISIONS.md), kept on the `rev9-frontier` branch so the submitted PDF stays
+frozen.
+
+1. **New "Identifiability-frontier controls (rev 9)" section** (below) fixing
+   F1 (Bayesian posterior over the rule table under an observation-noise
+   model), F2 (learned table-bit reader feeding an exact simulator; **gated
+   training**), and F3 (the extended degraded-observation grid on which all
+   estimators are compared, with per-cell verdict rules).
+2. **Pre-registered hypotheses** (stated here so they cannot be reframed post
+   hoc): (i) F1 dominates the deterministic inverter in the intermediate-noise
+   regime and degrades gracefully; (ii) F2 extends further into the degraded
+   regime than F1; (iii) nowhere that per-bit table recovery remains high does
+   any *direct* amortizer beat the best read-then-simulate estimator. Each is
+   judged by the registered verdict rules, and a refuted hypothesis is reported
+   as refuted.
+3. **Registration-status labels for the manuscript:** F1 and its evaluation on
+   the existing rev-8 axes are *post-hoc confirmatory* (new estimator, existing
+   data axes); F2 and the two new axes (state-label noise, unknown radius) are
+   *exploratory*. No change to criteria 1–9, rev-2…8 controls, or any existing
+   threshold; the rev-8 verdict rules (TOST δ=0.05 primary, superiority 0.10)
+   are reused unchanged.
+
 ## Revision 8 (2026-07-04) — changelog
 
 Added **before any of the round-2 review-response analyses is measured**, in
@@ -711,6 +892,71 @@ the number of MC pairs used by the mechanistic simulator, the one-time CNN train
 cost, and the **break-even query count**, plus an **accuracy-vs-MC-budget** curve
 for the mechanistic estimator. The practical recommendation is stated **with** its
 compute cost, not in the abstract.
+
+## Identifiability-frontier controls (rev 9)
+
+Fixed before measurement; none is a new pass/fail gate on criteria 1–9. The
+question: **which estimator class wins where, as the observation model degrades
+away from the matched (clean, complete, known-radius) regime** in which the
+rev-8 mechanistic estimator is simulation-limited-optimal.
+
+**F1 — Bayesian rule-posterior simulator (no training).** From one diagram,
+per-entry transition counts (`ones_k` of `total_k`) are already tabulated by
+`infer_rule_table` (`caspectra/eval/rule_inference.py`). Under a **bit-flip
+observation-noise model** with flip probability ε (each observed *output* cell
+is flipped independently; input-side corruption is treated by the same
+effective-ε approximation and stated as such), the per-entry likelihood is
+Binomial: P(ones_k | bit=1) = Binom(total_k, 1−ε), P(ones_k | bit=0) =
+Binom(total_k, ε). With a Bernoulli(p₀) prior per entry (p₀ = the observed
+marginal one-frequency, as in the rev-8 completion machinery; sensitivity to
+p₀ = 1/2 reported), this yields an independent per-entry posterior P(bit_k=1).
+The estimate is the **posterior-predictive damage response**: sample tables
+from the per-entry posteriors (reusing `mechanistic_estimate_posterior`'s
+sampling), simulate each under the reference protocol with an independent RNG,
+and average; the sample spread is the predictive interval. Two ε regimes are
+registered: **(a) ε known** (the protocol's true corruption rate is passed in);
+**(b) ε estimated** by maximizing the observation self-consistency (the
+fraction of transitions agreeing with the per-entry majority) over a fixed ε
+grid — the grid and the selection rule are fixed in code before measurement.
+Decision rules: F1 "restores identification at a grid cell" **only** where its
+per-target R² rule-bootstrap CI excludes the deterministic inverter's point
+value from below; the calibration of its nominal 1σ predictive intervals is
+reported per cell. Label: **post-hoc confirmatory** on the rev-8 axes.
+
+**F2 — learned rule-reader → simulator (GATED training).** A small CNN
+(backbone reused from `caspectra/models/encoder.py`) with a `2^(2r+1)`-unit
+sigmoid head is trained on **training-split rules only** (the registered rev-5
+leave-rules-out split; held-out rules never seen) to predict the generating
+rule's table bits from a diagram, with **noise/masking augmentation** drawn
+from the same degradation families as the F3 grid (augmentation ranges fixed
+in the training config before training; the grid's *test* corruption levels
+are not tuned on). Evaluation on held-out rules: **(a) F2-MAP** — threshold the
+predicted bit probabilities at 1/2, simulate the resulting table exactly;
+**(b) F2-sampled** — sample tables from the predicted per-bit probabilities and
+average the simulated responses (predictive interval reported). Reported per
+grid cell: per-bit balanced accuracy, exact-table rate, per-target and median
+R². Training discipline: 63 px smoke first; each full 127 px run individually
+approved; one seed per rule space initially (seed variance noted as a
+limitation, expanded only if the result is borderline). Label: **exploratory**.
+
+**F3 — the extended degraded-observation grid.** Estimators: {deterministic
+inverter (rev-8 reference), F1(ε known), F1(ε estimated), F2-MAP, F2-sampled,
+frozen direct CNN (rev-8 checkpoint), 5-statistic GBM, stats+CNN stack} ×
+axes: **bit-flip noise** (denser grid than rev 8, range 0–20%), **masking**
+(0–90%), **IC density** (as rev 8), plus the two axes rev 8 skipped:
+**state-label noise** (global 0↔1 polarity flip applied to a random subset of
+diagrams — tests reliance on polarity conventions) and **unknown radius** (the
+estimator must select r ∈ {1, 2, 3} by a fixed consistency score before
+inferring; selection rule fixed in code before measurement). The CNN-family
+estimators appear only on axes preserving their input geometry (as rev 8).
+Per cell: coverage / per-bit accuracy, exact-reconstruction rate, per-target
+and median R² with rule-bootstrap CIs. **Verdict rules per cell region** (the
+rev-8 rules, reused): superiority = ΔR² ≥ 0.10 with 95% CI excluding 0; TOST
+equivalence at δ=0.05 (sensitivity 0.02/0.10); otherwise inconclusive. The
+headline figure reports, per axis, **which estimator class is best** with its
+verdict against the runner-up — a "who wins where" map, not a single ordering.
+Rule panel and RNG offsets: the rev-8 identifiability panel (80 held-out
+range-2 rules, fixed seed) is the primary panel; ECA is the replication panel.
 
 ## Reported diagnostics (not gated)
 
