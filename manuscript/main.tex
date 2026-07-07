@@ -12,7 +12,7 @@
 
 \begin{document}
 
-\title{Rule reconstruction from a single space--time diagram yields
+\title{Rule reconstruction from a single spacetime diagram yields
 simulation-limited prediction of the finite-horizon damage response of cellular
 automata}
 
@@ -80,10 +80,11 @@ when each strategy is the right one.
 Cellular automata (CA) are the canonical minimal model of emergent computation:
 a single local update rule, iterated in parallel, produces the full zoo of
 behaviours from frozen order to chaos to the localized interacting ``particles''
-of complex rules~\cite{wolfram1984,wolfram2002,langton1990,boccara1991}. Classifying that behaviour is a
+of complex rules~\cite{wolfram1984,wolfram2002,langton1990,boccara1991,rollier2025taxonomy}. Classifying that behaviour is a
 long-standing and subtle problem, because the field distinguishes the
 \emph{genotype}---the local update rule---from the \emph{phenotype}---the
-mesoscopic structure of the space--time diagram it generates. A method intended
+mesoscopic structure of the spacetime diagram it
+generates~\cite{vispoel2022progress,rollier2025taxonomy}. A method intended
 to read behaviour off the diagram must be prevented from instead reading the
 \emph{rule} off it: whenever the diagram exercises the table under the
 assumed deterministic, synchronous update it contains, in its local
@@ -168,7 +169,7 @@ not the inverter but the calibration: a \emph{simulation-limited} benchmark
 that knows the difference between ``as good as re-measuring the target'' and
 ``as good as the truth'' (Sec.~\ref{sec:reliability}). \emph{Second}, the
 two direct estimators we trained---a five-statistic regressor and a
-convolutional amortiser built to resist first-layer rule reading---fall well
+convolutional amortizer built to resist first-layer rule reading---fall well
 short of that benchmark exactly where texture is least informative (damage
 survival), and neither dominates the other; the network does carry survival
 information the five statistics miss, a real and quantified complementarity.
@@ -197,15 +198,19 @@ labels each analysis as \emph{registered}, \emph{post-hoc confirmatory}, or
 We use two rule spaces. \emph{Elementary CA} (ECA): two states, radius one,
 $2^{2^3}=256$ rules, of which $88$ are distinct representatives under the
 reflection and complementation symmetries a behavioural method should
-respect~\cite{lipackard1990}.
-\emph{Radius-two CA}: two states, a five-cell neighbourhood, a $32$-entry table
+respect~\cite{lipackard1990}---the \emph{independent rules} of the CA
+taxonomy~\cite{rollier2025taxonomy}; we call each such equivalence class an
+\emph{orbit}.
+\emph{Radius-two CA}, an extended-neighbourhood
+CA~\cite{rollier2025taxonomy}: two states, a five-cell neighbourhood, a $32$-entry table
 and $2^{32}\approx4\times10^{9}$ rules; ECA embeds exactly (a continuity
 control). The radius-two space is sampled uniformly ($800$ canonical rules after
 orbit deduplication).
 
 Every quantity is indexed by a fixed \emph{observation protocol}: a
-Bernoulli$(1/2)$ initial condition on a ring of $127$ cells (non-power-of-two,
-so additive rules do not collapse to homogeneity), evolved from $t=0$; the
+Bernoulli$(1/2)$ initial condition on a ring of $127$ cells (periodic
+boundary conditions; non-power-of-two, so additive rules do not collapse to
+homogeneity), evolved from $t=0$; the
 damage horizon is $\lfloor w/(2r)\rfloor-1$ steps so a perturbation cone cannot
 wrap. The observation model deliberately matches the generator: diagrams are
 \emph{complete, noiseless, binary, synchronous in the observed time direction,
@@ -219,7 +224,7 @@ initial condition, flip one uniformly chosen cell, evolve both copies to the
 horizon, and compare final rows. \emph{Damage survival} is the probability that
 any difference remains; conditional on survival, \emph{damage fraction} is the
 fraction of the ring that differs, \emph{spreading rate} is the damage-cone
-extent normalised by $2r$ times the number of steps (so $1$ is light speed at
+extent normalized by $2r$ times the number of steps (so $1$ is light speed at
 any radius), and \emph{cone fill} is the density of differing cells within the
 cone (exact formulas in Appendix~\ref{app:methods}). Survival is a
 finite-horizon \emph{proxy} for the sign of the CA's damage-based maximal
@@ -308,7 +313,7 @@ orbit symmetries. Both a ridge and a gradient-boosted regressor are fit; the
 stronger (the boosted one) is the baseline of record
 (Appendix~\ref{app:methods}).
 
-\emph{(iii) Direct convolutional amortiser.} A small CNN ($31{,}524$
+\emph{(iii) Direct convolutional amortizer.} A small CNN ($31{,}524$
 parameters; full layer table in Appendix~\ref{app:methods}) whose $2\times2$
 first-layer kernels cannot span a neighbourhood together with its output cell,
 feeding a $64$-dimensional bottleneck and a linear head; BatchNorm keeps the
@@ -634,7 +639,8 @@ every estimator except the sampled reader collapses by $5$--$7.5\%$ on this
 panel. Masking (top right): the pseudo-posterior extends the deterministic
 inverter's tolerance from ${\sim}25\%$ to $50\%$. Extreme initial-condition
 density (bottom left): the posterior rescues under-exercised tables.
-Label-polarity flips (bottom right): the read-then-simulate family is
+Label-polarity flips (bottom right; the complement symmetry applied to the
+whole diagram as a corruption): the read-then-simulate family is
 exactly invariant; the direct CNN and the stack degrade. Grid simulations at
 $n_{\mathrm{pairs}}=48$, $8$ posterior-table samples per diagram (production
 targets: $256$ pairs); the rule-reader is a single training seed. Registered
@@ -904,7 +910,7 @@ Sec.~\ref{sec:constructive}.}
 \label{sec:discussion}
 
 Under a fully observed, noiseless, deterministic, synchronous, binary
-observation model with known radius, a single space--time diagram identified
+observation model with known radius, a single spacetime diagram identified
 the local rule exactly for every elementary and $97.5\%$ of radius-two
 held-out rules, and reconstructing the generator then re-running the
 stipulated experiment predicts finite-horizon damage response at the
@@ -1084,7 +1090,7 @@ verified to vanish.
 
 \emph{Data.} ECA: all $88$ orbit representatives, $256$ diagrams per rule;
 radius two: $800$ canonical rules ($857$ drawn, deduplicated by the order-four
-reflect/complement orbit), $64$ diagrams per rule; all diagrams
+reflection/complement orbit), $64$ diagrams per rule; all diagrams
 $127\times127$, Bernoulli$(1/2)$ ICs, no transient discarded. \emph{Sampling
 measure:} radius-two rules are drawn uniformly over the $2^{32}$ raw
 encodings, folded to canonical orbit representatives, and deduplicated;
@@ -1121,8 +1127,8 @@ the per-diagram audit [rev.~11] reports the other unit.
 
 \emph{Targets.} With flip position $x_0$ uniform on the ring, horizon
 $T=\lfloor w/(2r)\rfloor-1$ (capped so a single flip's light cone cannot wrap
-the periodic boundary), and $d\in\{0,1\}^w$ the cellwise disagreement of the
-twin runs at time $T$:
+the periodic boundary), and $d\in\{0,1\}^w$ the cellwise disagreement (the
+\emph{difference pattern}) of the twin runs at time $T$:
 survival $=\Pr[\exists i: d_i=1]$; fraction $=\mathbb{E}[\bar d\mid\text{surv}]$;
 rate $=\mathbb{E}[\mathrm{ext}(d)/(2rT)\mid\text{surv}]$; fill
 $=\mathbb{E}[\sum_i d_i/\mathrm{ext}(d)\mid\text{surv}]$. The extent is
@@ -1143,7 +1149,7 @@ BatchNorm and no final nonlinearity; global average pool; linear head to $4$
 targets ($31{,}524$ parameters; receptive field $31\times31$ per bottleneck
 position before pooling). AdamW, lr $10^{-3}$, weight decay $10^{-6}$, batch
 $128$, $60$ epochs, no early stopping; targets standardized on training rules.
-Augmentations: cyclic shift, horizontal flip, polarity inversion (the exact
+Augmentations: cyclic shift, reflection, complement (the exact
 orbit symmetries). Training cost $\approx22$\,min (radius two) and
 $\approx10$\,min (ECA) per seed on the reference machine.
 
