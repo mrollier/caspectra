@@ -32,6 +32,7 @@ from sklearn.preprocessing import StandardScaler
 
 from caspectra.config import ExperimentConfig
 from caspectra.data.targets import TARGET_NAMES, load_or_compute_invariant_targets
+from caspectra.eval.annealed import annealed_estimate_from_diagram
 from caspectra.eval.baselines import compute_baseline_features
 from caspectra.eval.rule_inference import mechanistic_estimate
 from caspectra.factory import build_dataset, build_model
@@ -120,6 +121,29 @@ def main() -> None:
             f"[c8] mechanistic n_pairs={budget:>4}: {mech_curve[-1]['latency_s_per_diagram']:.3f}"
             f" s/diagram  median R² {mech_curve[-1]['median_r2']:.4f}"
         )
+
+    # --- Annealed analytic member: the zero-budget point of the curve. --------
+    # Must be routed to the analytic estimator: mechanistic_estimate with
+    # n_pairs=0 would average an empty pair set (NaN). Descriptive/post-hoc; the
+    # analytic tier is the family's *negative* anchor (see
+    # scripts/eval_annealed_member.py and docs/research_directions_2026-07-07.md §4).
+    t0 = time.perf_counter()
+    preds0 = [annealed_estimate_from_diagram(held_diag[r], radius, width=width)[0] for r in held]
+    elapsed0 = time.perf_counter() - t0
+    per0 = r2_per_feature(np.stack(preds0), true_held)
+    mech_curve.insert(
+        0,
+        {
+            "n_pairs": 0,
+            "latency_s_per_diagram": round(elapsed0 / len(held), 4),
+            "median_r2": round(float(np.nanmedian(per0)), 4),
+            "per_target_r2": {n: round(float(v), 4) for n, v in zip(TARGET_NAMES, per0)},
+        },
+    )
+    print(
+        f"[c8] annealed  n_pairs=   0: {mech_curve[0]['latency_s_per_diagram']:.3f}"
+        f" s/diagram  median R² {mech_curve[0]['median_r2']:.4f}"
+    )
 
     # --- CNN: forward-pass latency (single and batched). ----------------------
     model = build_model(cfg.model)

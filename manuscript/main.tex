@@ -847,6 +847,21 @@ is the most accurate at every simulation budget we measured, so the
 network's case must rest on degraded-observation regimes
 (Fig.~\ref{fig:ident}) or extreme-throughput screening, not on accuracy.
 
+The curve's zero-budget end is anchored by an analytic member [exploratory,
+rev.~12]: the annealed approximation~\cite{derridapomeau1986} applied to the
+reconstructed table, whose linearization at zero damage recovers the
+mean-field maximal-Lyapunov criterion~\cite{bagnoli1992} (with the Jacobian
+density read under the IC measure). At $2.7$\,ms per diagram it
+fails on every target (median held-out \rtwo{} $-2.15$; per-target $-0.003$
+to $-4.5$), and its survival criterion never improves on the
+always-survives base rate of the radius-two panel ($98\%$). The mean-field
+tier of the rule-table cost hierarchy~\cite{vispoel2026structure} thus does
+not transfer to finite-horizon damage-response statistics under this
+protocol---the targets measure exactly the quenched correlation annealing
+discards (an additive rule's difference pattern is a deterministic gasket,
+cone density $0.26$ at this horizon, not a mixed density near
+$0.5$)---leaving simulation the cheapest usable tier we measure.
+
 \subsection{Descriptive by-products, with independent ground-truth evaluation}
 \label{sec:constructive}
 
@@ -1066,7 +1081,8 @@ enriched-panel decomposition, per-diagram audit, seed replication,
 deployment-style stack, complement-panel noise-axis replication---each with
 its decision rule committed numbers-free before measurement);
 \emph{exploratory}: the identifiability phase diagram, the accuracy--compute
-curve, the learned rule-reader, and the label-noise and unknown-radius axes.
+curve with its annealed zero-budget member (rev.~12), the learned
+rule-reader, and the label-noise and unknown-radius axes.
 
 The three frontier hypotheses (rev.~9) were registered verbatim before
 measurement; their earned verdicts---\emph{(i)} the posterior dominates the
