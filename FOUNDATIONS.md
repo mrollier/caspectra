@@ -49,10 +49,21 @@ dynamical features and taxonomy are to the IC density and lattice width;
 - Rule-table vs spacetime-pattern classification is a recognized split (Vispoel, Daly &
   Baetens 2022), and the rule-identifiability cheat has direct prior art (Rollier, Daly,
   Bruno & Baetens).
+- The genotype→class map is cheap: two mean-field rule-table parameters — average slope
+  *s* and non-linearity *β* of the mean-field density map — predict the Wolfram class
+  across three rule spaces with high accuracy and **no simulation** (Vispoel, Daly &
+  Baetens 2026, Physica D 496:135306; notes in
+  `docs/literature/vispoel_2026_hidden_structure_NOTES.md`). This quantifies why the
+  rule-identifiability cheat is disqualifying rather than benign — an encoder that
+  recovers the rule gets the class nearly for free through two scalar functionals of the
+  table — and independently reinforces the budget-indexed (compute-tiered) view of
+  behaviour prediction.
 
 **Contested (we must not lean on it):**
 - λ / edge-of-chaos as a per-rule complexity coordinate (Mitchell–Hraber–Crutchfield
-  re-examination stands).
+  re-examination stands; now also quantitative — λ + μ-sensitivity predict the Wolfram
+  class at best 39%, on their best rule space, because the two parameters are mutually
+  correlated: Vispoel, Daly & Baetens 2026, §4.3.1).
 - The exact membership of "class IV": Wolfram class IV in ECAs is essentially {54, 110};
   some schemes elevate 106; published results give rule 40 (class I) chaotic invariant
   subsets and rule 42 (class II) a chaotic global attractor. Hence the `borderline` flags
@@ -66,7 +77,11 @@ dynamical features and taxonomy are to the IC density and lattice width;
   (Dennunzio, Formenti, Provillard) treats heterogeneity as a genuine enlargement in which
   the *rule distribution itself* belongs in the classification target.
 - No complete published Kůrka/Gilman class table for all 88 orbits (only prototypes), so
-  those columns cannot be added to `rule_labels.csv` yet.
+  those columns cannot be added to `rule_labels.csv` yet. (A complete *manual
+  Wolfram-style* table for all 256 ECA plus two totalistic spaces now exists — Vispoel,
+  Daly & Baetens 2026, constant-inhomogeneous folded into class I, data on request
+  (requested 2026-07-07); if obtained it becomes an additional dual-reported column,
+  never ground truth.)
 
 ## 3. The mission, reframed (decision record, 2026-07-02)
 
@@ -135,6 +150,12 @@ defensible as stated (§2, impossibility results). The project's goal is now:
 10. Vispoel, Daly & Baetens (2024), *Damage Spreading and the Lyapunov Spectrum of
     Cellular Automata and Boolean Networks* — the bridge from perturbation metrics to an
     invariant-based taxonomy.
+11. Vispoel, Daly & Baetens (2026), *Unveiling Hidden Structures: A Quantitative
+    Exploration of the Cellular Automaton Rule Space* — mean-field rule-table parameters
+    (s, β) predict class without simulation; λ + μ quantitatively poor (≤ 39%); complete
+    manual classification of three rule spaces; class IV as a II↔III transition region
+    (binary) / I-II-III triple point (k ≥ 3). Notes:
+    `docs/literature/vispoel_2026_hidden_structure_NOTES.md`.
 
 **Stretch directions** (tracked, not scheduled): Israeli–Goldenfeld emulation relations as
 a reference partial order over rules; computational-mechanics domain/particle filters as a
