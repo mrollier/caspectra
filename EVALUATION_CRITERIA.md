@@ -5,6 +5,31 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 12 (2026-07-07) — changelog
+
+Purely additive; zero changes to criteria 1–9 or to any rev-2…11 threshold,
+margin, or verdict rule. Registers one exploratory analysis arising from the
+2026-07-07 literature read-through. Unlike rev 11, this entry is written
+**after** the analysis ran; the pre-declaration that governs it (expected
+strengths, expected failure modes, and the manuscript decision rule) was
+frozen in `docs/research_directions_2026-07-07.md` §2 *before* the first
+evaluation run, and that file is the reference of record.
+
+1. **M8 — annealed (mean-field) zero-budget family member (exploratory,
+   descriptive).** The Derrida–Pomeau annealed damage map applied to the
+   *reconstructed* rule table (`caspectra/eval/annealed.py`;
+   `scripts/eval_annealed_member.py`; `n_pairs = 0` entry in
+   `scripts/benchmark_compute.py`) supplies the zero-simulation point of the
+   budget-indexed estimator family. Reporting rule (per the frozen
+   pre-declaration): all four targets on both panels, plus the survival-sign
+   agreement against its majority base rate, reported regardless of
+   direction; results enter the manuscript's accuracy-versus-compute
+   subsection tagged [exploratory, rev.~12]. Outcome for the record:
+   negative on both axes (median held-out R² −2.15 on the radius-two panel
+   vs 0.92 for the 16-pair mechanistic member; survival criterion never
+   exceeds the always-survives base rate). No registered quantity is
+   affected.
+
 ## Revision 11 (2026-07-06) — changelog
 
 Added **before any round-4 review-response measurement**, numbers-free. The
