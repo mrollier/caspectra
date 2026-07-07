@@ -107,8 +107,8 @@ single cell and measure how the difference grows. The construction has a long
 lineage---Kauffman's damage experiments on Boolean
 networks~\cite{kauffman1969}, the annealed treatment of Derrida and
 Pomeau~\cite{derridapomeau1986}, and its formalization for CA, where the
-damage growth rate defines a maximal Lyapunov
-exponent~\cite{bagnoli1992,baetens2010}. Our targets are the finite-horizon,
+multiplication rate of defects, counted via Boolean derivatives, defines a
+maximal Lyapunov exponent~\cite{bagnoli1992,baetens2010}. Our targets are the finite-horizon,
 protocol-indexed versions of exactly these
 quantities~\cite{vispoel2024damage,vispoel2022progress}: we call them
 \emph{damage-response statistics}, not invariants, because they are
@@ -658,7 +658,7 @@ both [registered numbers-free as rev.~9 before measurement; per-estimator
 status in Fig.~\ref{fig:frontier}].
 
 \emph{(i) Approximate Bayesian rule decoder}---the probabilistic move of the
-identification programme~\cite{adamatzky1994,yangbillings2000}. The model is
+identification programme~\cite{adamatzky1994}. The model is
 an \emph{entrywise pseudo-posterior}: each observed transition count enters
 an independent per-entry Binomial likelihood in which a bit flip corrupts
 only the \emph{output} cell at rate $\varepsilon$ (supplied, or estimated
@@ -1252,10 +1252,10 @@ the reliability-aware ceiling, and the identifiability frontier.
 \begin{tabular}{lllll}
 work & CA / data regime & neighbourhood & inference method & task \\
 \colrule
-Richards \emph{et al.}~\cite{richards1990} & experimental (dendrites), noisy & unknown & genetic search over rule sets & extract CA dynamics from data \\
+Richards \emph{et al.}~\cite{richards1990} & experimental (dendrites), noisy & unknown & genetic search over templates & extract CA dynamics from data \\
 Adamatzky~\cite{adamatzky1994} & deterministic \& probabilistic & known/unknown & transition tabulation, theory & identification of CA (monograph) \\
-Yang \& Billings~\cite{yangbillings2000} & noisy observations & unknown & orthogonal least squares & rule + neighbourhood recovery \\
-Sun \emph{et al.}~\cite{sunrosinmartin2011} & deterministic, 1D/2D & unknown & incremental identification & fast rule + neighbourhood selection \\
+Yang \& Billings~\cite{yangbillings2000} & noisy observations & unknown & multiobjective genetic algorithm & rule + neighbourhood recovery \\
+Sun \emph{et al.}~\cite{sunrosinmartin2011} & deterministic \& probabilistic, 1D--3D & unknown & incremental identification & fast rule + neighbourhood selection \\
 Elser~\cite{elser2021} & nonconsecutive snapshots & known & constraint projections & rule + hidden-state recovery \\
 Gilpin~\cite{gilpin2019} & clean diagrams & known & CNN $\equiv$ CA construction & representation equivalence \\
 Mordvintsev \emph{et al.}~\cite{mordvintsev2020} & target behaviour, differentiable & known & gradient descent on rule & learn rule to match behaviour \\
