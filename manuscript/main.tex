@@ -37,8 +37,10 @@ and $800$ sampled radius-two rules, for complete, noiseless, binary diagrams
 of known radius. Under these matched assumptions a single $127$-cell diagram
 identifies the rule table for $100\%$ (elementary) and $97.5\%$ (radius-two)
 of held-out rules, and re-running the perturbation experiment on the
-reconstructed rule predicts all four statistics at the accuracy of an
-independent Monte-Carlo replicate of the target. We distinguish this
+reconstructed rule predicts the four statistics at the accuracy of an
+independent Monte-Carlo replicate of the target (statistically
+indistinguishable wherever the panels can resolve the paired comparison,
+and never distinguishable in the unfavourable direction). We distinguish this
 simulation-limited benchmark ($2\,\mathrm{ICC}-1$) from the latent-reliability
 ceiling (ICC). Two direct learned estimators fall far short of the benchmark
 on damage survival, though the network carries survival information the cheap
@@ -49,7 +51,8 @@ noise band beyond belongs to training for the corruption, where a
 degradation-augmented direct network is strongest, an ordering that
 replicates across rule panels and training seeds even though its level does
 not. Wherever the rule is recoverable, no tested direct estimator matches
-reading it, not even an unconstrained network $354\times$ larger. When the
+reading it, not even an unconstrained network $354\times$ larger trained at
+the same budget. When the
 observation encodes the generator, system identification, whose accuracy is
 set by simulation budget rather than training, is the baseline to beat.
 \end{abstract}
@@ -635,13 +638,16 @@ bottom of a panel are negative; the noise axis is replicated on the
 complementary $80$ rules in Sec.~\ref{sec:frontier}). Solid/dashed pairs:
 pseudo-posterior decoder with $\varepsilon$ supplied/self-estimated (red
 triangles); learned reader, MAP/sampled (purple diamonds). Noise (top left):
-every estimator except the sampled reader collapses by $5$--$7.5\%$ on this
-panel. Masking (top right): the pseudo-posterior extends the deterministic
+of the eight rev-9 estimators plotted, all but the sampled reader collapse
+by $5$--$7.5\%$ on this panel. Masking (top right): the pseudo-posterior extends the deterministic
 inverter's tolerance from ${\sim}25\%$ to $50\%$. Extreme initial-condition
 density (bottom left): the posterior rescues under-exercised tables.
 Label-polarity flips (bottom right; the complement symmetry applied to the
 whole diagram as a corruption): the read-then-simulate family is
-exactly invariant; the direct CNN and the stack degrade. Grid simulations at
+exactly invariant; the direct CNN and the stack degrade. The rev-10
+fairness controls (the degradation-trained CNN and the unconstrained
+\texttt{resnet18}) are scored on the same grid cells but are not plotted;
+their noise-band results are in Sec.~\ref{sec:frontier}(iii). Grid simulations at
 $n_{\mathrm{pairs}}=48$, $8$ posterior-table samples per diagram (production
 targets: $256$ pairs); the rule-reader is a single training seed. Registered
 numbers-free as rev.~9; the posterior on these axes is post-hoc
@@ -690,7 +696,11 @@ inaccurate, its intervals are overconfident. That
 noise-axis overconfidence is exactly the expected price of the entrywise
 pseudo-likelihood: masking removes transitions cleanly (the independence
 approximation stays benign), whereas bit flips corrupt inputs as well as
-outputs, which the likelihood ignores.
+outputs, which the likelihood ignores. A likelihood that models input-side
+corruption too---marginalizing over latent clean diagrams, e.g.\ by
+expectation--maximization---is the natural untested repair on this axis;
+the noise-band verdicts below therefore bound the estimators evaluated,
+not the read-then-simulate family.
 We also quantified the known-radius assumption: selecting the radius by a
 smallest-consistent rule costs ${\sim}0.12$ median \rtwo{} on clean diagrams
 and degrades under noise (neighbourhood detection is itself a studied
@@ -719,8 +729,8 @@ adapted for degradation while the direct CNN stays clean-trained and
 constrained, so we ran two symmetric controls, each a single seed on the
 identical grid cells: the same CNN retrained with the reader's registered
 degradation augmentation, and an unconstrained \texttt{resnet18} at the same
-budget ($1.1\times10^{7}$ parameters, $354\times$ the constrained CNN;
-clean-trained). On this fixed $80$-rule panel the result reverses one rev-9
+budget ($11{,}172{,}292$ parameters, $354\times$ the constrained CNN's
+$31{,}524$; clean-trained). On this fixed $80$-rule panel the result reverses one rev-9
 conclusion and confirms the other. The noise ``dead zone'' was an
 adaptation artifact, not an estimator-family boundary: the seed-0
 degradation-trained CNN holds median \rtwo{} $0.51$--$0.62$ from $3\%$
@@ -757,7 +767,9 @@ pseudo-posterior's collapse point moves---it holds $0.79/0.70/0.61$ at
 $3/5/7.5\%$ on the complement where it had collapsed by $5\%$ on the
 canonical panel---so the posterior-to-network crossover should be read as a
 band, ${\sim}3$--$7.5\%$ noise, that depends on which rules are being
-decoded, not as a sharp boundary.
+decoded, not as a sharp boundary. The masking and density axes were not
+replicated on the complement panel; their rows in Table~\ref{tab:guidance}
+rest on the canonical panel alone.
 
 \emph{Seed replication} [registered, rev.~11]. The degradation-trained
 control was retrained under two further seeds, all else identical, against
@@ -815,7 +827,13 @@ unknown radius & smallest-consistent selection & ${\sim}0.12$ cost on clean diag
 protocol: radius two, the fixed $80$-rule frontier panel, the exact
 corruption distributions of Sec.~\ref{sec:identifiability}, and the
 estimators actually tested (per-cell rule-bootstrap CIs accompany every
-number in the released grid artifact). ``Use'' means the named estimator won
+number in the released grid artifact). Each axis was swept singly: joint
+corruptions (noisy \emph{and} masked, say) were not tested, and the
+per-axis recommendations are not established to compose. Where the
+recommendation is a trained network, validate the specific trained seed on
+held-out synthetically corrupted diagrams before relying on it (run-to-run
+training variance at this budget spans a factor of ${\sim}2$;
+Sec.~\ref{sec:frontier}). ``Use'' means the named estimator won
 its cells under the registered rules; ``none reliably recommendable'' is a
 claim about these estimators, not all estimators. Do not extrapolate beyond
 the corruption model, architecture, and training distribution
@@ -910,9 +928,11 @@ have not done.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/landscape.pdf}
-\caption{The radius-two \emph{damage-signature landscape} ($n=3000$
-uniformly sampled canonical rules; the $800$-rule estimator panel is a
-subset). Red: rules satisfying the registered criterion---persistent,
+\caption{The radius-two \emph{damage-signature landscape}, drawn in damage
+coordinates---spreading rate (horizontal) versus cone fill
+(vertical)---over $n=3000$ canonical rules sampled uniformly over raw
+encodings, so orbits enter proportionally to orbit size
+(Appendix~\ref{app:methods}); the $800$-rule estimator panel is a subset. Red: rules satisfying the registered criterion---persistent,
 sub-ballistic damage in a sparse cone; they form a band between the ordered
 arm and the chaotic bulk, and the embedded class-IV ECAs $54$ and $110$
 (stars) land in it. The band is \emph{not} an independently validated glider
@@ -932,7 +952,10 @@ stipulated experiment predicts finite-horizon damage response at the
 accuracy of re-measuring it. That is the central finding, and we believe it
 generalizes: \emph{a nominally single-observation amortization benchmark can
 be solved by system identification whenever the observation encodes the
-generator}. Benchmark designers who intend to test representation learning
+generator}---more precisely, whenever the observation determines the
+generator within a known or searchable model class, the inversion is
+computationally tractable, and the target's own measurement procedure can
+be re-run at matched budget. Benchmark designers who intend to test representation learning
 must break that encoding (noise, partial observation, unknown model class)
 or accept that they are benchmarking identification.
 
@@ -1037,7 +1060,7 @@ writing---review \& editing.
 \section*{Data availability}
 
 The complete pipeline, the pre-registered decision rules with their full
-git revision history (revisions~2--11), the measured record, the run
+git revision history (revisions~2--12), the measured record, the run
 artifacts backing every number in this article, and a programmatic audit
 that re-derives the quoted values from those artifacts are released with
 the article as a timestamped repository archive; the archive records the
@@ -1045,8 +1068,13 @@ exact commit hash of the version that produced this manuscript. Environment:
 Python~3.11 on Apple silicon (fp32), PyTorch, scikit-learn pinned at 1.9.0;
 \texttt{pip install -e .} recreates it. Reproduction entry points:
 \texttt{scripts/audit\_manuscript\_numbers.py} re-derives every quoted
-number from the released artifacts (exit code $0$ on agreement), and
-\texttt{manuscript/make\_figures.py} regenerates every figure.
+number from the released artifacts (exit code $0$ on agreement);
+\texttt{manuscript/make\_figures.py} regenerates
+Fig.~\ref{fig:landscape} from the released landscape cache, and
+\texttt{scripts/build\_identifiability\_diagram.py} and
+\texttt{scripts/build\_frontier\_grid.py} (flags
+\texttt{--write-manuscript-figure} / \texttt{--write-figure}) regenerate
+Figs.~\ref{fig:ident} and~\ref{fig:frontier} by re-running their sweeps.
 % TODO(user): mint the archive DOI on acceptance and insert it here.
 
 \appendix
