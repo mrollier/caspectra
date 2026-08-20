@@ -146,7 +146,11 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-PRODUCTION_PAIRS = 256  # cfg.targets.n_pairs: the budget the cached targets were measured at
+PRODUCTION_PAIRS = 256
+# REVTeX two-column \textwidth, in inches: the manuscript figure's true width.
+TEXTWIDTH_IN = 7.1
+# Vertical band reserved below the axes for the shared legend, in inches.
+LEGEND_BAND_IN = 0.6  # cfg.targets.n_pairs: the budget the cached targets were measured at
 
 
 def _ceilings(args):
@@ -211,7 +215,14 @@ def plot_grid(grid, radius, out, write_figure, ceilings=None, axes_shown=None):
         return
     ncol = 3 if len(panels) == 3 else 2
     nrow = int(np.ceil(len(panels) / ncol))
-    fig, axes_arr = plt.subplots(nrow, ncol, figsize=(3.3 * ncol, 3.2 * nrow), squeeze=False)
+    # The manuscript figure is included at \textwidth (7.1 in in the two-column
+    # REVTeX layout). Drawing it wider and letting LaTeX scale it down shrinks
+    # every font by the same factor -- a 3-panel row drawn at 9.9 in lands at
+    # 5 pt type. Size the canvas to the destination instead.
+    panel_w = TEXTWIDTH_IN / ncol if axes_shown else 3.3
+    fig, axes_arr = plt.subplots(
+        nrow, ncol, figsize=(panel_w * ncol, 0.95 * panel_w * nrow + LEGEND_BAND_IN), squeeze=False
+    )
     styles = {
         "det": ("^-", "C2"),
         "f1_eps_known": ("v-", "C3"),
@@ -254,17 +265,21 @@ def plot_grid(grid, radius, out, write_figure, ceilings=None, axes_shown=None):
         labels.append("direct-estimator ceiling (ICC)")
     # One shared legend outside the axes: the eight-entry legend repeated in
     # every panel cost most of the plot area (referee 4, §7).
+    legend_ncol = 3
+    legend_rows = int(np.ceil(len(labels) / legend_ncol))
     fig.legend(
         handles,
         labels,
         fontsize=7,
         loc="lower center",
-        ncol=3,
+        ncol=legend_ncol,
         frameon=False,
         bbox_to_anchor=(0.5, -0.01),
     )
     fig.suptitle(f"Identifiability frontier (radius {radius})")
-    fig.tight_layout(rect=(0, 0.10, 1, 1))
+    # Reserve the legend's height in inches, not as a fixed fraction: the
+    # manuscript figure is short enough that a 10% band would overlap the axes.
+    fig.tight_layout(rect=(0, min(0.35, 0.15 * legend_rows / fig.get_figheight()), 1, 1))
     fig.savefig(out / "frontier.pdf")
     if write_figure:
         fig.savefig("manuscript/figures/identifiability_v2.pdf")

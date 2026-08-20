@@ -403,8 +403,13 @@ def build_rev13_checks() -> list[Check]:
 
 
 def text_guards() -> list[tuple[str, bool]]:
-    """Literal-string guards: the corrected values are present, stale ones gone."""
-    tex = MAIN_TEX.read_text()
+    """Literal-string guards: the corrected values are present, stale ones gone.
+
+    Whitespace is collapsed first: LaTeX source wraps freely, so a guard phrase
+    that happens to straddle a line break is a false alarm about the audit, not
+    about the manuscript.
+    """
+    tex = re.sub(r"\s+", " ", MAIN_TEX.read_text())
     results = RESULTS.read_text()
     return [
         ("main.tex quotes the canonical frozen-CNN value (-0.93)", "frozen CNN to $-0.93$" in tex),
@@ -428,7 +433,7 @@ def text_guards() -> list[tuple[str, bool]]:
         ),
         (
             "main.tex defines rho against its two exact ceilings",
-            "eq:rho" in tex and "simulation-limited\nbenchmark" in tex.replace("  ", " "),
+            "eq:rho" in tex and "simulation-limited benchmark" in tex,
         ),
     ]
 
