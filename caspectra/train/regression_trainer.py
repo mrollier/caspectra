@@ -12,7 +12,19 @@ Two design points with scientific content:
   in every checkpoint so evaluation can invert it.
 * **Validation is the criterion-6 preview**: each epoch, per-feature R² over
   the *held-out rules'* diagrams. R² is invariant under the (shared) affine
-  standardization, so values are comparable to the raw-target scale.
+  standardization, so values are comparable to the raw-target scale. This
+  curve is a *preview only* — it is scored on the test panel and must never
+  drive any training decision.
+* **Checkpoint selection (rev 13, M9) uses a separate inner fold** carved from
+  the *training* rules' diagrams. The rev-10 protocol kept final-epoch weights,
+  which under heavy degradation augmentation samples an oscillating validation
+  curve at an arbitrary point; the fourth referee report (§3.17) is right that
+  reporting the resulting run-to-run spread as an estimator-family property
+  confounds the estimator with the selection rule. Selecting on the held-out
+  rules would be selection on the test set, so the inner fold holds out
+  training-rule *diagrams* instead: every training rule stays in the training
+  set, and the only variable that changes relative to rev 10 is which epoch's
+  weights are kept.
 """
 
 from __future__ import annotations
@@ -82,10 +94,12 @@ class RegressionTrainer:
         train_rules: list[int],
         holdout_rules: list[int],
         target_names: list[str],
+        select_loader: DataLoader | None = None,
     ) -> None:
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
+        self.select_loader = select_loader
         self.optimizer = optimizer
         self.device = device
         self.config = config
@@ -113,6 +127,11 @@ class RegressionTrainer:
 
         self.history: list[float] = []
         self.val_r2_history: list[np.ndarray] = []
+        # Rev-13 M9: inner-fold selection state. ``None`` reproduces the
+        # rev-10 final-epoch protocol exactly.
+        self.select_loss_history: list[float] = []
+        self.best_select_loss: float = math.inf
+        self.best_select_epoch: int = 0
 
     def _batch_targets(self, metadata: dict) -> torch.Tensor:
         reps = metadata["equiv_class_rep"]
@@ -144,28 +163,67 @@ class RegressionTrainer:
         self.model.train()
         return r2_per_feature(np.concatenate(preds), np.concatenate(targets))
 
+    @torch.no_grad()
+    def _selection_loss(self) -> float:
+        """Mean MSE on the inner fold: unseen *diagrams* of *training* rules.
+
+        Clean (never degraded), matching evaluation-time input, and disjoint
+        from both the training diagrams and the held-out rule panel.
+        """
+        self.model.eval()
+        total, n = 0.0, 0
+        for image, metadata in self.select_loader:
+            predictions = self.model(image.to(self.device))
+            loss = torch.nn.functional.mse_loss(
+                predictions, self._batch_targets(metadata), reduction="sum"
+            )
+            total += float(loss.item())
+            n += predictions.numel()
+        self.model.train()
+        return total / max(1, n)
+
     def train(self) -> list[float]:
         """Run the full loop; return the per-epoch train-loss history."""
         csv_path = self.output_dir / "loss_log.csv"
         with csv_path.open("w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(
+            header = (
                 ["epoch", "train_loss"]
                 + [f"val_r2_{n}" for n in self.target_names]
                 + ["val_r2_median"]
             )
+            if self.select_loader is not None:
+                header.append("select_loss")
+            writer.writerow(header)
             for epoch in range(1, self.config.epochs + 1):
                 epoch_loss = self._train_one_epoch()
                 val_r2 = self._validate()
                 self.history.append(epoch_loss)
                 self.val_r2_history.append(val_r2)
                 median = float(np.nanmedian(val_r2)) if not np.all(np.isnan(val_r2)) else math.nan
-                writer.writerow([epoch, epoch_loss, *val_r2.tolist(), median])
+                row = [epoch, epoch_loss, *val_r2.tolist(), median]
+                if self.select_loader is not None:
+                    select_loss = self._selection_loss()
+                    self.select_loss_history.append(select_loss)
+                    row.append(select_loss)
+                    if select_loss < self.best_select_loss:
+                        self.best_select_loss = select_loss
+                        self.best_select_epoch = epoch
+                        self.save_checkpoint(self.output_dir / "checkpoint_selected.pt", epoch)
+                writer.writerow(row)
                 f.flush()
                 if epoch % self.config.checkpoint_every == 0:
                     self.save_checkpoint(self.output_dir / f"checkpoint_epoch{epoch}.pt", epoch)
 
+        # Final-epoch weights are always kept, so the rev-10/rev-11 numbers stay
+        # reproducible from a selected-checkpoint run directory.
         self.save_checkpoint(self.output_dir / "checkpoint_final.pt", self.config.epochs)
+        if self.select_loader is not None:
+            print(
+                f"[lever-a] selected epoch {self.best_select_epoch}/{self.config.epochs} "
+                f"(inner-fold MSE {self.best_select_loss:.5f}; "
+                f"final-epoch {self.select_loss_history[-1]:.5f})"
+            )
         self._plot(self.output_dir / "loss_curve.png")
         return self.history
 
@@ -182,6 +240,11 @@ class RegressionTrainer:
                 "train_rules": self.train_rules,
                 "holdout_rules": self.holdout_rules,
                 "target_names": self.target_names,
+                "selection": {
+                    "enabled": self.select_loader is not None,
+                    "best_epoch": self.best_select_epoch,
+                    "best_inner_fold_mse": self.best_select_loss,
+                },
             },
             path,
         )

@@ -23,14 +23,17 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import json
 import warnings
+from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 import torch
+from matplotlib.lines import Line2D  # noqa: E402
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
@@ -79,6 +82,31 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output-dir", default=None)
     p.add_argument("--write-figure", action="store_true", help="Write manuscript figure.")
     p.add_argument(
+        "--replot-from",
+        default=None,
+        help="Redraw the figure from a committed summary.json without re-running any "
+        "sweep. Figure-only changes (labels, shared legend, benchmark lines) should "
+        "never cost a grid re-simulation.",
+    )
+    p.add_argument(
+        "--manuscript-axes",
+        default=None,
+        help="Comma-separated axes to draw in the manuscript figure. The polarity axis is "
+        "four flat lines (the read-then-simulate family is exactly invariant by "
+        "construction) and does not earn a panel; the full four-axis figure is still "
+        "written to the run directory.",
+    )
+    p.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="Allow a sweep to replace an existing summary.json in the output directory.",
+    )
+    p.add_argument(
+        "--reliability-summary",
+        default="runs/m4_range2/reliability/summary.json",
+        help="Source of the per-target ICCs used to draw the panel ceilings.",
+    )
+    p.add_argument(
         "--extra-cnn",
         action="append",
         default=[],
@@ -118,8 +146,162 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+PRODUCTION_PAIRS = 256
+# REVTeX two-column \textwidth, in inches: the manuscript figure's true width.
+TEXTWIDTH_IN = 7.1
+# Vertical band reserved below the axes for the shared legend, in inches.
+LEGEND_BAND_IN = 0.6  # cfg.targets.n_pairs: the budget the cached targets were measured at
+
+
+def _ceilings(args):
+    """Panel ceilings under the ACTUAL scoring convention (referee 4, §3.16).
+
+    The grid scores an estimator that simulates at ``args.n_pairs`` against the
+    production target cache at ``PRODUCTION_PAIRS``. A fresh-simulation
+    estimator therefore carries sigma_e^2(n) = (256/n) sigma_e^2(256) of its own
+    noise on top of the target's, so its ceiling is 1 - (1 + 256/n)(1 - ICC) --
+    NOT 2*ICC - 1 evaluated at the reduced budget, which would be the ceiling
+    if the targets had been recomputed at n too. A direct estimator predicting
+    the latent mean keeps the ICC ceiling at any grid budget.
+    """
+    path = Path(args.reliability_summary)
+    if not path.exists():
+        return None
+    per = json.loads(path.read_text())["per_feature"]
+    iccs = [float(v["icc"]) for v in per.values()]
+    scale = PRODUCTION_PAIRS / args.n_pairs
+    rts = [1.0 - (1.0 + scale) * (1.0 - i) for i in iccs]
+    return {
+        "read_then_simulate": float(np.median(rts)),
+        "direct": float(np.median(iccs)),
+    }
+
+
+# Readable estimator names. The rev-9 artifact keys (``f1_eps_known`` etc.) are
+# not names a reader can follow, and the fourth referee report (§7) is right
+# that they should not appear in a published legend.
+ESTIMATOR_LABELS = {
+    "det": "deterministic inverter",
+    "f1_eps_known": r"pseudo-posterior ($\varepsilon$ given)",
+    "f1_eps_estimated": r"pseudo-posterior ($\varepsilon$ estimated)",
+    "f2_map": "learned reader (MAP)",
+    "f2_sampled": "learned reader (sampled)",
+    "cnn": "direct CNN (frozen)",
+    "gbm": "5 statistics",
+    "stack": "5 stats + CNN stack",
+    "degaug": "direct CNN (degradation-trained)",
+    "degaug_sel": "direct CNN (degradation-trained, selected)",
+    "resnet18": r"\texttt{resnet18} (unconstrained)",
+}
+AXIS_LABELS = {
+    "noise": "bit-flip noise rate",
+    "mask": "masked cell fraction",
+    "density": "initial-condition density",
+    "label": "label-polarity flip fraction",
+}
+
+
+def plot_grid(grid, radius, out, write_figure, ceilings=None, axes_shown=None):
+    """Draw the frontier figure from a grid dict (live or reloaded).
+
+    ``ceilings`` is ``{"read_then_simulate": float, "direct": float}``: the
+    panels score an estimator simulating at the grid budget against the
+    production target cache, so neither family's ceiling is 1 and the curves
+    are unreadable without them drawn (referee 4, §3.16).
+    """
+    wanted = axes_shown or ("noise", "mask", "density", "label")
+    panels = [a for a in wanted if a in grid]
+    if not panels:
+        return
+    ncol = 3 if len(panels) == 3 else 2
+    nrow = int(np.ceil(len(panels) / ncol))
+    # The manuscript figure is included at \textwidth (7.1 in in the two-column
+    # REVTeX layout). Drawing it wider and letting LaTeX scale it down shrinks
+    # every font by the same factor -- a 3-panel row drawn at 9.9 in lands at
+    # 5 pt type. Size the canvas to the destination instead.
+    panel_w = TEXTWIDTH_IN / ncol if axes_shown else 3.3
+    fig, axes_arr = plt.subplots(
+        nrow, ncol, figsize=(panel_w * ncol, 0.95 * panel_w * nrow + LEGEND_BAND_IN), squeeze=False
+    )
+    styles = {
+        "det": ("^-", "C2"),
+        "f1_eps_known": ("v-", "C3"),
+        "f1_eps_estimated": ("v--", "C3"),
+        "f2_map": ("D-", "C4"),
+        "f2_sampled": ("D--", "C4"),
+        "cnn": ("o-", "C0"),
+        "gbm": ("s-", "C1"),
+        "stack": ("*-", "C5"),
+        "degaug": ("P-", "C6"),
+        "degaug_sel": ("P-", "C8"),
+        "resnet18": ("X-", "C7"),
+    }
+    handles, labels = [], []
+    for i, axis_name in enumerate(panels):
+        ax = axes_arr[i // ncol][i % ncol]
+        cells = grid[axis_name]
+        xs = [c["value"] for c in cells]
+        if ceilings:
+            ax.axhline(ceilings["read_then_simulate"], color="0.35", lw=0.8, ls="-.", zorder=0)
+            ax.axhline(ceilings["direct"], color="0.6", lw=0.8, ls=":", zorder=0)
+        for est, (fmt, col) in styles.items():
+            ys = [c["estimators"].get(est, {}).get("median_r2") for c in cells]
+            if any(v is not None for v in ys):
+                (line,) = ax.plot(
+                    xs, ys, fmt, color=col, label=ESTIMATOR_LABELS.get(est, est), ms=4
+                )
+                if ESTIMATOR_LABELS.get(est, est) not in labels:
+                    handles.append(line)
+                    labels.append(ESTIMATOR_LABELS.get(est, est))
+        ax.set_xlabel(AXIS_LABELS.get(axis_name, axis_name))
+        ax.set_ylabel("median held-out $R^2$")
+        ax.set_ylim(-0.05, 1.05)
+    for j in range(len(panels), nrow * ncol):
+        axes_arr[j // ncol][j % ncol].set_visible(False)
+    if ceilings:
+        handles.append(Line2D([], [], color="0.35", lw=0.8, ls="-."))
+        labels.append("read-then-simulate ceiling (grid budget)")
+        handles.append(Line2D([], [], color="0.6", lw=0.8, ls=":"))
+        labels.append("direct-estimator ceiling (ICC)")
+    # One shared legend outside the axes: the eight-entry legend repeated in
+    # every panel cost most of the plot area (referee 4, §7).
+    legend_ncol = 3
+    legend_rows = int(np.ceil(len(labels) / legend_ncol))
+    fig.legend(
+        handles,
+        labels,
+        fontsize=7,
+        loc="lower center",
+        ncol=legend_ncol,
+        frameon=False,
+        bbox_to_anchor=(0.5, -0.01),
+    )
+    fig.suptitle(f"Identifiability frontier (radius {radius})")
+    # Reserve the legend's height in inches, not as a fixed fraction: the
+    # manuscript figure is short enough that a 10% band would overlap the axes.
+    fig.tight_layout(rect=(0, min(0.35, 0.15 * legend_rows / fig.get_figheight()), 1, 1))
+    fig.savefig(out / "frontier.pdf")
+    if write_figure:
+        fig.savefig("manuscript/figures/identifiability_v2.pdf")
+
+
 def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     args = parse_args()
+    if args.replot_from:
+        # Figure-only changes must never cost a grid re-simulation: the committed
+        # summary.json already holds every plotted number.
+        src = Path(args.replot_from)
+        payload = json.loads(src.read_text())
+        plot_grid(
+            payload["grid"],
+            payload.get("radius", 2),
+            Path(ensure_dir(args.output_dir or str(src.parent))),
+            args.write_figure,
+            _ceilings(args),
+            tuple(args.manuscript_axes.split(",")) if args.manuscript_axes else None,
+        )
+        print(f"[f3] replotted from {src} (no simulation)")
+        return
     cfg = ExperimentConfig.from_yaml(args.config)
     # The rev-10 modes must never clobber the canonical released artifact.
     if args.direct_only:
@@ -131,6 +313,17 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     if args.rule_subsample == "complement":
         default_out += "_complement"  # never clobber a canonical-panel artifact
     out = ensure_dir(args.output_dir or default_out)
+    # A sweep must never silently replace a released artifact. This directory is
+    # gitignored, so an accidental overwrite is unrecoverable and invisible to
+    # `git status` -- which is exactly how the canonical grid was once lost to a
+    # run whose --replot-from flag had failed to take effect.
+    existing = Path(out) / "summary.json"
+    if existing.exists() and not args.force_overwrite:
+        raise SystemExit(
+            f"{existing} already exists. Sweeps do not overwrite released artifacts: "
+            "pass --output-dir to write elsewhere, --replot-from to redraw the figure "
+            "without simulating, or --force-overwrite if you really mean to replace it."
+        )
     lean_mode = args.direct_only or args.calibrate_f1
     set_seed(cfg.seed)
     radius, width = cfg.data.radius, cfg.data.grid_size
@@ -182,8 +375,6 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
 
     # Rev-10 control checkpoints: independent scalers, architecture from the
     # config saved in each run dir. Evaluated as frozen forward passes only.
-    from pathlib import Path
-
     extra_cnns: dict[str, tuple] = {}
     for spec in args.extra_cnn:
         name, ckpt = spec.split("=", 1)
@@ -518,7 +709,6 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     # read-family estimator's CI_high at a cell with per-bit recovery >= 0.95;
     # dead-zone extension = control CI_low above the F2-sampled point value.
     if args.direct_only and args.reference_summary:
-        import json
 
         ref = json.loads(open(args.reference_summary).read())["grid"]
         read_family = ("det", "f1_eps_known", "f1_eps_estimated", "f2_map", "f2_sampled")
@@ -569,38 +759,9 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     save_json(summary, out / "summary.json")
 
     # Figure: one panel per continuous axis, one curve per estimator.
-    panels = [a for a in ("noise", "mask", "density", "label") if a in grid]
-    if panels and not lean_mode:
-        ncol = 2
-        nrow = int(np.ceil(len(panels) / ncol))
-        fig, axes_arr = plt.subplots(nrow, ncol, figsize=(9.5, 3.4 * nrow), squeeze=False)
-        styles = {
-            "det": ("^-", "C2"),
-            "f1_eps_known": ("v-", "C3"),
-            "f1_eps_estimated": ("v--", "C3"),
-            "f2_map": ("D-", "C4"),
-            "f2_sampled": ("D--", "C4"),
-            "cnn": ("o-", "C0"),
-            "gbm": ("s-", "C1"),
-            "stack": ("*-", "C5"),
-        }
-        for i, axis_name in enumerate(panels):
-            ax = axes_arr[i // ncol][i % ncol]
-            cells = grid[axis_name]
-            xs = [c["value"] for c in cells]
-            for est, (fmt, col) in styles.items():
-                ys = [c["estimators"].get(est, {}).get("median_r2") for c in cells]
-                if any(v is not None for v in ys):
-                    ax.plot(xs, ys, fmt, color=col, label=est, ms=4)
-            ax.set_xlabel(axis_name)
-            ax.set_ylabel("median held-out $R^2$")
-            ax.set_ylim(-0.05, 1.05)
-            ax.legend(fontsize=6)
-        fig.suptitle(f"Identifiability frontier (radius {radius})")
-        fig.tight_layout()
-        fig.savefig(out / "frontier.pdf")
-        if args.write_figure:
-            fig.savefig("manuscript/figures/identifiability_v2.pdf")
+    if not lean_mode:
+        plot_grid(grid, radius, out, args.write_figure, _ceilings(args))
+
     print(f"[f3] wrote {out}/summary.json and {out}/frontier.pdf")
 
 

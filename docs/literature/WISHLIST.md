@@ -19,15 +19,35 @@ Added 2026-07-07 after the read-through (details + rationale in
 `docs/research_directions_2026-07-07.md` §3; bibliographic data to verify on
 retrieval):
 
-2. **Kauffman 1969**, J. Theor. Biol. 22:437 — *promoted from honourable mention:*
-   cited directly at main.tex l.108 but never read (same secondhand-attribution
-   risk the read-through just cleaned up elsewhere).
-3. **Derrida & Weisbuch 1986**, J. Physique 47:1297 — refined annealed
-   overlap-evolution formalism behind the (now-negative) zero-budget member.
-4. **Domany & Kinzel 1984**, PRL 53:311 — canonical stochastic-CA/DP model
-   anchoring Bagnoli's directed-percolation mapping.
+2. ~~**Kauffman 1969**, J. Theor. Biol. 22:437~~ — **READ 2026-08-20**
+   (`kauffman-metabolic-1969.pdf`). The existing cite is accurate: §4 perturbs a
+   single gene for one time step and follows whether the net returns to its
+   cycle, using Hamming distance as the dissimilarity measure — a single-site
+   damage experiment in all but name. No wording change needed.
+3. ~~**Derrida & Weisbuch 1986**, J. Physique 47:1297~~ — **READ AND CITED
+   2026-08-20** (`derrida-evolution-1986.pdf`; doi 10.1051/jphys:019860047080129700).
+   Compares quenched (Kauffman) against annealed overlap evolution in random
+   Boolean nets and finds the annealed predictions track the simulations
+   closely. Cited in Sec. IV G as the *contrast* to our negative annealed
+   member: their agreement holds where connections are redrawn, and a single
+   fixed CA rule is the opposite limit.
+4. ~~**Domany & Kinzel 1984**, PRL 53:311~~ — **READ AND CITED 2026-08-20**
+   (`domany_kinzel-equivalence-1984.pdf`, duplicate of `domany-equivalence-1984.pdf`;
+   doi 10.1103/PhysRevLett.53.311). Maps d-dimensional stochastic peripheral CA
+   onto (d+1)-dimensional Ising models; the update carries three conditional
+   probabilities P(1|0,0)=x, P(1|0,1)=y, P(1|1,1)=z, deterministic CA sit at the
+   corners of that cube, and the x=0 face is generalized directed percolation.
+   Cited in the Discussion as the stochastic-generator testbed. **Caveats
+   observed:** the paper is sublattice (odd/even) updated, not synchronous, and
+   it does **no** damage spreading — so it must not be cited for the DK
+   damage-spreading literature (the manuscript's earlier "well-studied
+   damage-spreading literature" clause was dropped rather than cited loosely).
 5. **Grassberger 1995**, J. Stat. Phys. 79:13 — damage-spreading transitions and
-   DP universality; the critical-regime failure discussion.
+   DP universality; the critical-regime failure discussion. **STILL WANTED.** The
+   PDF in this directory (`grassberger-damage-1995.pdf`) is a *different* 1995
+   Grassberger paper — Physica A 214:547, "Damage spreading and critical
+   exponents for 'model A' Ising dynamics", which studies the Ising model rather
+   than DP universality of damage transitions. Not cited.
 6. **Zhao & Billings FCA-OLS line** (Sun 2011 refs [19], [21], [22]) — the actual
    OLS identification papers, for the corrected Appendix-D row.
 7. *(optional)* **Bagnoli & Rechtman 1999**, PRE 59:R1307; **Martins et al. 1991**,

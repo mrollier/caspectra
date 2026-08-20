@@ -5,6 +5,143 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-08-20 — Round-5 review-response results (rev 13; M9–M12 + re-expressions)
+
+Decision and reporting rules registered numbers-free in EVALUATION_CRITERIA.md
+rev 13 (commit 1cd55b7) **before** any number below. Fourth review
+(`manuscript/reviews/review_opus5_20aug26.md`, major revision).
+
+### M10 — stratified split without force-holding (registered)
+
+The canonical panel force-holds all 57 signature-complex rules, leaving **zero**
+of them in training where a representative split would hold ~7%. The CNN was
+retrained (3 seeds) on a stratified leave-rules-out split with force-holding
+disabled — 52 of the 57 signature-complex rules in training, 5 (3.1%) held out —
+and every family rescored on that panel.
+
+| family | stratified panel | enriched panel |
+|---|---|---|
+| mechanistic | **0.992** | 0.991 |
+| 5 statistics (GBM) | 0.780 | 0.845 |
+| deep CNN | **0.778** (seeds 0.74–0.78) | 0.859 |
+
+Registered rule: downgrade the family-gap claim to the stratified number if any
+target's gap shrinks by more than 0.10 median R² against the post-stratified
+gap. **No downgrade** — the largest shrink over both direct estimators is 0.07
+(GBM cone fill), while two of the CNN's gaps *widen*: survival by 0.16 and cone
+fill by 0.34. Representative training does not close the gap; the enrichment
+was flattering the network, not handicapping it.
+
+Counter-observation, on 5 rules and therefore weak: with 52 complex rules in
+training the CNN still scores −0.81 on the 5 held-out complex rules against 0.78
+on the rest, reversing the direction seen on the enriched panel (0.832 complex
+vs 0.821 random). Artifact: `runs/m4_range2_strat/control/`.
+
+Implementation note worth recording: `HeldOutPredictions.complex_mask` derives
+membership from `cfg.train.force_holdout_rules`, which this control empties by
+design, so it is identically False here. The scorer reads the signature set from
+the canonical config instead — the first run reported "0 signature-complex" and
+was wrong for that reason.
+
+### M11 — retrieval baseline (registered). The most uncomfortable number.
+
+Nearest-training-rule lookup: no training, no simulation, return the cached
+target of the nearest training rule; predictions averaged within rule as for
+every direct estimator.
+
+| metric space | radius-2 median R² | ECA median R² |
+|---|---|---|
+| five statistics | 0.821 | 0.828 |
+| **CNN bottleneck** | **0.862** | **0.881** |
+| *(trained CNN, for comparison)* | *0.864* | *0.852* |
+
+Retrieval in the network's own bottleneck is level with its regression head on
+radius two and **exceeds** it on ECA. Under the registered interpretation rule
+this is evidence that the direct estimators' accuracy on this benchmark is
+substantially rule recognition rather than extrapolation to unseen tables.
+Consistent with the rev-8 identity probes (0.95 balanced accuracy from the same
+bottleneck). Artifacts: `runs/{m4_range2,lever_a_local}/retrieval/`.
+
+### M12 — horizon-matched cross-space prevalence (registered)
+
+The horizon ⌊w/2r⌋−1 is 62 for ECA and 30 for radius two at w = 127, so the
+manuscript's "7.8% vs 3/88" compared two different experiments.
+
+| ECA horizon | prevalence | signature set | precision vs class IV |
+|---|---|---|---|
+| T = 62 (as published) | 3/88 = 3.4% | {54, 106, 110} | 2/3 |
+| **T = 30 (matched)** | **6/88 = 6.8%** | {37, 45, 54, 60, 106, 110} | **1/3** |
+
+Radius two is 7.8% (Wilson [6.9, 8.8]%). **At matched horizon the cross-space
+gap essentially closes.** Per the registered reporting rule the confounded form
+is withdrawn from the manuscript. Artifact:
+`runs/analysis/glider_validation_T30/`.
+
+### Zero-simulation re-expressions (post-hoc confirmatory; rules fixed in rev 13)
+
+`scripts/analyze_round6_metrics.py` → `runs/analysis/round6_metrics/summary.json`.
+
+**(a) ρ = RMSE/σ̂_e, per-rule σ̂_e, pooled as √(Σeᵢ²/Σσ̂ₑ²(i)).** √2 is the
+simulation-limited benchmark and 1 the latent ceiling, exactly.
+
+| target | ECA mech / stats / CNN | radius-2 mech / stats / CNN |
+|---|---|---|
+| survival | 1.4 / 6.0 / 6.4 | 1.4 / 4.0 / 3.0 |
+| fraction | 1.2 / 20 / 33 | 1.4 / 7.2 / 8.7 |
+| rate | 0.7 / 27 / 27 | 1.5 / 9.5 / 11 |
+| cone fill | 1.8 / 13 / 15 | 1.0 / 5.2 / 6.4 |
+
+Every mechanistic CI covers √2; every direct-estimator CI is far above it. The
+pooled form (not an average of per-rule ratios) is what makes both reference
+values exact and what survives the rules with σ̂_e = 0 — the fully ordered ones,
+3/18 on ECA and 1/160 on radius two, on which the mechanistic error is also
+exactly zero.
+
+**(b) Per-panel reliability.** ICC recomputed inside each decomposition; the
+post-stratified row reweights strata to the 7.1% universe prevalence. Median
+2·ICC−1: enriched 0.985, random 0.988, post-stratified 0.987, complex 0.979.
+**Max |ICC shift| vs the universe sample: 0.010** — the referee's objection is
+structurally valid but small in magnitude.
+
+**(c) Target dependence.** fill vs (w/2rT)·fraction/rate: **R² = 0.637**
+(3000-rule landscape), **0.702** (160-rule panel), Pearson r = 0.857. The
+registered threshold for declaring cone fill a derived coordinate was R² > 0.95.
+**Not met** — cone fill carries independent information.
+
+**(d) Frontier ceilings.** The grid scores an estimator simulating at n against
+the **256-pair production cache**, so the read-then-simulate ceiling is
+1 − (1 + 256/n)(1 − ICC): median 0.963 at n = 64 (Fig. 1), 0.953 at n = 48
+(Fig. 2); a direct estimator keeps the ICC ceiling, 0.993. *Not* 2·ICC−1
+evaluated at reduced budget.
+
+**(e) Survival-band stratification.** Restricted to survival ∈ [0.1, 0.9]
+(14/18 ECA orbits, 40/160 radius-two rules):
+
+| | ECA full → band | radius-2 full → band |
+|---|---|---|
+| mechanistic | 0.985 → 0.895 | 0.977 → 0.939 |
+| 5 statistics | 0.708 → **−0.871** | 0.809 → 0.409 |
+| CNN | 0.667 → **−1.255** | 0.888 → 0.664 |
+
+Mode accuracy stays 0.89–1.00 throughout. **The direct estimators' survival
+skill is mode assignment**: within the band they are worse than the band mean on
+ECA.
+
+**(f) Reconstruction-failure analysis.** The four radius-two rules with
+incomplete first-diagram coverage miss one entry of 32 each; mean |error| is
+0.017 vs 0.016 (survival) and 0.008 vs 0.009 (cone fill) against fully covered
+rules, and *smaller* on fraction (0.0009 vs 0.0041) and rate (0.0017 vs 0.0084).
+The failures are dynamically benign: an entry the diagram never exercises is one
+the dynamics rarely reaches.
+
+**(g) Fig. 3 decorrelation.** Signature rules span 1.5× in damage fraction vs
+2.6× for the bulk, and in decorrelated coordinates (rate vs N/2rT) the tightest
+box containing all 234 of them also contains 732 ordinary rules (F1 = 0.39). The
+red region is a **threshold region, not a discovered cluster**; the caption now
+says so.
+
+---
+
 ## 2026-07-06 — Round-4 review-response analyses (rev 11; M1–M7)
 
 Decision rules pre-registered numbers-free in EVALUATION_CRITERIA.md rev 11

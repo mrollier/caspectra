@@ -26,6 +26,8 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 import matplotlib
 
@@ -48,6 +50,78 @@ from caspectra.factory import build_dataset, build_model
 from caspectra.train.regression_trainer import r2_per_feature
 from caspectra.utils import ensure_dir, save_json, select_device, set_seed
 
+PRODUCTION_PAIRS = 256  # cfg.targets.n_pairs: the budget the cached targets were measured at
+
+
+def _ceilings(reliability_summary: str, n_pairs: int):
+    """Panel ceilings under the actual scoring convention (referee 4, §3.16).
+
+    The sweep scores an estimator simulating at ``n_pairs`` against the
+    production target cache at 256 pairs, so a fresh-simulation estimator
+    carries sigma_e^2(n) = (256/n) sigma_e^2(256) of its own noise on top of the
+    target's: its ceiling is 1 - (1 + 256/n)(1 - ICC), not 1 and not 2*ICC - 1.
+    A direct estimator predicting the latent mean keeps the ICC ceiling.
+    """
+    path = Path(reliability_summary)
+    if not path.exists():
+        return None
+    per = json.loads(path.read_text())["per_feature"]
+    iccs = [float(v["icc"]) for v in per.values()]
+    scale = PRODUCTION_PAIRS / n_pairs
+    return {
+        "read_then_simulate": float(np.median([1.0 - (1.0 + scale) * (1.0 - i) for i in iccs])),
+        "direct": float(np.median(iccs)),
+    }
+
+
+def plot_sweeps(sweeps, radius, density0, out, write_manuscript_figure, ceilings=None):
+    """Draw the four-panel identifiability figure from a sweeps dict."""
+    fig, ax = plt.subplots(2, 2, figsize=(9.5, 7.0))
+    a = ax[0, 0]
+    a.plot(
+        rows := sweeps["rows"]["values"],
+        sweeps["rows"]["exact"],
+        "o-",
+        label="exact reconstruction",
+    )
+    a.plot(rows, sweeps["rows"]["coverage"], "s--", color="gray", label="table coverage")
+    a.plot(rows, sweeps["rows"]["mechanistic"], "^-", color="C2", label="mechanistic $R^2$")
+    a.set_xlabel("observed rows (time steps)")
+    a.set_ylabel("value")
+    a.set_title("(a) observation length")
+    a.legend(fontsize=7)
+    a.set_ylim(-0.05, 1.05)
+
+    for key, panel, xlabel, title in [
+        ("noise", ax[0, 1], "bit-flip observation noise", "(b) observation noise"),
+        ("mask", ax[1, 0], "masked-cell fraction", "(c) partial observation"),
+        ("density", ax[1, 1], "IC density", "(d) IC-density shift"),
+    ]:
+        s = sweeps[key]
+        panel.plot(s["values"], s["mechanistic"], "^-", color="C2", label="mechanistic")
+        panel.plot(s["values"], s["baseline"], "s-", color="C1", label="5 statistics")
+        panel.plot(s["values"], s["cnn"], "o-", color="C0", label="frozen CNN")
+        panel.plot(s["values"], s["exact"], ":", color="gray", label="exact recon.")
+        panel.set_xlabel(xlabel)
+        panel.set_ylabel("median held-out $R^2$")
+        panel.set_title(title)
+        if ceilings:
+            panel.plot([], [], color="0.35", lw=0.8, ls="-.", label="sim. ceiling")
+            panel.plot([], [], color="0.6", lw=0.8, ls=":", label="ICC ceiling")
+        panel.legend(fontsize=6, ncol=2)
+        panel.set_ylim(-0.05, 1.05)
+        if key == "density":
+            panel.axvline(density0, color="k", lw=0.6, ls=":")
+        if ceilings:
+            panel.axhline(ceilings["read_then_simulate"], color="0.35", lw=0.8, ls="-.", zorder=0)
+            panel.axhline(ceilings["direct"], color="0.6", lw=0.8, ls=":", zorder=0)
+
+    fig.suptitle(f"Identifiability of the local rule (radius {radius})", fontsize=11)
+    fig.tight_layout()
+    fig.savefig(out / "identifiability.pdf")
+    if write_manuscript_figure:
+        fig.savefig("manuscript/figures/identifiability.pdf")
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="C4 identifiability phase diagram (rev 8).")
@@ -57,6 +131,21 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--n-pairs", type=int, default=96, help="MC pairs for sweep simulation.")
     p.add_argument("--max-rules", type=int, default=None, help="Cap held-out rules for speed.")
     p.add_argument("--output-dir", default=None)
+    p.add_argument(
+        "--replot-from",
+        default=None,
+        help="Redraw the figure from a committed summary.json without re-running the sweep.",
+    )
+    p.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="Allow a sweep to replace an existing summary.json in the output directory.",
+    )
+    p.add_argument(
+        "--reliability-summary",
+        default="runs/m4_range2/reliability/summary.json",
+        help="Source of the per-target ICCs used to draw the panel ceilings.",
+    )
     p.add_argument(
         "--write-manuscript-figure",
         action="store_true",
@@ -82,8 +171,30 @@ def _evolve(rule: int, radius: int, ic: np.ndarray, steps: int) -> np.ndarray:
 
 def main() -> None:
     args = parse_args()
+    if args.replot_from:
+        src = Path(args.replot_from)
+        payload = json.loads(src.read_text())
+        plot_sweeps(
+            payload["sweeps"],
+            payload.get("radius", 2),
+            payload.get("density0", 0.5),
+            Path(ensure_dir(args.output_dir or str(src.parent))),
+            args.write_manuscript_figure,
+            _ceilings(args.reliability_summary, payload.get("n_pairs", args.n_pairs)),
+        )
+        print(f"[c4] replotted from {src} (no simulation)")
+        return
     cfg = ExperimentConfig.from_yaml(args.config)
     out = ensure_dir(args.output_dir or f"{cfg.train.output_dir}/identifiability")
+    # See build_frontier_grid.py: runs/ is gitignored, so an accidental overwrite
+    # of a released sweep artifact is unrecoverable and invisible to git status.
+    existing = Path(out) / "summary.json"
+    if existing.exists() and not args.force_overwrite:
+        raise SystemExit(
+            f"{existing} already exists. Sweeps do not overwrite released artifacts: "
+            "pass --output-dir to write elsewhere, --replot-from to redraw the figure "
+            "without simulating, or --force-overwrite if you really mean to replace it."
+        )
     set_seed(cfg.seed)
     radius, width = cfg.data.radius, cfg.data.grid_size
     density0 = cfg.targets.ic_density
@@ -266,46 +377,14 @@ def main() -> None:
         out / "summary.json",
     )
 
-    # Figure: four panels.
-    fig, ax = plt.subplots(2, 2, figsize=(9.5, 7.0))
-    a = ax[0, 0]
-    a.plot(
-        rows := sweeps["rows"]["values"],
-        sweeps["rows"]["exact"],
-        "o-",
-        label="exact reconstruction",
+    plot_sweeps(
+        sweeps,
+        radius,
+        density0,
+        out,
+        args.write_manuscript_figure,
+        _ceilings(args.reliability_summary, args.n_pairs),
     )
-    a.plot(rows, sweeps["rows"]["coverage"], "s--", color="gray", label="table coverage")
-    a.plot(rows, sweeps["rows"]["mechanistic"], "^-", color="C2", label="mechanistic $R^2$")
-    a.set_xlabel("observed rows (time steps)")
-    a.set_ylabel("value")
-    a.set_title("(a) observation length")
-    a.legend(fontsize=7)
-    a.set_ylim(-0.05, 1.05)
-
-    for key, panel, xlabel, title in [
-        ("noise", ax[0, 1], "bit-flip observation noise", "(b) observation noise"),
-        ("mask", ax[1, 0], "masked-cell fraction", "(c) partial observation"),
-        ("density", ax[1, 1], "IC density", "(d) IC-density shift"),
-    ]:
-        s = sweeps[key]
-        panel.plot(s["values"], s["mechanistic"], "^-", color="C2", label="mechanistic")
-        panel.plot(s["values"], s["baseline"], "s-", color="C1", label="5 statistics")
-        panel.plot(s["values"], s["cnn"], "o-", color="C0", label="frozen CNN")
-        panel.plot(s["values"], s["exact"], ":", color="gray", label="exact recon.")
-        panel.set_xlabel(xlabel)
-        panel.set_ylabel("median held-out $R^2$")
-        panel.set_title(title)
-        panel.legend(fontsize=7)
-        panel.set_ylim(-0.05, 1.05)
-        if key == "density":
-            panel.axvline(density0, color="k", lw=0.6, ls=":")
-
-    fig.suptitle(f"Identifiability of the local rule (radius {radius})", fontsize=11)
-    fig.tight_layout()
-    fig.savefig(out / "identifiability.pdf")
-    if args.write_manuscript_figure:
-        fig.savefig("manuscript/figures/identifiability.pdf")
     print(f"[c4] wrote {out}/summary.json and {out}/identifiability.pdf")
     for k, s in sweeps.items():
         print(f"[c4] {k:>8}: mechanistic {s['mechanistic']}")
