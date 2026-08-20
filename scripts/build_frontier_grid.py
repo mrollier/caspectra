@@ -97,6 +97,11 @@ def parse_args() -> argparse.Namespace:
         "written to the run directory.",
     )
     p.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="Allow a sweep to replace an existing summary.json in the output directory.",
+    )
+    p.add_argument(
         "--reliability-summary",
         default="runs/m4_range2/reliability/summary.json",
         help="Source of the per-target ICCs used to draw the panel ceilings.",
@@ -293,6 +298,17 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
     if args.rule_subsample == "complement":
         default_out += "_complement"  # never clobber a canonical-panel artifact
     out = ensure_dir(args.output_dir or default_out)
+    # A sweep must never silently replace a released artifact. This directory is
+    # gitignored, so an accidental overwrite is unrecoverable and invisible to
+    # `git status` -- which is exactly how the canonical grid was once lost to a
+    # run whose --replot-from flag had failed to take effect.
+    existing = Path(out) / "summary.json"
+    if existing.exists() and not args.force_overwrite:
+        raise SystemExit(
+            f"{existing} already exists. Sweeps do not overwrite released artifacts: "
+            "pass --output-dir to write elsewhere, --replot-from to redraw the figure "
+            "without simulating, or --force-overwrite if you really mean to replace it."
+        )
     lean_mode = args.direct_only or args.calibrate_f1
     set_seed(cfg.seed)
     radius, width = cfg.data.radius, cfg.data.grid_size

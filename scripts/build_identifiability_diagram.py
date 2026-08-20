@@ -137,6 +137,11 @@ def parse_args() -> argparse.Namespace:
         help="Redraw the figure from a committed summary.json without re-running the sweep.",
     )
     p.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="Allow a sweep to replace an existing summary.json in the output directory.",
+    )
+    p.add_argument(
         "--reliability-summary",
         default="runs/m4_range2/reliability/summary.json",
         help="Source of the per-target ICCs used to draw the panel ceilings.",
@@ -181,6 +186,15 @@ def main() -> None:
         return
     cfg = ExperimentConfig.from_yaml(args.config)
     out = ensure_dir(args.output_dir or f"{cfg.train.output_dir}/identifiability")
+    # See build_frontier_grid.py: runs/ is gitignored, so an accidental overwrite
+    # of a released sweep artifact is unrecoverable and invisible to git status.
+    existing = Path(out) / "summary.json"
+    if existing.exists() and not args.force_overwrite:
+        raise SystemExit(
+            f"{existing} already exists. Sweeps do not overwrite released artifacts: "
+            "pass --output-dir to write elsewhere, --replot-from to redraw the figure "
+            "without simulating, or --force-overwrite if you really mean to replace it."
+        )
     set_seed(cfg.seed)
     radius, width = cfg.data.radius, cfg.data.grid_size
     density0 = cfg.targets.ic_density
