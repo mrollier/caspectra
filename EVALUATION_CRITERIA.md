@@ -5,6 +5,57 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 14 (2026-08-20) — changelog
+
+Added **before any round-7 review-response measurement**, numbers-free. The
+fifth review (`manuscript/reviews/review_deepseekv4pro_20aug26.md`, verdict:
+major revision) charges that (§3) the manuscript's central matched-regime CNN
+numbers rest on the final-epoch protocol that rev 13 itself showed inferior to
+validation-based checkpoint selection, and (§2) the ρ reference values are
+stated as exact while the denominator is estimated from finitely many
+replicates. Rev 14 registers the one run and the one re-expression answering
+those charges. Purely additive; **zero changes to criteria 1–9 or to any
+rev-2…14 threshold, margin, or verdict rule.** The decision rule below is
+frozen before the run.
+
+1. **M13 — validation-selected checkpoint for the matched-regime CNN
+   (registered).** The canonical clean-trained direct CNN (five seeds on each
+   of ECA and radius two; the estimator behind the manuscript's matched-regime
+   tables) is retrained all-else-identical with the final-epoch weight
+   selection replaced by the rev-13 M9 inner-fold rule: selection of the epoch
+   minimising loss on a fixed fraction of training-rule diagrams
+   (`--selection-frac`, the M9 value; selection fold drawn by the fixed
+   selection seed; the held-out rule panel is never consulted). Final-epoch
+   checkpoints are retained in each run directory so the registered numbers
+   stay reproducible. This is a protocol change, not an epoch change: the
+   selection fold removes a fixed fraction of training diagrams, exactly as in
+   M9, and is disclosed as such. *Switch rule, frozen before training:* if on
+   either space any per-target five-seed mean held-out R² under selection
+   exceeds the final-epoch five-seed mean by more than 0.02, the selection
+   protocol becomes the CNN of record in the matched-regime tables and the
+   final-epoch numbers move to a sensitivity note; otherwise the final-epoch
+   numbers stand and the selection result is reported as a sensitivity.
+   Both protocols are reported either way. *Downstream scope if the switch
+   triggers:* every consumer of the canonical checkpoint is rescored
+   (ρ column, paired comparisons, stacking, retrieval bottleneck variant,
+   identity/table-bit probes) — rescoring and refits only, no further
+   training. The frontier's frozen-CNN curves remain the final-epoch artifact
+   in either outcome (the frontier carries its own M9 selected-checkpoint
+   control), and the manuscript states that scoping.
+
+2. **Finite-replicate variability of the ρ reference values (post-hoc
+   confirmatory; rule fixed here, computed from released artifacts).** The
+   ρ reference values (√2 simulation-limited, 1 latent) are exact in
+   expectation under the additive-noise idealization; the pooled denominator
+   is estimated from K replicates per rule and is therefore itself a random
+   quantity. The re-expression quantifies the implied spread of the pooled
+   reference — by the delta method over the per-rule σ̂ₑ variances, and, if
+   computed, by resampling regenerated replicates — and the manuscript's
+   wording is downgraded from “exact” to expectation-level exactness wherever
+   the claim appears, with the measured spread quoted. Reported whatever the
+   magnitude shows: a negligible spread justifies the reference lines as
+   drawn; a non-negligible one is disclosed next to every ρ table.
+
 ## Revision 13 (2026-08-20) — changelog
 
 Added **before any round-5 review-response measurement**, numbers-free. The
