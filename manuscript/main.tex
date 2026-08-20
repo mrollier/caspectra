@@ -868,9 +868,8 @@ to $15\%$ noise---where no previously tested estimator exceeded
 $0.17$---meeting the registered extension rule (bootstrap CI excluding the
 sampled reader's point value from below) at every noise cell up to $15\%$;
 at $20\%$ that seed and the reader are comparable ($0.17$ vs $0.12$),
-neither reliable. It pays a seed-dependent robustness tax on clean diagrams
-($0.14$--$0.37$ on the grid's clean cells across the three seeds below)
-and does not approach the posterior under masking ($0.48$ vs $0.85$ at
+neither reliable. It pays a robustness tax on clean diagrams
+and does not approach the decoder under masking ($0.48$ vs $0.85$ at
 $40\%$) or extreme density ($0.20$ vs $0.77$). Meanwhile the third
 registered hypothesis survives the controls: at every cell with per-bit
 table recovery ${\ge}0.95$ the best read-then-simulate estimator remains
@@ -882,46 +881,41 @@ slightly lower median, and every mechanistic superiority verdict survives.
 The matched-regime
 negative result is not an artifact of the anti-shortcut constraint.
 
-\emph{Panel replication.} Because the frontier rests
-on a fixed $80$-rule subsample, we re-simulated the entire noise axis on the
-\emph{complementary} $80$ held-out rules at identical budgets. The family
-structure replicates: read-then-simulate owns the low-noise cells, the
-degradation-trained network is strongest or statistically tied at every cell
-from $3\%$ (point-strongest from $7.5\%$: $0.70/0.64/0.35$ at
-$7.5/10/15\%$ against the pseudo-posterior's $0.61/0.37/{-0.19}$), and at
-$20\%$ no estimator's CI clears zero. No cell winner is re-stated under the
-registered rule. Two level shifts measure panel sensitivity in their own
-right: the degradation-trained band reads $0.35$--$0.71$ on the
-complement against $0.51$--$0.62$ on the canonical panel, and the
-pseudo-posterior's collapse point moves---it holds $0.79/0.70/0.61$ at
-$3/5/7.5\%$ on the complement where it had collapsed by $5\%$ on the
-canonical panel---so the posterior-to-network crossover should be read as a
-band, ${\sim}3$--$7.5\%$ noise, that depends on which rules are being
-decoded, not as a sharp boundary. The masking and density axes were not
-replicated on the complement panel; their rows in Table~\ref{tab:guidance}
-rest on the canonical panel alone.
+\emph{Seed variance was mostly the selection rule} [registered, rev.~13].
+The rev-11 seed replication reported a factor-${\sim}2$ spread (band
+$0.24$--$0.62$; seed 1 trained to $0.24$--$0.33$) and attributed it to
+final-epoch weight selection under an oscillating validation curve. That
+diagnosis was testable, so we tested it: the three seeds were retrained with
+the final-epoch rule replaced by \emph{selection of the epoch minimising loss
+on an inner fold of training-rule diagrams} (never the held-out panel, which
+would be selection on the test set), everything else identical, and the noise
+axis rescored. The spread largely collapses. The band becomes $0.46$--$0.64$
+across all three seeds---seed 1, the outlier, moves to $0.46$--$0.56$---and
+the registered stability rule that \emph{failed} at rev 11 is now \emph{met}:
+every seed's band-cell median lies inside the seed-0 rule-bootstrap CI at
+every cell from $3\%$ to $15\%$. Clean-cell scores rise in step
+($0.43$--$0.55$ against $0.29$--$0.51$), so part of the ``robustness tax'' was
+also an artifact of stopping at epoch $60$. We therefore no longer report
+${\sim}2\times$ run-to-run variance as a property of this estimator family: at
+this budget \emph{with} checkpoint selection it is nearer $1.4\times$. What
+does not change is the ceiling---at $20\%$ noise the selected checkpoints
+reach only $0.18$--$0.36$---or the family-level ordering.
 
-\emph{Seed replication.} The degradation-trained
-control was retrained under two further seeds, all else identical, against
-a registered stability rule (each new seed's band-cell medians inside the
-seed-0 CIs). The rule \emph{fails}: seed 2 passes every cell (band
-$0.49$--$0.56$), but seed 1 trains to a much weaker model
-($0.24$--$0.33$; its clean-cell and clean-panel scores drop in step, and
-training loss converged identically, so this is run-to-run training
-variance---validation medians swing by ${\sim}\pm0.2$ between late epochs
-under augmentation, implicating final-epoch selection). Per the registered
-rule we report the band as a per-seed range: median \rtwo{} $0.24$--$0.62$
-across $3$--$15\%$ noise, two of three seeds in $0.49$--$0.62$. What is
-seed-stable is the family-level ordering: at every cell from $5\%$ to
-$20\%$ noise, \emph{every} seed's point median exceeds the best
-read-then-simulate estimator's (all ${\le}0.17$ there); the extension rule
-is met by seed 0 at $3$--$15\%$, seed 2 at $5$--$15\%$, seed 1 at $15\%$
-only. At $20\%$, reliability is itself seed-dependent: seeds 1 and 2 clear
-zero ($0.31$, $0.43$) where seed 0 and the complement-panel evaluation do
-not. The corruption-adaptation conclusion stands at the family level; the
-accuracy a practitioner should expect from a single training run at this
-budget is uncertain by a factor of ${\sim}2$
-(Table~\ref{tab:guidance}).
+\emph{Panel replication.} Because the frontier rests on a fixed $80$-rule
+subsample, we re-simulated the entire noise axis on the \emph{complementary}
+$80$ held-out rules at identical budgets. The family structure replicates:
+read-then-simulate owns the low-noise cells, the degradation-trained network
+is strongest or statistically tied from $3\%$, and at $20\%$ no estimator is
+reliable. No cell winner is re-stated under the registered rule. Two level
+shifts measure panel sensitivity in its own right: the selected-checkpoint
+band reads $0.39$--$0.81$ on the complement against $0.46$--$0.64$ on the
+canonical panel, and the pseudo-posterior's collapse point moves---it holds
+$0.79/0.70/0.61$ at $3/5/7.5\%$ on the complement where it had collapsed by
+$5\%$ on the canonical panel---so the crossover should be read as a band,
+${\sim}3$--$7.5\%$ noise, that depends on which rules are being decoded, not
+as a sharp boundary. The masking and density axes were not replicated on the
+complement panel; their rows in Table~\ref{tab:guidance} rest on the canonical
+panel alone.
 
 \emph{Verdicts.} The registered hypothesis that the reader extends beyond the
 decoder is confirmed on noise only weakly---it moves the frontier without
@@ -941,8 +935,8 @@ observation regime & use & median \rtwo{} evidence & reference \\
 matched (clean, full, known $r$) & exact inversion & simulation-limited & Tables~\ref{tab:eca}--\ref{tab:r2} \\
 noise $\lesssim2\%$ & pseudo-posterior decoder & $0.55$ vs det $0.38$ at $2\%$ & Fig.~\ref{fig:frontier} \\
 noise $3$--$7.5\%$ & either adapted family & crossover band; panel-dependent winner & Sec.~\ref{sec:frontier}(iii) \\
-noise $7.5$--$15\%$ & degradation-trained direct CNN & $0.24$--$0.62$ across seeds (two of three $0.49$--$0.62$); replication panel $0.35$--$0.71$ & Sec.~\ref{sec:frontier}(iii) \\
-noise $20\%$ & none reliably recommendable & CNN signal seed-dependent ($0.31$/$0.43$; seed-0 CI spans $0$) & Sec.~\ref{sec:frontier}(iii) \\
+noise $7.5$--$15\%$ & degradation-trained direct CNN, validation-selected checkpoint & $0.46$--$0.64$ across three seeds; replication panel $0.39$--$0.81$ & Sec.~\ref{sec:frontier}(iii) \\
+noise $20\%$ & none reliably recommendable & selected checkpoints reach only $0.18$--$0.36$ & Sec.~\ref{sec:frontier}(iii) \\
 masking $\lesssim25\%$ & exact inversion & $0.89$ at $25\%$ & Fig.~\ref{fig:frontier} \\
 masking $25$--$50\%$ & pseudo-posterior decoder & $0.85$ at $40\%$, $0.59$ at $50\%$ & Fig.~\ref{fig:frontier} \\
 extreme IC density & pseudo-posterior decoder & $0.77$ vs det $0.08$ at density $0.1$ & Fig.~\ref{fig:frontier} \\
@@ -959,11 +953,12 @@ targets, ceiling median $0.953$) and are \emph{not} comparable to the
 matched-regime numbers of Tables~\ref{tab:eca}--\ref{tab:r2} (per-cell rule-bootstrap CIs accompany every
 number in the released grid artifact). Each axis was swept singly: joint
 corruptions (noisy \emph{and} masked, say) were not tested, and the
-per-axis recommendations are not established to compose. Where the
-recommendation is a trained network, validate the specific trained seed on
-held-out synthetically corrupted diagrams before relying on it (run-to-run
-training variance at this budget spans a factor of ${\sim}2$;
-Sec.~\ref{sec:frontier}). ``Use'' means the named estimator won
+per-axis recommendations are not established to compose. Where the recommendation is a trained network,
+select its checkpoint on a validation fold rather than taking the final
+epoch---doing so shrinks run-to-run variance at this budget from a factor of
+${\sim}2$ to ${\sim}1.4$ (Sec.~\ref{sec:frontier})---and validate the specific
+trained seed on held-out synthetically corrupted diagrams before relying on
+it. ``Use'' means the named estimator won
 its cells under the registered rules; ``none reliably recommendable'' is a
 claim about these estimators, not all estimators. Do not extrapolate beyond
 the corruption model, architecture, and training distribution
@@ -1209,8 +1204,8 @@ at the strength its independent evaluation supports and no
 stronger~\cite{kleinberg2002,mitchell1993}.
 
 \begin{acknowledgments}
-We thank the anonymous referees, whose three reports directly shaped
-revisions~7--11 of the registered evaluation criteria and the controls
+We thank the anonymous referees, whose four reports directly shaped
+revisions~7--13 of the registered evaluation criteria and the controls
 reported here.
 % TODO(user): add funding sources before submission.
 \end{acknowledgments}
@@ -1228,7 +1223,7 @@ writing---review \& editing.
 \section*{Data availability}
 
 The complete pipeline, the pre-registered decision rules with their full
-git revision history (revisions~2--12), the measured record, the run
+git revision history (revisions~2--13), the measured record, the run
 artifacts backing every number in this article, and a programmatic audit
 that re-derives the quoted values from those artifacts are released with
 the article as a timestamped repository archive; the archive records the
