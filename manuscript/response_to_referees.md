@@ -766,10 +766,27 @@ R² = 0.90 (ECA) and 0.94 (radius two) while the boosted baseline and the CNN
 fall to **−0.87 and −1.25** on ECA and 0.41 and 0.66 on radius two — worse than
 the band mean on the elementary panel — with mode accuracy still 0.89–1.00.
 
-**§3.15, §3.17 — the two fairness gaps.** Both controls were run (M9, M10) and
-are reported in Sec. IV F. We also disclose the point the report identifies
-correctly in principle: force-holding leaves **zero** signature-complex rules in
-training.
+**§3.17 — rerun with checkpoint selection before reporting factor-2 seed
+variance.** Run, and the report's diagnosis is confirmed. We retrained the
+degradation-augmented CNN under three seeds with the final-epoch rule replaced
+by selection on an inner fold — of *training-rule diagrams*, not the held-out
+panel, since the existing validation loader is built from held-out rules and
+selecting on it would be selection on the test set — and rescored the noise
+axis on both frontier panels.
+
+| | band, 3–15% noise | clean cell | registered stability rule |
+|---|---|---|---|
+| final-epoch (rev 10/11) | **0.24–0.62** (seed 1: 0.24–0.33) | 0.29–0.51 | **fails** |
+| validation-selected (rev 13) | **0.46–0.64** | 0.43–0.55 | **met at every band cell, every seed** |
+
+Seed 1, the outlier that drove the caveat, was a final-epoch artifact. Table V
+now says ~1.4× rather than ~2×, and its guidance line tells the practitioner to
+select on a validation fold. What did not move: the 20% ceiling (selected
+checkpoints reach only 0.18–0.36) and the family-level ordering.
+
+**§3.15 — the stratified-split control.** Run (M10) and reported in Sec. IV F.
+We also disclose the point the report identifies correctly in principle:
+force-holding leaves **zero** signature-complex rules in training.
 
 **§3.16 — frontier ceilings.** Drawn on both figures and stated in Table V's
 caption. One correction: the report's ceiling table assumes both target and
