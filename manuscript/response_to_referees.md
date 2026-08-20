@@ -674,3 +674,191 @@ committed numbers-free before any of the measurements above, in the same
 git-auditable pattern as revisions 2–10. The manuscript's Appendix A lists
 all seven under post-hoc confirmatory (review-response) with their decision
 rules.
+
+---
+
+# Round-5 response (fourth report, 20 August 2026)
+
+We thank the referee for a report whose central diagnosis we accept: the
+matched-regime result *is* close to an identity, and we had been presenting it
+as though it were an empirical finding. Fixing that recovered the space to
+address the frontier, which is where the report is right that the evidence is
+thinner than the page count implied. All four new measurements were registered
+numbers-free before measurement (repository revision 13, M9–M12), and all five
+re-expressions of released measurements carry reporting rules fixed in the same
+revision. Where we disagree we say so and give the number.
+
+## Accepted and acted on
+
+**§3.1 — the matched regime is an identity.** Agreed. Sec. IV A now opens with
+the exchangeability statement as a displayed equation: conditional on exact
+recovery and an independent stream at matched `n_pairs`, `(Ŷ, Y₁) =ᵈ (Y₂, Y₁)`,
+so `R²(Ŷ, Y₁)` and the replicate benchmark are the same random variable. The
+TOST apparatus moves to Appendix A relabelled a **correctness audit** — it can
+only fail on stream dependence, inexact recovery, or biased scoring. One
+correction to the report: on a finite panel these are two draws from the same
+distribution, not the same number, so the manuscript claims the identity *in
+distribution*.
+
+We also took the report's advice to analyse the failures instead. The four
+radius-two rules with incomplete coverage miss one entry of 32 each, and their
+prediction error is indistinguishable from the fully covered rules (survival
+0.017 vs 0.016; cone fill 0.008 vs 0.009) and **smaller** on fraction (0.0009
+vs 0.0041) and rate (0.0017 vs 0.0084). An entry that 127×127 cells never
+exercise is one the dynamics rarely reaches, so mis-setting it barely perturbs
+the resimulated statistic.
+
+**§3.3 — ICC disavowed then used as a margin.** Agreed, and resolved by the
+above: the margin is now described as an audit tolerance, explicitly a
+convention rather than an inferential margin, with the heteroscedasticity
+objection stated in the appendix that uses it.
+
+**§3.4 — report in units of the target's Monte-Carlo error.** Adopted; this was
+the best suggestion in the report. New Table IV gives ρ = RMSE/σ̂_e with σ̂_e
+estimated **per rule** from the K = 20 replicates. We use the pooled form
+ρ = √(Σᵢ eᵢ² / Σᵢ σ̂ₑ²(i)) rather than an average of per-rule ratios, because
+only the pooled form makes both reference values exact and survives the rules
+whose target carries no Monte-Carlo noise. Mechanistic ρ = 1.0–1.8 with every
+CI covering √2; the direct estimators are at 3–33. The rescaling is not
+cosmetic: the CNN's ECA spreading rate reads R² = 0.96 and ρ = 27.
+
+**§3.8, §3.7 — spreading-rate and cone-fill conventions.** Both correct and
+both fixed in the text. The light-cone maximum is (2rT+1)/(2rT) = 1.008, so
+"rate 1" is light speed to within one cell of extent; we did not redefine the
+statistic, because the shift is a constant (leaving every R² invariant) and the
+largest rate observed anywhere is 0.816. The ext = 1 ⟹ fill = 1 degeneracy is
+now disclosed with its measured incidence (0.13% of sampled rules).
+
+**§3.9 — horizon-confounded prevalence comparison.** Correct, and the result
+changed the claim. Re-running the elementary criterion at the matched T = 30
+raises its prevalence from 3/88 (3.4%) to 6/88 (6.8%) against 7.8% at radius
+two, so **the cross-space gap essentially closes**, while precision against
+literature class IV falls from 2/3 to 1/3. Per the registered reporting rule
+the confounded form is withdrawn; we no longer claim a richer complex region at
+radius two.
+
+**§3.10 — effective sample size.** Accepted as a mechanism, not just a caveat.
+The text now states that every cell is one output and 2r+1 inputs and that
+adjacent neighbourhoods share 2r of 2r+1 bits, so the nominal ~500 counts per
+entry carry a far smaller effective sample and the ℓ ≈ 77 of the worked example
+is overconfident by construction — which is what produces the measured
+calibration collapse. Per the report's request the scope limit is now **in the
+abstract**: the noise-band verdicts bound the estimators evaluated, not the
+read-then-simulate family. We did not build the latent-clean-diagram decoder;
+the Discussion names it as the paper's most consequential omission.
+
+**§3.11, §3.12, §3.13, §3.19, §3.20** — all accepted and stated: D's downward
+bias at small counts and its double duty in radius selection; the 0.005
+tolerance conceded as a convention with marginal likelihood plus a 2^(2r+1)
+description-length penalty named as the principled replacement; what the
+[−1, 1] bootstrap clipping actually binds on; 283 ms disclosed as a first-party
+single-core Python figure whose bit-packed floor would move break-even from
+~4700 to ~50 queries; "as few as 4 rows" corrected to the median with the
+coupon-collector mechanism (32·H₃₂ ≈ 130 draws against 127 windows per row);
+the Lyapunov wording tightened to distinguish the defect-multiplication rate
+from survival; and "never distinguishable in the unfavourable direction"
+removed, since it rested on two underpowered comparisons.
+
+**§3.14 — R² on a bimodal target rewards mode assignment.** Correct, and the
+stratified report is now a headline finding rather than a diagnostic.
+Restricted to intermediate survival (0.1–0.9), the mechanistic estimator holds
+R² = 0.90 (ECA) and 0.94 (radius two) while the boosted baseline and the CNN
+fall to **−0.87 and −1.25** on ECA and 0.41 and 0.66 on radius two — worse than
+the band mean on the elementary panel — with mode accuracy still 0.89–1.00.
+
+**§3.15, §3.17 — the two fairness gaps.** Both controls were run (M9, M10) and
+are reported in Sec. IV F. We also disclose the point the report identifies
+correctly in principle: force-holding leaves **zero** signature-complex rules in
+training.
+
+**§3.16 — frontier ceilings.** Drawn on both figures and stated in Table V's
+caption. One correction: the report's ceiling table assumes both target and
+estimator at reduced budget. The grid loads targets at the production budget
+(`build_frontier_grid.py` passes `cfg.targets.n_pairs`) while `--n-pairs` sets
+only the estimator's simulation, so the ceiling is 1 − (1 + 256/n)(1 − ICC),
+i.e. 0.963 at n = 64 and 0.953 at n = 48, with a direct estimator retaining the
+ICC ceiling at 0.993.
+
+**§3.18 — registration tags.** Agreed; 14 of the 29 inline tags are gone and
+Appendix A carries the record as a scannable list.
+
+**§5.3 — the retrieval baseline.** Built (M11), and it is the most uncomfortable
+new number in the paper. A nearest-training-rule lookup — no training, no
+simulation — reaches median held-out R² 0.821/0.828 in the five-statistic space
+and **0.862/0.881 in the CNN's own bottleneck**, level with the trained CNN
+(0.864 radius two) and above it on ECA (0.852). Under the registered reading,
+the direct estimators' accuracy here is substantially rule recognition.
+
+**§6, §7 — cuts and presentation.** The stacking table is gone (every number
+was already in the prose); the annealed member, the glider detector and the
+composed-system maps are compressed; the frontier figure now carries one shared
+legend outside the axes with readable estimator names in place of
+`f1_eps_known`; "pseudo-posterior" is used consistently; Fig. 3's stars are in
+the legend and the 204/184 labels no longer collide. Both figure scripts gained
+a `--replot-from` path so presentation changes cost no re-simulation.
+
+## Respectfully disagreed, with the measurement
+
+**§3.5 — "you have roughly two and a half targets."** The relation is real but
+loose. The report set the threshold itself (R² > 0.95 ⟹ derived coordinate); we
+registered that reading and measured **R² = 0.64** over the 3000-rule landscape
+and **0.70** over the held-out panel (Pearson r = 0.86). Cone fill is not a
+derived coordinate, and the number is now in Appendix B.
+
+**§3.2 — "that cannot be right."** The objection is structurally valid and we
+have acted on it: Table I now carries per-panel benchmarks, post-stratified row
+included. But the magnitude does not support "cannot be right" — recomputing
+ICC within each decomposition moves it by **at most 0.010** (survival
+0.987/0.987/0.990 for universe/enriched/random), because the enrichment barely
+changes the between-rule variance.
+
+**§3.15 — "the enrichment penalises the learned estimators specifically."** The
+training-distribution distortion is real and now disclosed. The claimed
+*direction* is not supported by our own decomposition: the seed-0 CNN scores
+**higher** on the complex subpanel (0.832) than the random one (0.821). We ran
+the control anyway and report both.
+
+**§3.6 — Fig. 3's axes.** We overlaid the iso-fraction contours as asked, and
+the result went against our first reading rather than the report's: the
+signature rules span only 1.5× in damage fraction against 2.6× for the bulk, so
+the region lies largely *between* contours, and in decorrelated coordinates
+(rate vs N/2rT) the tightest box holding all 234 signature rules also holds 732
+ordinary ones. The caption now says plainly that the red set is a registered
+**threshold region, not a discovered cluster**. We regard this as the report's
+point conceded, not refuted.
+
+**§7 — "figure axis labels are broken"; §3.20 — "2^{2^3} renders as 22 3".**
+Neither reproduces. The source is `set_ylabel("median held-out $R^2$")` and
+`$2^{2^3}=256$`, both correct, and the compiled PDF renders both correctly;
+"m e dia n h eld-o ut R 2" is what text extraction returns for rotated
+matplotlib text. We did find and fix three genuine layout faults the report
+could not have seen through that extraction: two tables and one display
+equation overflowed their measure (112 pt, 118 pt and 52 pt). The build is now
+0 overfull boxes, 0 undefined references, 0 errors.
+
+**§6 — promote `resnet18` to the direct baseline of record.** Declined.
+`resnet18` was run as a registered fairness control on the frontier grid and
+the clean protocol only; it has never been through the paired comparisons, the
+stacking analysis or the probes, so promoting it would mean a new run set and
+would misrepresent what was registered. The paper's neural claims remain
+explicitly scoped to the constrained CNN, and the control's verdict — an
+architecture 354× larger changes nothing — is unaffected.
+
+**§7 — split the abstract and lead with the frontier.** Partly declined. The
+abstract is tightened and now carries the identity framing, ρ, the
+mode-assignment result and the noise-model scope limit, but it stays a single
+paragraph (AIP *Chaos* style) and still leads with the identification result,
+which is what the title claims and what the frontier is a scope statement for.
+
+## Not done, and named as such
+
+**§5.1 (stochastic generator) and §5.2 (latent-clean-diagram decoder).** We
+agree with the report's judgement that the first "could be the paper" and that
+the second is the more uncomfortable omission, and both are beyond a revision.
+The Discussion now argues the stochastic case concretely rather than dismissing
+it in three lines: the entrywise pseudo-posterior is already a Beta–Bernoulli
+posterior over π_k, so it is natively the right estimator there with the ε
+machinery dropping out, and its independence approximation becomes much milder
+because outputs really are conditionally independent given inputs. **§3.15's
+leave-one-orbit-out CNN (~15 h)** was also not run; the ECA panel's 18 held-out
+orbits remain the stated limitation.

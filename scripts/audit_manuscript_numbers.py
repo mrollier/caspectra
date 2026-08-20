@@ -36,6 +36,10 @@ EQUIV_ECA = REPO / "runs" / "lever_a_local" / "paired_equivalence" / "summary.js
 DECOMP = REPO / "runs" / "m4_range2" / "panel_decomposition" / "summary.json"
 PERDIAG = REPO / "runs" / "m4_range2" / "per_diagram_audit" / "summary.json"
 DEPLOY = REPO / "runs" / "m4_range2" / "deployment_stack" / "summary.json"
+ROUND6 = REPO / "runs" / "analysis" / "round6_metrics" / "summary.json"
+RETRIEVAL_R2 = REPO / "runs" / "m4_range2" / "retrieval" / "summary.json"
+RETRIEVAL_ECA = REPO / "runs" / "lever_a_local" / "retrieval" / "summary.json"
+GLIDER_T30 = REPO / "runs" / "analysis" / "glider_validation_T30" / "summary_r1.json"
 MAIN_TEX = REPO / "manuscript" / "main.tex"
 RESULTS = REPO / "RESULTS.md"
 
@@ -260,6 +264,144 @@ def build_rev11_checks() -> list[Check]:
     return checks
 
 
+def build_rev13_checks() -> list[Check]:
+    """Round-5 review-response numbers (EVALUATION_CRITERIA rev 13)."""
+    checks: list[Check] = []
+    if ROUND6.exists():
+        d = json.loads(ROUND6.read_text())
+        r2, eca = d["radius2"], d["eca"]
+        rho2, rhoe = r2["A1_rho"], eca["A1_rho"]
+        # Table IV (rho), rounded to one decimal in the manuscript.
+        for tgt, mech, gbm, cnn in [
+            ("damage_survival", 1.4, 4.0, 3.0),
+            ("damage_fraction", 1.4, 7.2, 8.7),
+            ("spreading_rate", 1.5, 9.5, 11),
+            ("cone_fill", 1.0, 5.2, 6.4),
+        ]:
+            checks += [
+                Check(f"rho r2 {tgt} mech", mech, rho2["mechanistic"][tgt]["rho"]),
+                Check(f"rho r2 {tgt} gbm", gbm, rho2["gbm"][tgt]["rho"]),
+                Check(f"rho r2 {tgt} cnn", cnn, rho2["cnn"][tgt]["rho"]),
+            ]
+        for tgt, mech, gbm, cnn in [
+            ("damage_survival", 1.4, 6.0, 6.4),
+            ("damage_fraction", 1.2, 20, 33),
+            ("spreading_rate", 0.7, 27, 27),
+            ("cone_fill", 1.8, 13, 15),
+        ]:
+            checks += [
+                Check(f"rho eca {tgt} mech", mech, rhoe["mechanistic"][tgt]["rho"]),
+                Check(f"rho eca {tgt} gbm", gbm, rhoe["gbm"][tgt]["rho"]),
+                Check(f"rho eca {tgt} cnn", cnn, rhoe["cnn"][tgt]["rho"]),
+            ]
+        # A2 per-panel replicate benchmarks quoted in Table I.
+        a2 = r2["A2_per_panel_reliability"]
+        checks += [
+            Check("panel bench enriched", 0.985, a2["enriched_panel"]["median_two_icc_minus_one"]),
+            Check("panel ICC enriched", 0.993, a2["enriched_panel"]["median_icc"]),
+            Check("panel bench random", 0.988, a2["random_subpanel"]["median_two_icc_minus_one"]),
+            Check("panel ICC random", 0.994, a2["random_subpanel"]["median_icc"]),
+            Check(
+                "panel bench poststrat", 0.987, a2["post_stratified"]["median_two_icc_minus_one"]
+            ),
+            Check("panel ICC poststrat", 0.994, a2["post_stratified"]["median_icc"]),
+            Check(
+                "panel bench complex", 0.979, a2["signature_subpanel"]["median_two_icc_minus_one"]
+            ),
+            Check("panel ICC complex", 0.990, a2["signature_subpanel"]["median_icc"]),
+            Check("max ICC shift vs universe", 0.010, a2["_max_abs_icc_shift"]),
+        ]
+        # A3 target dependence (Appendix B).
+        by_label = {p["label"].split("_n")[0]: p for p in r2["A3_target_dependence"]["panels"]}
+        checks += [
+            Check("fill-vs-ratio R2 landscape", 0.64, by_label["landscape"]["r2_fill_vs_ratio"]),
+            Check("fill-vs-ratio R2 panel", 0.70, by_label["held_out_panel"]["r2_fill_vs_ratio"]),
+            Check("fill-vs-ratio pearson", 0.86, by_label["landscape"]["pearson_r"]),
+        ]
+        # A4 frontier ceilings quoted in the Fig. 1/2 captions and Table V.
+        a4 = r2["A4_frontier_ceilings"]
+        checks += [
+            Check(
+                "ceiling n=64 median",
+                0.963,
+                a4["identifiability_fig"]["median_read_then_simulate_ceiling"],
+            ),
+            Check(
+                "ceiling n=64 survival",
+                0.935,
+                a4["identifiability_fig"]["damage_survival"]["read_then_simulate_ceiling"],
+            ),
+            Check(
+                "ceiling n=64 cone fill",
+                0.900,
+                a4["identifiability_fig"]["cone_fill"]["read_then_simulate_ceiling"],
+            ),
+            Check(
+                "ceiling n=48 median",
+                0.953,
+                a4["frontier_fig"]["median_read_then_simulate_ceiling"],
+            ),
+            Check(
+                "ceiling n=48 survival",
+                0.918,
+                a4["frontier_fig"]["damage_survival"]["read_then_simulate_ceiling"],
+            ),
+            Check(
+                "ceiling n=48 cone fill",
+                0.871,
+                a4["frontier_fig"]["cone_fill"]["read_then_simulate_ceiling"],
+            ),
+            Check("direct ICC ceiling", 0.993, a4["frontier_fig"]["median_icc_ceiling"]),
+        ]
+        # A5 survival-band stratification.
+        for space, blk, mech, gbm, cnn in [
+            ("r2", r2["A5_survival_band"], 0.94, 0.41, 0.66),
+            ("eca", eca["A5_survival_band"], 0.90, -0.87, -1.25),
+        ]:
+            b = blk["damage_survival"]
+            checks += [
+                Check(f"band {space} mech", mech, b["mechanistic"]["r2_in_band"]),
+                Check(f"band {space} gbm", gbm, b["gbm"]["r2_in_band"]),
+                Check(f"band {space} cnn", cnn, b["cnn"]["r2_in_band"]),
+            ]
+        checks += [
+            Check("band n r2", 40, r2["A5_survival_band"]["n_in_band"]),
+            Check("band n eca", 14, eca["A5_survival_band"]["n_in_band"]),
+        ]
+    # M11 retrieval baseline.
+    for path, space, stats5, bottleneck in [
+        (RETRIEVAL_R2, "r2", 0.821, 0.862),
+        (RETRIEVAL_ECA, "eca", 0.828, 0.881),
+    ]:
+        if path.exists():
+            r = json.loads(path.read_text())["retrieval"]
+            checks += [
+                Check(f"retrieval {space} stats5", stats5, r["stats5"]["median_r2"]),
+                Check(f"retrieval {space} bottleneck", bottleneck, r["bottleneck"]["median_r2"]),
+            ]
+    # M12 horizon-matched ECA signature.
+    if GLIDER_T30.exists():
+        g = json.loads(GLIDER_T30.read_text())
+        checks.append(
+            Check("M12 matched-horizon ECA count", 6, g["damage_signature_complex_count"])
+        )
+        checks.append(
+            Check(
+                "M12 matched-horizon ECA prevalence",
+                0.068,
+                g["damage_signature_complex_fraction"],
+            )
+        )
+        checks.append(
+            Check(
+                "M12 matched-horizon precision vs class IV",
+                0.333,
+                g["damage_signature_vs_literature_confusion"]["precision"],
+            )
+        )
+    return checks
+
+
 def text_guards() -> list[tuple[str, bool]]:
     """Literal-string guards: the corrected values are present, stale ones gone."""
     tex = MAIN_TEX.read_text()
@@ -274,6 +416,20 @@ def text_guards() -> list[tuple[str, bool]]:
             "RESULTS.md F2 table has no discarded-run cnn cell",
             not re.search(r"\|\s*-1\.09\s*\|", results),
         ),
+        # Rev-13: the confounded cross-space prevalence comparison must not
+        # return, and the identity framing must be present.
+        (
+            "main.tex no longer quotes the horizon-confounded 3/88 comparison",
+            "versus $3/88$ elementary orbits" not in tex,
+        ),
+        (
+            "main.tex states the matched-regime exchangeability identity",
+            "eq:exchangeable" in tex,
+        ),
+        (
+            "main.tex defines rho against its two exact ceilings",
+            "eq:rho" in tex and "simulation-limited\nbenchmark" in tex.replace("  ", " "),
+        ),
     ]
 
 
@@ -286,6 +442,7 @@ def main() -> int:
             json.loads(CALIBRATION.read_text())["grid"],
         )
     checks += build_rev11_checks()
+    checks += build_rev13_checks()
     failures = 0
     for check in checks:
         status = "ok " if check.ok else "FAIL"
