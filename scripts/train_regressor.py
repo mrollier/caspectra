@@ -41,6 +41,23 @@ def parse_args() -> argparse.Namespace:
         "split, diagram cache and targets are keyed on their own seeds, so a --seed sweep "
         "measures pure optimisation-seed variance (S2 error bars, EVALUATION_CRITERIA rev 6).",
     )
+    parser.add_argument(
+        "--selection-frac",
+        type=float,
+        default=0.0,
+        help="Rev-13 M9: fraction of each TRAINING rule's diagrams held out as an inner "
+        "fold for validation-based checkpoint selection (writes checkpoint_selected.pt). "
+        "0.0 (default) reproduces the rev-10 final-epoch protocol exactly. The held-out "
+        "RULE panel is never used for selection — that would be selection on the test set; "
+        "holding out diagrams instead keeps every training rule in the training set, so "
+        "the selection rule is the only variable that changes.",
+    )
+    parser.add_argument(
+        "--selection-seed",
+        type=int,
+        default=13,
+        help="Seed for the inner-fold diagram draw (fixed before measurement, rev 13).",
+    )
     return parser.parse_args()
 
 
@@ -96,8 +113,36 @@ def main() -> None:
     targets_by_rule = {r: matrix[i] for i, r in enumerate(rules)}
 
     train_mask = np.isin(ds_train.equiv_reps, train_rules)
+    train_idx = np.flatnonzero(train_mask)
+
+    # Rev-13 M9 inner selection fold: a fixed-seed, per-rule-stratified slice of
+    # the training diagrams. Disjoint from both the training batches and the
+    # held-out rule panel, so selecting on it leaks nothing.
+    select_idx: np.ndarray = np.empty(0, dtype=int)
+    if args.selection_frac > 0:
+        if not 0 < args.selection_frac < 0.5:
+            raise SystemExit(f"--selection-frac must be in (0, 0.5), got {args.selection_frac}")
+        rng = np.random.default_rng(np.random.SeedSequence([args.selection_seed, cfg.seed]))
+        reps_train = np.asarray(ds_train.equiv_reps)[train_idx]
+        picked = []
+        for rule in train_rules:
+            rule_pos = np.flatnonzero(reps_train == rule)
+            if rule_pos.size < 2:  # never strip a rule of all its diagrams
+                continue
+            k = max(1, int(round(args.selection_frac * rule_pos.size)))
+            k = min(k, rule_pos.size - 1)
+            picked.append(rng.choice(rule_pos, size=k, replace=False))
+        select_pos = np.sort(np.concatenate(picked)) if picked else np.empty(0, dtype=int)
+        select_idx = train_idx[select_pos]
+        train_idx = np.setdiff1d(train_idx, select_idx)
+        print(
+            f"[lever-a] rev-13 selection fold: {len(select_idx)} diagrams held out of "
+            f"{len(train_idx) + len(select_idx)} training diagrams "
+            f"({len(train_rules)} training rules all retained)"
+        )
+
     train_loader = build_dataloader(
-        Subset(ds_train, np.flatnonzero(train_mask).tolist()),
+        Subset(ds_train, train_idx.tolist()),
         batch_size=cfg.train.batch_size,
         shuffle=True,
         num_workers=cfg.train.num_workers,
@@ -109,8 +154,18 @@ def main() -> None:
         shuffle=False,
         num_workers=cfg.train.num_workers,
     )
+    select_loader = (
+        build_dataloader(
+            Subset(ds_raw, select_idx.tolist()),
+            batch_size=cfg.eval.batch_size,
+            shuffle=False,
+            num_workers=cfg.train.num_workers,
+        )
+        if select_idx.size
+        else None
+    )
     print(
-        f"[lever-a] {int(train_mask.sum())} train diagrams "
+        f"[lever-a] {len(train_idx)} train diagrams "
         f"({len(train_loader)} batches/epoch), {int((~train_mask).sum())} val diagrams"
     )
 
@@ -127,6 +182,7 @@ def main() -> None:
         train_rules=train_rules,
         holdout_rules=holdout_rules,
         target_names=TARGET_NAMES,
+        select_loader=select_loader,
     )
     history = trainer.train()
     final_r2 = trainer.val_r2_history[-1]

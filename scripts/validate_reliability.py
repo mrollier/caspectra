@@ -40,6 +40,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max-rules", type=int, default=None, help="Subsample rules (ICC is stable).")
     p.add_argument("--n-boot", type=int, default=2000, help="Rule-bootstrap resamples for CIs.")
     p.add_argument("--output-dir", default=None, help="Default <train.output_dir>/reliability.")
+    p.add_argument(
+        "--rules-from-preds",
+        default=None,
+        help="Rev-13 A1: take the rule list from a HeldOutPredictions pickle instead of the "
+        "dataset, so per-rule sigma_e is available for exactly the scored panel. Needed "
+        "because rho = RMSE/sigma_e must divide by each rule's OWN Monte-Carlo error -- "
+        "survival and cone fill are markedly heteroscedastic, so a panel-average sigma_e "
+        "understates rho for quiet rules and overstates it for noisy ones.",
+    )
     return p.parse_args()
 
 
@@ -50,8 +59,15 @@ def main() -> None:
     set_seed(cfg.seed)
     radius = cfg.data.radius
 
-    dataset = build_dataset(cfg.data, training=False)
-    rules = sorted({int(r) for r in np.asarray(dataset.equiv_reps)})
+    if args.rules_from_preds:
+        import pickle
+
+        with open(args.rules_from_preds, "rb") as fh:
+            rules = sorted(int(r) for r in pickle.load(fh).held)
+        print(f"[r3] rule list from {args.rules_from_preds}: {len(rules)} held-out rules")
+    else:
+        dataset = build_dataset(cfg.data, training=False)
+        rules = sorted({int(r) for r in np.asarray(dataset.equiv_reps)})
     if args.max_rules is not None and len(rules) > args.max_rules:
         # Representative subsample: the ICC ratio is stable across rules spanning
         # the full behaviour landscape (fixed RNG so the subset is reproducible).
@@ -86,6 +102,16 @@ def main() -> None:
         "median_replicate_agreement": round(median_agreement, 4),
     }
     save_json(summary, out / "summary.json")
+
+    # Rev-13 A1: per-rule Monte-Carlo error, the divisor for rho = RMSE/sigma_e.
+    np.savez(
+        out / "per_rule_sigma_e.npz",
+        rules=np.asarray(rules, dtype=np.int64),
+        sigma_e=reps.std(axis=0, ddof=1),  # (n_rules, n_features)
+        feature_names=np.asarray(list(bench.keys())),
+        n_replicates=args.n_replicates,
+        n_pairs=cfg.targets.n_pairs,
+    )
 
     for name, v in bench.items():
         print(
