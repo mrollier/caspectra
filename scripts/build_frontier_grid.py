@@ -89,6 +89,14 @@ def parse_args() -> argparse.Namespace:
         "never cost a grid re-simulation.",
     )
     p.add_argument(
+        "--manuscript-axes",
+        default=None,
+        help="Comma-separated axes to draw in the manuscript figure. The polarity axis is "
+        "four flat lines (the read-then-simulate family is exactly invariant by "
+        "construction) and does not earn a panel; the full four-axis figure is still "
+        "written to the run directory.",
+    )
+    p.add_argument(
         "--reliability-summary",
         default="runs/m4_range2/reliability/summary.json",
         help="Source of the per-target ICCs used to draw the panel ceilings.",
@@ -184,7 +192,7 @@ AXIS_LABELS = {
 }
 
 
-def plot_grid(grid, radius, out, write_figure, ceilings=None):
+def plot_grid(grid, radius, out, write_figure, ceilings=None, axes_shown=None):
     """Draw the frontier figure from a grid dict (live or reloaded).
 
     ``ceilings`` is ``{"read_then_simulate": float, "direct": float}``: the
@@ -192,12 +200,13 @@ def plot_grid(grid, radius, out, write_figure, ceilings=None):
     production target cache, so neither family's ceiling is 1 and the curves
     are unreadable without them drawn (referee 4, §3.16).
     """
-    panels = [a for a in ("noise", "mask", "density", "label") if a in grid]
+    wanted = axes_shown or ("noise", "mask", "density", "label")
+    panels = [a for a in wanted if a in grid]
     if not panels:
         return
-    ncol = 2
+    ncol = 3 if len(panels) == 3 else 2
     nrow = int(np.ceil(len(panels) / ncol))
-    fig, axes_arr = plt.subplots(nrow, ncol, figsize=(9.5, 3.2 * nrow), squeeze=False)
+    fig, axes_arr = plt.subplots(nrow, ncol, figsize=(3.3 * ncol, 3.2 * nrow), squeeze=False)
     styles = {
         "det": ("^-", "C2"),
         "f1_eps_known": ("v-", "C3"),
@@ -269,6 +278,7 @@ def main() -> None:  # noqa: C901 - one orchestration function, sectioned below
             Path(ensure_dir(args.output_dir or str(src.parent))),
             args.write_figure,
             _ceilings(args),
+            tuple(args.manuscript_axes.split(",")) if args.manuscript_axes else None,
         )
         print(f"[f3] replotted from {src} (no simulation)")
         return
