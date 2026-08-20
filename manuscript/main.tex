@@ -836,22 +836,20 @@ nesting, the principled replacement is the marginal likelihood of the
 entrywise Beta--Bernoulli model already in hand, penalized by the $2^{2r+1}$
 parameter count.
 
-\emph{(ii) Learned rule-reader:} a small
-($3\times10^4$-parameter) network---trained once, on one seed, per the
-registered gating; seed variance at this capacity is untested---on
-training-split rules to predict
-table bits from degradation-augmented diagrams, feeding the exact simulator
-either its thresholded (MAP) table or an average over tables sampled from its
-per-bit probabilities. On held-out rules the reader recovers $0.73$ of table
-bits and never a full table exactly, and the MAP variant fails everywhere
-(median \rtwo{} $\le -2.2$): a single mostly-right table is a badly wrong
-dynamical system. Sampling is what salvages the signal. The sampled variant is
-the only one of the eight registered estimators that does not collapse in the dead
-zone (Fig.~\ref{fig:frontier}): from $7.5$ to $20\%$ noise it is the best of
-those eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
-accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
-and the frozen CNN to $-0.93$; from $5\%$ it beats the inverter by the
-registered rule at every cell.
+\emph{(ii) Learned rule-reader:} a small ($3\times10^4$-parameter) network
+trained once, on one seed, on training-split rules to predict table bits from
+degradation-augmented diagrams, feeding the exact simulator either its
+thresholded (MAP) table or an average over tables sampled from its per-bit
+probabilities. It recovers $0.73$ of held-out table bits and never a full
+table exactly, and the MAP variant fails everywhere (median \rtwo{}
+$\le-2.2$): a single mostly-right table is a badly wrong dynamical system.
+Sampling salvages the signal. The sampled variant is the only one of the eight
+registered estimators that does not collapse in the dead zone
+(Fig.~\ref{fig:frontier}), holding median \rtwo{} in $[-0.04,0.17]$ from
+$7.5$ to $20\%$ noise---essentially flat, its bit accuracy dropping only
+$0.73{\to}0.70$---while the inverter falls to $-5.6$ and the frozen CNN to
+$-0.93$. Holding \rtwo{}${\approx}0$ is not identification; it moves the
+frontier without restoring it.
 
 \emph{(iii) Fairness controls} [registered numbers-free as rev.~10 before
 measurement]. The comparison above hands the read-then-simulate family two estimators
