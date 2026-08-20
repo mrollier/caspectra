@@ -5,6 +5,96 @@ seeing the results (SELF_CRITICISM: "no pre-registered success criterion").
 Changing these thresholds after a run requires saying so explicitly wherever the
 run is reported.
 
+## Revision 13 (2026-08-20) — changelog
+
+Added **before any round-5 review-response measurement**, numbers-free. The
+fourth review (`manuscript/reviews/review_opus5_20aug26.md`, verdict: major
+revision) accepts the three-benchmark distinction, the retired anti-shortcut
+claim and the deployment-versus-diagnostic result, but charges that (§3.1) the
+matched-regime verdict is an exchangeability identity presented as an
+empirical test, (§3.15/§3.17) the frontier's fairness controls rest on a
+training protocol that selects final-epoch weights and on a split that
+force-holds every signature-complex rule, (§3.9) the cross-space prevalence
+comparison is horizon-confounded, and (§5.3) no retrieval baseline separates
+"recognises a training rule" from generalisation. Rev 13 registers the four
+measurements answering those charges, plus the reporting rules for the
+zero-simulation re-analyses. Purely additive; **zero changes to criteria 1–9
+or to any rev-2…12 threshold, margin, or verdict rule.** All four decision
+rules below are frozen before the corresponding runs.
+
+1. **M9 — validation-based checkpoint selection for the degradation-trained
+   control (registered).** The rev-10 degradation-augmented CNN is retrained
+   under seeds 0/1/2, all else identical, with the final-epoch weight
+   selection replaced by **selection of the epoch minimising validation loss
+   on the training-split validation fold** (fold fixed by the existing split
+   seed; held-out rules never consulted). Final-epoch weights are retained in
+   each run directory so the rev-10/rev-11 numbers stay reproducible. The
+   noise axis is then rescored on **both** the canonical and complement
+   80-rule panels at the rev-9 budgets. *Stability rule (unchanged in form
+   from rev 11):* the control is declared **seed-stable under selection** iff
+   every seed's band-cell median R² lies inside the seed-0 rule-bootstrap CI
+   at every noise cell in 3–15%. Reporting rule, binding regardless of
+   outcome: the per-seed band range is reported as a range, the seed-stable
+   family-level ordering is reported separately from the level, and the
+   manuscript's practitioner-guidance caveat about run-to-run variance is
+   **rewritten to whatever the selected-checkpoint spread supports** —
+   widened, narrowed, or removed. A collapse of the spread is as reportable
+   as its persistence.
+
+2. **M10 — stratified-split direct CNN without force-holding (registered).**
+   The radius-two CNN is retrained (3 seeds) on a leave-rules-out split that
+   **does not** force-hold the 57 signature-complex rules, stratified instead
+   so the training and held-out distributions match the sampling universe, and
+   evaluated on its own random held-out panel. Purpose: separate the
+   held-out-rule question from the covariate-shift question, since under the
+   registered split the training set contains no signature-complex rules at
+   all. *Decision rule:* the manuscript's family-gap claim (mechanistic over
+   the direct estimators) is reported **at the stratified split** as well as
+   the enriched one; if the stratified-split gap is smaller than the
+   post-stratified gap by more than the registered superiority margin (0.10
+   median R²) on any target, the family-gap claim is downgraded to the
+   stratified number. Reported regardless of direction, including the
+   possibility — visible in the rev-11 decomposition — that the enrichment
+   was not a handicap.
+
+3. **M11 — retrieval (nearest-neighbour) baseline (registered).** A
+   train-set-lookup estimator: standardise the five statistics on training
+   rules, find each held-out diagram's nearest **training** rule, and return
+   that rule's cached target vector. A second variant uses the trained CNN's
+   64-d bottleneck as the metric space. No training, no simulation.
+   *Reporting rule:* per-target and median held-out R² and ρ on both spaces,
+   next to the five-statistic and CNN columns. *Interpretation rule, fixed
+   here:* a retrieval score close to the CNN's is evidence that the direct
+   network's accuracy is substantially rule-recognition rather than
+   generalisation to unseen tables; a retrieval score well below it is
+   evidence against that reading. Both directions are reported.
+
+4. **M12 — horizon-matched cross-space prevalence (registered).** The
+   registered damage-signature criterion is re-evaluated on the 88 ECA orbits
+   at the **radius-two horizon** (T as given by the radius-two protocol) so
+   that the elementary and radius-two prevalences are compared at equal
+   horizon. *Reporting rule:* the manuscript quotes the horizon-matched ECA
+   prevalence alongside the existing one, and the cross-space comparison is
+   either restated at matched horizon or withdrawn — the confounded form is
+   not retained.
+
+5. **Zero-simulation re-analyses (post-hoc confirmatory; rules fixed here,
+   computed from already-released artifacts).** Each is a re-expression or
+   decomposition of existing measurements, not a new measurement:
+   (a) **ρ = RMSE/σ̂_e** reported as a secondary column, with ρ = √2 the
+   simulation-limited benchmark and ρ = 1 the latent ceiling;
+   (b) **per-panel** replicate-agreement and ICC recomputed inside each
+   radius-two panel decomposition, replacing the panel-wide constants;
+   (c) the **empirical scatter of cone fill against (w/2rT)·fraction/rate**,
+   reported whatever it shows, with the pre-committed reading that R² > 0.95
+   would make cone fill a derived coordinate requiring disclosure or removal;
+   (d) **reduced-budget frontier ceilings** stated under the actual scoring
+   convention (targets at the production budget, estimator simulation at the
+   grid budget) and drawn on the frontier figures;
+   (e) **survival-band stratified** R²/ρ restricted to rules with survival in
+   [0.1, 0.9], plus mode-assignment accuracy, to separate resolution within
+   the intermediate band from mode calling.
+
 ## Revision 12 (2026-07-07) — changelog
 
 Purely additive; zero changes to criteria 1–9 or to any rev-2…11 threshold,
