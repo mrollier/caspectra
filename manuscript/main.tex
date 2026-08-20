@@ -387,11 +387,12 @@ statistics.
 \label{sec:results-mech}
 
 \emph{The matched-regime verdict is an identity, and we state it as one.}
-Write the cached target as $Y_1=\theta+\varepsilon_1$. Conditional on exact
-table recovery, the mechanistic estimator re-runs the target's own measurement
-procedure on an independent stream at the same $n_{\mathrm{pairs}}$, returning
-$\hat Y=\theta+\varepsilon_2$ with $\varepsilon_2\stackrel{d}{=}\varepsilon_1$
-independent. Then
+Write the cached target as $Y_1=\theta+\varepsilon_1$ and a second independent
+replicate of it as $Y_2=\theta+\varepsilon_2$. Conditional on exact table
+recovery, the mechanistic estimator re-runs the target's own measurement
+procedure on an independent stream at the same $n_{\mathrm{pairs}}$, so it
+returns $\hat Y=\theta+\varepsilon$ with $\varepsilon$ distributed as
+$\varepsilon_1$ and independent of it. Then
 \begin{equation}
 (\hat Y,\,Y_1)\ \stackrel{d}{=}\ (Y_2,\,Y_1),
 \label{eq:exchangeable}
@@ -746,13 +747,13 @@ entry.
 \caption{The estimator race across the identifiability frontier (radius two,
 canonical $80$-rule panel; median held-out \rtwo{}; curves leaving the
 bottom of a panel are negative; the noise axis is replicated on the
-complementary $80$ rules in Sec.~\ref{sec:frontier}). Solid/dashed pairs:
-pseudo-posterior decoder with $\varepsilon$ supplied/self-estimated (red
-triangles); learned reader, MAP/sampled (purple diamonds). Noise (top left):
-of the eight rev-9 estimators plotted, all but the sampled reader collapse
-by $5$--$7.5\%$ on this panel. Masking (top right): the pseudo-posterior extends the deterministic
-inverter's tolerance from ${\sim}25\%$ to $50\%$. Extreme initial-condition
-density (bottom left): the posterior rescues under-exercised tables.
+complementary $80$ rules in Sec.~\ref{sec:frontier}). Solid/dashed pairs share
+a colour: $\varepsilon$ supplied/self-estimated for the decoder, MAP/sampled
+for the reader. \emph{Noise} (left): of the eight registered estimators, all
+but the sampled reader collapse by $5$--$7.5\%$ on this panel.
+\emph{Masking} (centre): the pseudo-posterior extends the deterministic
+inverter's tolerance from ${\sim}25\%$ to $50\%$. \emph{Density} (right): the
+decoder rescues under-exercised tables.
 A fourth axis, label-polarity flips (the complement symmetry applied to the
 whole diagram as a corruption), is omitted here because it is four flat
 lines: the read-then-simulate family is \emph{exactly} invariant by
@@ -845,7 +846,7 @@ per-bit probabilities. On held-out rules the reader recovers $0.73$ of table
 bits and never a full table exactly, and the MAP variant fails everywhere
 (median \rtwo{} $\le -2.2$): a single mostly-right table is a badly wrong
 dynamical system. Sampling is what salvages the signal. The sampled variant is
-the only one of the eight rev-9 estimators that does not collapse in the dead
+the only one of the eight registered estimators that does not collapse in the dead
 zone (Fig.~\ref{fig:frontier}): from $7.5$ to $20\%$ noise it is the best of
 those eight, holding median \rtwo{} in $[-0.04, 0.17]$---essentially flat, its bit
 accuracy dropping only $0.73{\to}0.70$---while the inverter falls to $-5.6$
