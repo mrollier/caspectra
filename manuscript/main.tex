@@ -571,26 +571,26 @@ and so drop out; the mechanistic estimator's error on them is exactly zero.}
 \label{tab:rho}
 \end{table}
 
-The completion prior is exposed rather than hidden, and---per
-Eq.~\eqref{eq:exchangeable}---the $2.5\%$ of radius-two rules it applies to
+By Eq.~\eqref{eq:exchangeable} the $2.5\%$ of rules needing a completion prior
 are the matched regime's only genuine failure mode, so we say what they cost.
-Per \emph{rule}, coverage is complete for every ECA held-out table and for
-$156/160$ radius-two tables; the four exceptions miss exactly one of $32$
-entries each. Those failures are \emph{dynamically benign}: the mean absolute
-prediction error on the four is $0.017$ (survival) and $0.008$ (cone fill)
-against $0.016$ and $0.009$ on the $156$ fully covered rules, and is
-\emph{smaller} on fraction ($0.0009$ vs $0.0041$) and rate ($0.0017$ vs
+Coverage is complete for every ECA held-out table and for $156/160$ radius-two
+tables; the four exceptions miss one of $32$ entries each, and their failures
+are \emph{dynamically benign}---mean absolute error $0.017$ (survival) and
+$0.008$ (cone fill) against $0.016$ and $0.009$ on the fully covered rules,
+and \emph{smaller} on fraction ($0.0009$ vs $0.0041$) and rate ($0.0017$ vs
 $0.0084$). This is not luck: an entry that $127\times127$ cells of
-Bernoulli$(1/2)$ evolution never exercise is an entry the dynamics rarely
-reaches under that measure, so mis-setting it barely perturbs the resimulated
-statistic. Consistently, the
-default-$0$/default-$1$/empirical completions change the radius-two median
-\rtwo{} only in the fourth decimal ($0.9905$--$0.9908$), and the
-posterior-averaged variant supplies predictive intervals precisely for those
-rules. Per \emph{diagram}, over all $10{,}240$
+Bernoulli$(1/2)$ evolution never exercise is one the dynamics rarely reaches,
+so mis-setting it barely perturbs the resimulated statistic. Accordingly the
+default-$0$/default-$1$/empirical completions move the radius-two median
+\rtwo{} only in the fourth decimal ($0.9905$--$0.9908$). That test is on
+\emph{clean} diagrams, where the prior barely binds; both default-$0$ and the
+ties-to-$0$ majority rule lean toward quiescence and so bias reconstructed
+survival downward where coverage actually falls, under heavy masking and
+extreme densities. We did not repeat it there, because the estimator we
+recommend in that regime replaces the point completion by an entrywise
+posterior (Sec.~\ref{sec:frontier}). Per \emph{diagram}, over all $10{,}240$
 radius-two held-out diagrams the exact-reconstruction rate is $0.990$ with
-median coverage $1.0$; over all $4{,}608$ ECA diagrams both are $1.0$. The
-estimator carries a weak, testable prior---it is not assumption-free.
+median coverage $1.0$; over all $4{,}608$ ECA diagrams both are $1.0$.
 
 \subsection{No stable ordering between the direct estimators}
 \label{sec:paired}
