@@ -422,8 +422,8 @@ shortfall is genuine estimator error; the $1-\mathrm{ICC}$ headroom of a
 perfect latent-mean predictor (Sec.~\ref{sec:reliability}) is nowhere in
 play for the models we trained.
 
-Table~\ref{tab:rho} restates all of this in replicate-noise units, and the
-restatement changes how large the gap looks. The mechanistic estimator sits at
+Table~\ref{tab:rho} restates this in replicate-noise units, which changes how
+large the gap looks. The mechanistic estimator sits at
 $\rho=1.0$--$1.8$, its CI covering $\sqrt2$ on every target and panel; the
 direct estimators sit at $\rho=3$--$33$. Two further readings follow.
 \emph{First}, \rtwo{} flatters the direct estimators most where the target is
@@ -455,17 +455,15 @@ from $0.859$ enriched to $0.821$ random and $0.830$ post-stratified.
 Reweighting to the representative distribution \emph{widens} the gap between
 the families.
 
-Force-holding has a second effect that reweighting cannot undo, and we
-disclose it: the training split then contains \emph{no} signature-complex
-rules at all, where a representative one would hold ${\sim}7\%$. The
-mechanistic estimator is invariant to that distortion by construction and the
-learned ones are not, so the comparison is in principle handicapped. The
-measured direction is the opposite of the obvious worry---the seed-0 CNN
-scores \emph{higher} on the complex subpanel ($0.832$) than on the random one
-($0.821$), so the missing training mass is not visibly hurting it---but that
-is an observation, not a control, so we ran the control
-(Sec.~\ref{sec:frontier}(iv)), which puts the complex rules back into training
-and moves the CNN \emph{down}.
+Force-holding has a second effect that reweighting cannot undo: the
+training split then contains \emph{no} signature-complex rules, where a
+representative one would hold ${\sim}7\%$. The mechanistic estimator is
+invariant to that by construction and the learned ones are not, so the
+comparison is in principle handicapped. The measured direction is the
+opposite---the seed-0 CNN scores \emph{higher} on the complex subpanel
+($0.832$) than on the random one ($0.821$)---but that is an observation, not a
+control, so we ran one (Sec.~\ref{sec:frontier}(iv)); it puts the complex rules
+back into training and moves the CNN \emph{down}.
 
 \begin{table*}[t]
 \centering
@@ -803,8 +801,7 @@ the calibration collapse measured below. We built neither the cheap repair (divi
 counts by an overlap factor, or fitting an overdispersion parameter) nor the
 correct one (marginalizing the latent clean diagram), so the noise-band
 verdicts below bound \emph{the estimators evaluated}, not the
-read-then-simulate family. Algorithms and a worked example are in
-Appendix~\ref{app:algorithms}. Simulating tables sampled from it \emph{restores
+read-then-simulate family. Simulating tables sampled from it \emph{restores
 identification across the intermediate band}: at $40\%$ masking its median
 \rtwo{} is $0.85$ against the deterministic inverter's $0.24$; at $50\%$,
 $0.59$ against $-0.77$; at IC density $0.1$, $0.77$ against $0.08$; and it is
@@ -912,11 +909,10 @@ downgrades the family-gap claim to the stratified number if any target's gap
 shrinks by more than $0.10$ median \rtwo{}; the largest shrink over both direct
 estimators is $0.07$ (the boosted baseline's cone fill), and two of the
 network's gaps \emph{widen}---survival by $0.16$ and cone fill by $0.34$.
-Representative training does not close the gap. One counter-observation,
-resting on five rules and correspondingly weak: with $52$ complex rules in
-training the CNN still scores $-0.81$ on the five held-out complex rules
-against $0.78$ on the rest, where on the enriched panel it had scored
-\emph{higher} on complex rules than on random ones.
+Representative training does not close the gap. One counter-observation, resting on
+five rules and correspondingly weak: the CNN still scores $-0.81$ on the five
+held-out complex rules against $0.78$ on the rest, where on the enriched panel
+it had scored \emph{higher} on complex rules than on random ones.
 
 \emph{Panel replication.} Because the frontier rests on a fixed $80$-rule
 subsample, we re-simulated the entire noise axis on the \emph{complementary}
@@ -934,17 +930,17 @@ as a sharp boundary. The masking and density axes were not replicated on the
 complement panel; their rows in Table~\ref{tab:guidance} rest on the canonical
 panel alone.
 
-\emph{Verdicts.} The registered hypothesis that the reader extends beyond the
-decoder is confirmed on noise only weakly---it moves the frontier without
-restoring identification---and refuted under masking; the fairness controls
-then supersede the reader in the noise band entirely. The third hypothesis
-survives both controls: at no grid cell with high table recovery does any
-direct amortizer beat the best read-then-simulate estimator
-(Appendix~\ref{app:repro} records each verdict against its registered rule).
+\emph{Verdicts.} The reader extends beyond the decoder only weakly on
+noise---moving the frontier without restoring identification---and not at all
+under masking, and the fairness controls then supersede it in the noise band
+entirely; at no grid cell with high table recovery does any direct amortizer
+beat the best read-then-simulate estimator (Appendix~\ref{app:repro} records
+each verdict against its registered rule).
 Table~\ref{tab:guidance} states the curves as practitioner guidance.
 
 \begin{table*}[t]
 \centering
+\footnotesize
 \begin{ruledtabular}
 \begin{tabular}{p{0.19\textwidth}p{0.21\textwidth}p{0.40\textwidth}p{0.13\textwidth}}
 observation regime & use & median \rtwo{} evidence & reference \\
@@ -1023,7 +1019,10 @@ measure exactly the quenched correlation annealing discards (an additive rule's
 difference pattern is a deterministic gasket, cone density $0.26$, not a mixed
 density near $0.5$), so the mean-field tier of the rule-table cost
 hierarchy~\cite{vispoel2026structure} does not transfer and simulation is the
-cheapest usable tier we measure.
+cheapest usable tier we measure. In the setting the approximation was built
+for---random Boolean networks with redrawn connections---annealed predictions
+track the quenched overlap dynamics closely~\cite{derridaweisbuch1986}; a
+single fixed rule is the opposite limit.
 
 \subsection{Descriptive by-products, with independent ground-truth evaluation}
 \label{sec:constructive}
@@ -1102,12 +1101,11 @@ the local rule exactly for every elementary and $97.5\%$ of radius-two
 held-out rules. Everything else in the matched regime follows: reconstructing
 the generator and re-running the stipulated experiment is \emph{exchangeable}
 with re-measuring the target, so the agreement is arithmetic, not evidence
-(Eq.~\eqref{eq:exchangeable}). The claim worth making is the conditional one:
-\emph{a nominally single-observation amortization benchmark is solved by
-system identification whenever the observation encodes the generator}---more
-precisely, whenever the observation determines the generator within a known or
-searchable model class, the inversion is tractable, and the target's own
-measurement procedure can be re-run at matched budget. Benchmark designers who
+(Eq.~\eqref{eq:exchangeable}). The claim worth making is conditional: \emph{a nominally
+single-observation amortization benchmark is solved by system identification}
+whenever the observation determines the generator within a known or searchable
+model class, the inversion is tractable, and the target's own measurement
+procedure can be re-run at matched budget. Benchmark designers who
 intend to test representation learning must break that encoding (noise,
 partial observation, unknown model class) or accept that they are benchmarking
 identification.
@@ -1191,12 +1189,12 @@ entrywise pseudo-posterior of Sec.~\ref{sec:frontier}(i) is already a
 Beta--Bernoulli posterior over $\pi_k$, natively the right estimator there
 with the $\varepsilon$ apparatus dropping out, and its independence
 approximation becomes much milder, since outputs really are conditionally
-independent given inputs and only input-side window overlap remains. The two-parameter stochastic CA
-family that embeds deterministic rules at its corners and has a well-studied
-damage-spreading literature is the obvious testbed.
-% TODO(user): cite Domany & Kinzel, Phys. Rev. Lett. 53, 311 (1984) once the
-% PDF is verified; add the DK damage-spreading reference alongside.
-We have not run it, so nothing here licenses conclusions for that case---but
+independent given inputs and only input-side window overlap remains. The obvious testbed is the stochastic
+cellular automaton of Domany and Kinzel~\cite{domanykinzel1984}: three
+conditional probabilities, deterministic rules exactly at the corners of that
+cube, and one face equivalent to generalized directed percolation, so the
+determinism axis is also a line through a known critical phenomenon. We have not
+run it, so nothing here licenses conclusions for that case---but
 it is the experiment that would turn a corollary of
 Richards \emph{et al.}~\cite{richards1990} into a result.
 
@@ -1290,15 +1288,11 @@ curve with its annealed zero-budget member (rev.~12); the learned rule-reader;
 and the label-noise and unknown-radius axes.
 
 The three frontier hypotheses (rev.~9) were registered verbatim before
-measurement; their earned verdicts---\emph{(i)} the posterior dominates the
-deterministic inverter at intermediate noise: \emph{confirmed}; \emph{(ii)}
-the reader extends further than the posterior: \emph{split}, weakly
-confirmed on noise and refuted under masking; \emph{(iii)} no direct
-amortizer beats the best read-then-simulate estimator at high table
-recovery: \emph{confirmed, zero violations}---are reported in
-Sec.~\ref{sec:frontier}, together with the one reporting item outstanding
-from rev.~9 (the calibration of the posterior's nominal $1\sigma$
-predictive intervals), completed in this revision.
+measurement; their earned verdicts---\emph{confirmed}; \emph{split}, weakly
+confirmed on noise and refuted under masking; and \emph{confirmed with zero
+violations}---are stated in Sec.~\ref{sec:frontier}, as is the one reporting
+item outstanding from rev.~9, the calibration of the posterior's nominal
+$1\sigma$ predictive intervals, completed here.
 
 \emph{Correctness audit of the matched regime.} Equation~\eqref{eq:exchangeable}
 makes the matched-regime agreement an identity, so the paired equivalence
@@ -1542,8 +1536,7 @@ accuracy $0.39$, precision $0.05$, $231$ applicable rules) and misses rule
 $54$ on ECA, whose ether front advances at light speed; it validates nothing
 in either direction. A multi-observable detector would in effect rebuild the
 structure filters of computational mechanics~\cite{shalizi2006} and was not
-built here. Composed-system map settings, and the full map-versus-baseline
-comparison, are in the released configuration and repository.
+built here.
 
 \bibliographystyle{apsrev4-2}
 \bibliography{refs}

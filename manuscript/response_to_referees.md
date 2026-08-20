@@ -784,6 +784,25 @@ now says ~1.4× rather than ~2×, and its guidance line tells the practitioner t
 select on a validation fold. What did not move: the 20% ceiling (selected
 checkpoints reach only 0.18–0.36) and the family-level ordering.
 
+**§5.1 — the stochastic-generator scope, now with its citation.** The
+Domany–Kinzel PDF was supplied after the first pass and has been read. The
+Discussion now cites it (PRL **53**, 311, 1984) for exactly what it establishes:
+a stochastic peripheral CA parametrized by three conditional probabilities,
+deterministic rules at the corners of that cube, and an x = 0 face equivalent to
+generalized directed percolation. Two things we did *not* do with it. It is
+sublattice-updated rather than synchronous, and it contains no damage-spreading
+analysis, so the earlier draft's "well-studied damage-spreading literature"
+clause was **dropped** rather than attached to a paper that does not support it.
+Separately, Derrida & Weisbuch (*J. Physique* **47**, 1297, 1986) is now cited at
+the annealed zero-budget member as the contrast case: annealed predictions track
+quenched overlap evolution closely in random Boolean networks, where connections
+are redrawn, and a single fixed CA rule is the opposite limit. Kauffman 1969 was
+read to check a standing cite and holds — it perturbs a single gene for one time
+step and tracks Hamming distance. One citation remains unavailable: the
+DP-universality reference we wanted is Grassberger, *J. Stat. Phys.* **79**, 13
+(1995), and the PDF to hand is the other 1995 Grassberger paper (*Physica A*
+**214**, 547, Ising "model A" dynamics), so nothing was cited for it.
+
 **§3.15 — the stratified-split control.** Run (M10) and reported in Sec. IV
 F(iv). We disclose the point the report identifies correctly in principle:
 force-holding leaves **zero** signature-complex rules in training. But the
