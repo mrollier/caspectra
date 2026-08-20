@@ -1090,33 +1090,44 @@ of the axis (Sec.~\ref{sec:methods}).}
 Under a fully observed, noiseless, deterministic, synchronous, binary
 observation model with known radius, a single spacetime diagram identified
 the local rule exactly for every elementary and $97.5\%$ of radius-two
-held-out rules, and reconstructing the generator then re-running the
-stipulated experiment predicts finite-horizon damage response at the
-accuracy of re-measuring it. That is the central finding, and we believe it
-generalizes: \emph{a nominally single-observation amortization benchmark can
-be solved by system identification whenever the observation encodes the
-generator}---more precisely, whenever the observation determines the
-generator within a known or searchable model class, the inversion is
-computationally tractable, and the target's own measurement procedure can
-be re-run at matched budget. Benchmark designers who intend to test representation learning
-must break that encoding (noise, partial observation, unknown model class)
-or accept that they are benchmarking identification.
+held-out rules. Everything else in the matched regime follows: reconstructing
+the generator and re-running the stipulated experiment is \emph{exchangeable}
+with re-measuring the target, so the agreement is arithmetic, not evidence
+(Eq.~\eqref{eq:exchangeable}). The claim worth making is the conditional one:
+\emph{a nominally single-observation amortization benchmark is solved by
+system identification whenever the observation encodes the generator}---more
+precisely, whenever the observation determines the generator within a known or
+searchable model class, the inversion is tractable, and the target's own
+measurement procedure can be re-run at matched budget. Benchmark designers who
+intend to test representation learning must break that encoding (noise,
+partial observation, unknown model class) or accept that they are benchmarking
+identification.
+
+We should be plain about how far that travels. We do not name a published
+benchmark this invalidates: we do not know of one posed on a system whose
+observations encode the generator as completely as a CA diagram does, and we
+have not surveyed for it. What this paper offers is a controlled instance in
+which the identification baseline can be built exactly and calibrated, plus a
+frontier that says where it stops working---and two measurements suggesting
+the failure mode is not exotic. Both direct estimators' survival ``skill'' is
+mode assignment (Sec.~\ref{sec:results-mech}), and a training-set lookup
+matches the network in its own embedding (Sec.~\ref{sec:stacking}); neither
+diagnostic is CA-specific, and both are cheap to run on any benchmark whose
+generator space is densely sampled.
 
 The lesson connects literatures that do not currently cite one another. In
-continuous-state settings the identification route is equation discovery:
-sparse and symbolic regression recover governing equations from clean,
-densely sampled data~\cite{brunton2016,schmidtlipson2009}, and once the
-generator is recovered, every simulation-defined functional of it---Lyapunov
-exponents included---follows by re-running; a damage-response benchmark posed
-on such systems would face the same baseline. Simulation-based inference
-names the trade we quantify---amortize training cost against per-query
-simulation~\cite{cranmer2020}---and the identifiability frontier is a worked
+continuous-state settings the identification route is equation
+discovery~\cite{brunton2016,schmidtlipson2009}: once the generator is
+recovered, every simulation-defined functional of it---Lyapunov exponents
+included---follows by re-running, so a damage-response benchmark posed there
+would face the same baseline. Simulation-based inference names the trade we
+quantify~\cite{cranmer2020}, and the identifiability frontier is a worked
 example of choosing between an amortized predictor and per-observation
 inference on observation quality. At field scale, McGreivy and Hakim document
 that most machine-learning-for-PDE papers claiming to beat standard numerics
-compared against weak baselines~\cite{mcgreivy2024}; this benchmark is the
-controlled, closed-world version of that critique, with the strong baseline
-constructed explicitly and calibrated against replicate reliability.
+compared against weak baselines~\cite{mcgreivy2024}; this is the controlled,
+closed-world version of that critique, with the strong baseline constructed
+explicitly and calibrated against replicate reliability.
 
 The neural results are deliberately scoped. For \emph{this} constrained
 architecture at \emph{this} training budget, direct regression neither reaches
