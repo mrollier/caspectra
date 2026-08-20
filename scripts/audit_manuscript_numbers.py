@@ -421,6 +421,16 @@ def build_m10_checks() -> list[Check]:
         Check("M10 cnn seed min", 0.74, min(d["cnn_seed_medians"])),
         Check("M10 cnn seed max", 0.78, max(d["cnn_seed_medians"])),
     ]
+    # The enriched-panel values Sec. IV F(iv) puts next to the control.
+    if DECOMP.exists():
+        enr = json.loads(DECOMP.read_text())["methods"]
+        checks += [
+            Check(
+                "M10 enriched mechanistic", 0.991, enr["mechanistic"]["enriched_panel"]["median_r2"]
+            ),
+            Check("M10 enriched gbm", 0.845, enr["gbm"]["enriched_panel"]["median_r2"]),
+            Check("M10 enriched cnn", 0.859, enr["cnn"]["enriched_panel"]["median_r2"]),
+        ]
     sub = d.get("cnn_subgroup", {})
     if sub:
         checks += [
