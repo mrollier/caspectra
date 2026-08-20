@@ -5,6 +5,55 @@ Running log of *measured* outcomes (predictions and critique live in
 
 ---
 
+## 2026-08-21 — Round-6 review-response results (rev 14; M13 + rho variability)
+
+Decision and reporting rules registered numbers-free in EVALUATION_CRITERIA.md
+rev 14 (commit 56f6936) **before** any number below. Fifth review
+(`manuscript/reviews/review_deepseekv4pro_20aug26.md`, major revision).
+
+### Finite-replicate variability of the rho references (rev-14 re-expression)
+
+The fifth review objected that the rho reference values (√2 / 1) are called
+"exact" while the pooled denominator rests on K = 20 replicates per rule.
+Delta-method decomposition under a Gaussian working model
+(`scripts/analyze_rho_variability.py`, artifact
+`runs/analysis/rho_variability/summary.json`), per target and space, of the
+SD of an exactly-matched resimulator's observed rho around √2:
+
+| source | worst case over all 8 target×space cells |
+|---|---|
+| finite-K denominator (the reviewer's point) | **0.14 rho-units** (ECA fraction) |
+| total incl. finite-panel numerator | **0.65 rho-units** (ECA fraction; radius-2 worst 0.58, cone fill) |
+
+Numerator and denominator are *independent* by the seeding design (prime seed
+offsets on per-rule SeedSequences), which is the half of the objection we
+rebut. The finite-panel share is what the manuscript's rule-bootstrap CIs
+already carry; the mechanistic rho spread in Table III (0.7–1.8, every CI
+covering √2) is exactly this scatter — the ECA spreading-rate value 0.7 is
+~1 SD below √2, not an anomaly. Manuscript wording downgraded to
+"exact in expectation" everywhere (abstract, Sec. II C, Table III caption).
+
+### Mode-assignment accuracies promoted to exact values
+
+Sec. IV A now quotes per-estimator ordered/chaotic mode accuracy from the A5
+artifact (was "89–100%"): ECA gbm 0.89 / CNN 0.94; radius-2 gbm 0.99 / CNN 1.00.
+
+### M13 — matched-regime CNN with checkpoint selection (registered)
+
+(placeholder — filled after the five-seed runs and full-table scoring)
+
+### Round-6 manuscript restructure (fifth review, length)
+
+17 pp (after round-6 statistical additions) → 16 pp: abstract 255→~200 words
+in plain language (no ICC/√2 symbols); all revision-number tags removed from
+the main body (registration record stays in Appendix A); Tables II+III merged
+into one per-target table; cost subsection 43→~30 lines (GPU/batched timings,
+32-pair point → repo record only); by-products compressed to two paragraphs
+with the landscape figure, coordinate caveats, ECA validation and detector
+null moved to new Appendix D; Table I gains the M10 stratified-split row
+(enriched panel stays the registered primary). Nothing deleted from the repo;
+audit exit 0 throughout.
+
 ## 2026-08-20 — Round-5 review-response results (rev 13; M9–M12 + re-expressions)
 
 Decision and reporting rules registered numbers-free in EVALUATION_CRITERIA.md

@@ -41,6 +41,11 @@ RETRIEVAL_R2 = REPO / "runs" / "m4_range2" / "retrieval" / "summary.json"
 RETRIEVAL_ECA = REPO / "runs" / "lever_a_local" / "retrieval" / "summary.json"
 GLIDER_T30 = REPO / "runs" / "analysis" / "glider_validation_T30" / "summary_r1.json"
 STRAT = REPO / "runs" / "m4_range2_strat" / "control" / "summary.json"
+RHOVAR = REPO / "runs" / "analysis" / "rho_variability" / "summary.json"
+FULLTABLE_SEL = REPO / "runs" / "m4_range2" / "full_table_sel" / "summary.json"
+FULLTABLE_SEL_ECA = REPO / "runs" / "lever_a_local" / "full_table_sel" / "summary.json"
+FULLTABLE = REPO / "runs" / "m4_range2" / "full_table" / "summary.json"
+FULLTABLE_ECA = REPO / "runs" / "lever_a_local" / "full_table" / "summary.json"
 MAIN_TEX = REPO / "manuscript" / "main.tex"
 RESULTS = REPO / "RESULTS.md"
 
@@ -453,6 +458,53 @@ def build_m10_checks() -> list[Check]:
     return checks
 
 
+def build_round7_checks() -> list[Check]:
+    """Rev-14 numbers quoted after the fifth review: rho variability, mode
+    accuracies, and (once scored) the M13 selection-protocol comparison."""
+    checks: list[Check] = []
+    if RHOVAR.exists():
+        d = json.loads(RHOVAR.read_text())
+        checks += [
+            Check(
+                "rev14 rho denominator sd (worst case, quoted 0.14)",
+                0.14,
+                d["worst_case_denominator_sd_of_rho"],
+            ),
+            # quoted as "up to ~0.6" -- the worst case must round to 0.6.
+            Check(
+                "rev14 rho total sampling sd (worst case, quoted ~0.6)",
+                0.6,
+                round(d["worst_case_total_sd_of_rho"], 1),
+            ),
+        ]
+    if ROUND6.exists():
+        d = json.loads(ROUND6.read_text())
+        eca = d["eca"]["A5_survival_band"]["damage_survival"]
+        r2 = d["radius2"]["A5_survival_band"]["damage_survival"]
+        checks += [
+            Check("mode accuracy ECA gbm", 0.89, eca["gbm"]["mode_accuracy_full_panel"]),
+            Check("mode accuracy ECA cnn", 0.94, eca["cnn"]["mode_accuracy_full_panel"]),
+            Check("mode accuracy r2 gbm", 0.99, r2["gbm"]["mode_accuracy_full_panel"]),
+            Check("mode accuracy r2 cnn", 1.00, r2["cnn"]["mode_accuracy_full_panel"]),
+        ]
+    # M13: selection-protocol full tables, once the runs land. The switch rule
+    # (rev 14) compares five-seed per-target means: selection minus final-epoch
+    # must exceed +0.02 on some target to displace the protocol of record.
+    for label, sel_path, fin_path in (
+        ("radius-2", FULLTABLE_SEL, FULLTABLE),
+        ("ECA", FULLTABLE_SEL_ECA, FULLTABLE_ECA),
+    ):
+        if sel_path.exists() and fin_path.exists():
+            sel = json.loads(sel_path.read_text())["cnn_seed_spread"]
+            fin = json.loads(fin_path.read_text())["cnn_seed_spread"]
+            worst = max(sel[tt]["mean"] - fin[tt]["mean"] for tt in fin)
+            checks.append(
+                Check(f"M13 {label} largest selection gain (switch at >+0.02)",
+                      round(worst, 2), worst)
+            )
+    return checks
+
+
 def text_guards() -> list[tuple[str, bool]]:
     """Literal-string guards: the corrected values are present, stale ones gone.
 
@@ -483,8 +535,31 @@ def text_guards() -> list[tuple[str, bool]]:
             "eq:exchangeable" in tex,
         ),
         (
-            "main.tex defines rho against its two exact ceilings",
+            "main.tex defines rho against its two reference ceilings",
             "eq:rho" in tex and "simulation-limited benchmark" in tex,
+        ),
+        # Rev-14 (fifth review): expectation-level exactness, explicit diagram
+        # dimensions, no bare "invariant to panel composition" claim, and no
+        # revision-number tags in the main-text body.
+        (
+            "main.tex qualifies the rho ceilings as expectation-level",
+            "in expectation} under the additive-noise idealization" in tex,
+        ),
+        (
+            "main.tex abstract states the 127x127 diagram dimensions",
+            "$127\\times127$ spacetime diagrams of known radius" in tex,
+        ),
+        (
+            "main.tex no longer claims rho is invariant to panel composition",
+            "invariant to panel composition" not in tex,
+        ),
+        (
+            "main.tex main body carries no revision-number tags",
+            not re.search(r"rev[.\s~-]{0,2}\d", tex[: tex.index("Author declarations")]),
+        ),
+        (
+            "main.tex conditions Eq. (1) on exact recovery in the equation",
+            "conditional on exact recovery)" in tex,
         ),
     ]
 
@@ -500,6 +575,7 @@ def main() -> int:
     checks += build_rev11_checks()
     checks += build_rev13_checks()
     checks += build_m10_checks()
+    checks += build_round7_checks()
     failures = 0
     for check in checks:
         status = "ok " if check.ok else "FAIL"
