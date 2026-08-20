@@ -149,18 +149,15 @@ it to be inferred: Ref.~\onlinecite{rollier2024cnn} showed that a network
 calibrates the resulting predictions against replicate reliability, and maps
 where the readability itself ends. One structural
 consequence deserves stating up front. Because the targets are
-simulation-defined, successful identification reproduces the target's own
-measurement procedure: run at the target's Monte-Carlo budget it attains the
-independent-replicate benchmark \emph{by construction}, and run at a larger
-budget it climbs to the latent ceiling, so identification yields a
-\emph{budget-indexed family} of estimators, not a point
-(Sec.~\ref{sec:reliability} quantifies the $1-\mathrm{ICC}$ gap between the
-two benchmarks---the entire noisy-score headroom any direct estimator holds
-over the family's matched-budget member). The same indexing arises
-independently for rule-table-side class prediction, whose candidate
-predictors form a parallel cost hierarchy---free rule-table parameters,
-lattice-independent mean-field iteration, full phenomenological
-simulation~\cite{vispoel2026structure}. Wherever the rule is exactly
+simulation-defined, identification reproduces the target's own measurement
+procedure: at the target's Monte-Carlo budget it attains the
+independent-replicate benchmark \emph{by construction}, at a larger budget it
+climbs to the latent ceiling. Identification therefore yields a
+\emph{budget-indexed family} of estimators, not a point, and the
+$1-\mathrm{ICC}$ gap between those benchmarks (Sec.~\ref{sec:reliability}) is
+the entire noisy-score headroom any direct estimator holds over the family's
+matched-budget member; a parallel cost hierarchy is known on the rule-table
+side~\cite{vispoel2026structure}. Wherever the rule is exactly
 recoverable, direct amortization can therefore win only on cost, with
 simulation budget now part of the cost, or on robustness to observation
 degradation. What remains empirical is how close identification comes to its
@@ -303,12 +300,14 @@ Reading \rtwo{} against a different ceiling per target and per panel is
 error-prone, so we also report each estimator's error in units of the target's
 own Monte-Carlo error,
 \begin{equation}
-\rho_t \;=\; \frac{\mathrm{RMSE}_t(\hat Y, Y_1)}{\hat\sigma_e(t)},
+\rho_t \;=\;
+\sqrt{\frac{\sum_i\bigl(\hat Y_{ti}-Y_{1,ti}\bigr)^2}{\sum_i\hat\sigma_e^2(t,i)}},
 \label{eq:rho}
 \end{equation}
-with $\hat\sigma_e$ estimated \emph{per rule} from the $K=20$ replicates (so
-heteroscedasticity is handled pointwise rather than averaged away). The two
-ceilings above become constants: an exactly identified rule resimulated at
+with $\hat\sigma_e(t,i)$ estimated \emph{per rule} from the $K=20$ replicates.
+Pooling the two sums, rather than averaging per-rule ratios, weights each rule
+by its own Monte-Carlo variance and is what makes the two reference values
+exact rather than approximate; the two ceilings above become constants: an exactly identified rule resimulated at
 matched budget gives $\rho=\sqrt2$ by Eq.~\eqref{eq:exchangeable}, and a
 perfect predictor of the latent mean gives $\rho=1$. Unlike \rtwo{}, $\rho$ is
 invariant to panel composition, is bounded below by $0$ with no sign
@@ -1125,28 +1124,26 @@ explicitly and calibrated against replicate reliability.
 The neural results are deliberately scoped. For \emph{this} constrained
 architecture at \emph{this} training budget, direct regression neither reaches
 the reliability benchmark nor dominates five cheap statistics, and the two
-trade places by target; the unconstrained control shows this is not the
-constraint's doing, since an architecture $354\times$ larger at the same
-budget changes no verdict. The network's one demonstrated edge---incremental
-survival information, $+0.32$ over the five-statistic base and $+0.08$ over
-the boosted baseline of record---is real and survives cross-fitting, but it
-sits next to two findings that bound how much of the network's score is
-generalisation at all: within the intermediate survival band it does not
+trade places by target; an unconstrained architecture $354\times$ larger at
+the same budget changes no verdict, so this is not the constraint's doing. The
+network's one demonstrated edge---incremental survival information, $+0.32$
+over the five-statistic base and $+0.08$ over the boosted baseline of
+record---survives cross-fitting, but sits next to two findings that bound how
+much of its score is generalisation at all: within the intermediate survival band it does not
 outperform the band mean (Sec.~\ref{sec:results-mech}), and a training-set
 lookup in its own bottleneck reproduces its median \rtwo{}
 (Sec.~\ref{sec:stacking}). We do not conclude that deep networks cannot close
-the gap. The probes show rule information is accessible to the network;
-whether exploiting it is an architecture, objective, or optimization question
-is open. The rev-9 rule reader and the rev-10
-degradation-trained control sharpen that question: in the noise band beyond
-${\sim}3$--$7.5\%$ the strongest estimator is the direct network trained for
-the corruption, the sampled reader merely holds \rtwo{}${\approx}0$, and
-neither approaches simulation-limited accuracy; under masking and extreme
-densities the pseudo-posterior decoder, not either learned route, extends the
-mechanistic route. Whether a larger reader, a differentiable simulator in
-the loop, joint reader--simulator training, or corruption-trained direct
-networks at scale close that gap is now a concrete, measurable open problem,
-next to rule-scrubbing and rule-provision interventions to test causality. One
+the gap: the probes show rule information is accessible, and whether
+exploiting it is an architecture, objective, or optimization question is open.
+The rev-9 reader and the rev-10 degradation-trained control sharpen
+it---beyond ${\sim}3$--$7.5\%$ noise the strongest estimator is the direct
+network trained for the corruption, the sampled reader merely holds
+\rtwo{}${\approx}0$, and neither approaches simulation-limited accuracy, while
+under masking and extreme densities the pseudo-posterior decoder extends the
+mechanistic route instead. Whether a larger reader, a differentiable simulator
+in the loop, joint reader--simulator training, or corruption-trained networks
+at scale close that gap is a concrete open problem, next to rule-scrubbing and
+rule-provision interventions to test causality. One
 omission we regard as the most consequential: the correctly specified decoder
 for bit-flip observation noise marginalizes the latent clean diagram---a
 factor graph with known structure, amenable to Gibbs sampling or
@@ -1170,15 +1167,14 @@ generator, by contrast, changes the problem in kind, and is where we expect
 this paper's thesis to stop being a near-identity. If the generator is a table
 of probabilities $\pi_k=\Pr[s_{t+1,i}{=}1\mid k]$ rather than bits, a single
 diagram gives only a \emph{noisy} estimate of $\pi$, so read-then-simulate
-acquires genuine estimation error that trades off against a direct
-estimator's, and the interesting question becomes \emph{where along the
-determinism axis} the identification baseline stops dominating. Two features
-of our machinery carry over unchanged: the entrywise pseudo-posterior of
-Sec.~\ref{sec:frontier}(i) is already a Beta--Bernoulli posterior over
-$\pi_k$, so it is natively the right estimator there with the $\varepsilon$
-apparatus dropping out entirely; and its independence approximation becomes
-much milder, since outputs really are conditionally independent given inputs
-and only input-side window overlap remains. The two-parameter stochastic CA
+acquires genuine estimation error trading off against a direct estimator's,
+and the question becomes \emph{where along the determinism axis} the
+identification baseline stops dominating. Our machinery carries over: the
+entrywise pseudo-posterior of Sec.~\ref{sec:frontier}(i) is already a
+Beta--Bernoulli posterior over $\pi_k$, natively the right estimator there
+with the $\varepsilon$ apparatus dropping out, and its independence
+approximation becomes much milder, since outputs really are conditionally
+independent given inputs and only input-side window overlap remains. The two-parameter stochastic CA
 family that embeds deterministic rules at its corners and has a well-studied
 damage-spreading literature is the obvious testbed.
 % TODO(user): cite Domany & Kinzel, Phys. Rev. Lett. 53, 311 (1984) once the
@@ -1494,10 +1490,11 @@ established prior art; what no prior work measures is its \emph{consequence
 for a behaviour-amortization benchmark}---the calibrated benchmark gap,
 the reliability-aware ceiling, and the identifiability frontier.
 
-\begin{table*}[t]
+\begin{table*}[b]
 \centering
+\scriptsize
 \begin{ruledtabular}
-\begin{tabular}{p{0.13\textwidth}p{0.20\textwidth}p{0.14\textwidth}p{0.19\textwidth}p{0.20\textwidth}}
+\begin{tabular}{p{0.14\textwidth}p{0.20\textwidth}p{0.13\textwidth}p{0.19\textwidth}p{0.20\textwidth}}
 work & CA / data regime & neighbourhood & inference method & task \\
 \colrule
 Richards \emph{et al.}~\cite{richards1990} & experimental (dendrites), noisy & unknown & genetic search over templates & extract CA dynamics from data \\
