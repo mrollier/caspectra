@@ -47,6 +47,7 @@ def damage_spreading_features(
     ic_density: float = 0.5,
     rng: np.random.Generator | None = None,
     simulator: object | None = None,
+    n_steps: int | None = None,
 ) -> np.ndarray:
     """Average damage-spreading statistics for one system over ``n_pairs`` ICs.
 
@@ -70,6 +71,15 @@ def damage_spreading_features(
     ``max_speed`` (the light-cone speed, = neighbourhood radius); it defaults to
     1 (ECA), and both the horizon and the rate normalization scale with it so
     the four features keep their meaning across radii.
+
+    ``n_steps`` overrides the derived horizon (rev-13 M12). The default
+    ``width // (2 * max_speed) - 1`` differs between radii at fixed width (62
+    for ECA, 30 for radius two), so elementary and radius-two prevalences are
+    measured at different horizons and are not directly comparable -- damage
+    survival is monotone decreasing in horizon, so a longer one kills more
+    marginal rules. Passing ``n_steps`` explicitly lets the two spaces be
+    compared at a matched horizon on the same ring. It must still respect the
+    no-wrap cap, which is enforced below.
     """
     if (rule is None) == (simulator is None):
         raise ValueError("pass exactly one of rule= or simulator=")
@@ -83,9 +93,16 @@ def damage_spreading_features(
     # ring, and normalize the spreading rate by that speed so "1 = light speed"
     # holds for any radius. radius=1 reproduces the ECA formulas exactly.
     max_speed = int(getattr(sim, "max_speed", 1))
-    n_steps = width // (2 * max_speed) - 1
-    if n_steps < 1:
+    max_steps = width // (2 * max_speed) - 1
+    if max_steps < 1:
         raise ValueError(f"width {width} too small for radius {max_speed}: horizon < 1 step")
+    if n_steps is None:
+        n_steps = max_steps
+    elif not 1 <= n_steps <= max_steps:
+        raise ValueError(
+            f"n_steps {n_steps} outside [1, {max_steps}] for width {width}, radius {max_speed}: "
+            "a longer horizon would let the damage cone wrap the periodic boundary"
+        )
 
     survived, fractions, rates, fills = [], [], [], []
     for _ in range(n_pairs):

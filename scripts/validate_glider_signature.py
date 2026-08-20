@@ -47,6 +47,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--width", type=int, default=127, help="Ring for the damage signature.")
     p.add_argument("--seed-width", type=int, default=255, help="Ring for the localized-seed test.")
     p.add_argument("--n-pairs", type=int, default=256)
+    p.add_argument(
+        "--horizon",
+        type=int,
+        default=None,
+        help="Rev-13 M12: override the derived damage horizon. The default differs "
+        "between radii at fixed width (62 for ECA, 30 for radius two), so cross-space "
+        "prevalence comparisons are horizon-confounded; --horizon 30 matches them.",
+    )
     p.add_argument("--output-dir", default="runs/analysis/glider_validation")
     return p.parse_args()
 
@@ -123,7 +131,11 @@ def main() -> None:
     for r in rules:
         if radius == 1:
             feats = damage_spreading_features(
-                int(r), width=args.width, n_pairs=args.n_pairs, rng=np.random.default_rng(int(r))
+                int(r),
+                width=args.width,
+                n_pairs=args.n_pairs,
+                rng=np.random.default_rng(int(r)),
+                n_steps=args.horizon,
             )
         else:
             from caspectra.ca.range_ca import RangeCA
@@ -133,6 +145,7 @@ def main() -> None:
                 width=args.width,
                 n_pairs=args.n_pairs,
                 rng=np.random.default_rng(int(r)),
+                n_steps=args.horizon,
             )
         sig = is_complex(feats, signature)
         m = localized_seed_metrics(

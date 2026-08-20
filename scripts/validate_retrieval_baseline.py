@@ -118,7 +118,13 @@ def main() -> None:
 
     spaces: dict[str, tuple[np.ndarray, np.ndarray]] = {}
 
-    feats = compute_baseline_features(images, radius=radius)
+    feat_cache = Path(cfg.data.cache_dir) / f"baseline_features_r{radius}_w{cfg.data.grid_size}.npy"
+    if feat_cache.exists():
+        feats = np.load(feat_cache)
+        print(f"[m11] baseline features from {feat_cache}")
+    else:
+        feats = compute_baseline_features(images, radius=radius)
+        np.save(feat_cache, feats)
     feats = StandardScaler().fit(feats[tr_mask]).transform(feats)
     spaces["stats5"] = (_rule_means(feats[tr_mask], reps[tr_mask], train_rules), feats[ho_mask])
 
@@ -160,11 +166,23 @@ def main() -> None:
             for j, t in enumerate(TARGET_NAMES)
         }
         if sigma_e is not None:
-            rho = np.sqrt(np.mean(((true_ho - pred) / sigma_e) ** 2, axis=0))
+            # Pooled, matching Eq. (2) of the manuscript: sum of squared errors
+            # over sum of per-rule Monte-Carlo variances. Rules whose target
+            # carries no MC noise (sigma_e = 0) then contribute 0 to both sums
+            # instead of dividing by zero.
+            with np.errstate(divide="ignore", invalid="ignore"):
+                rho = np.sqrt(((true_ho - pred) ** 2).sum(axis=0) / (sigma_e**2).sum(axis=0))
             for j, t in enumerate(TARGET_NAMES):
                 row[t]["rho"] = round(float(rho[j]), 3)
         row["median_r2"] = round(float(np.median(r2)), 4)
         results[name] = row
+        np.savez(
+            Path(out_dir) / f"predictions_{name}.npz",
+            held=np.asarray(held, dtype=np.int64),
+            true=true_ho,
+            pred=pred,
+            target_names=np.asarray(TARGET_NAMES),
+        )
         print(
             f"[m11] {name:11s} median R2 {row['median_r2']:.4f}  "
             + "  ".join(f"{t.split('_')[-1]}={row[t]['r2']:.3f}" for t in TARGET_NAMES)

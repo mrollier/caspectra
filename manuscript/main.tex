@@ -645,7 +645,25 @@ and rate $+0.03$ do transfer). Only the within-panel diagnostic detects the
 survival signal: the network \emph{carries} information that texture
 statistics miss---exactly where both direct methods sit farthest below the
 reliability benchmark---but a practitioner cannot yet buy it with a linear
-meta-model. The mechanistic estimator's increment over the five statistics
+meta-model.
+
+\emph{How much of the direct estimators' score is generalisation?} A
+shortcut-learning framing needs a baseline that separates ``recognises which
+training rule this resembles'' from ``generalises to an unseen table'', so we
+built the cheapest possible one: for each held-out diagram, return the
+\emph{cached target of the nearest training rule}---no training, no
+simulation, a lookup. In the five-statistic space it reaches median held-out
+\rtwo{} $0.821$ (radius two) and $0.828$ (ECA); in the CNN's own $64$-d
+bottleneck, $0.862$ and $0.881$. Those are not below the trained estimators,
+they are level with them: the radius-two CNN scores $0.864$ and the boosted
+baseline $0.845$, and on ECA retrieval in the bottleneck ($0.881$)
+\emph{exceeds} the network's own regression head ($0.852$). Under the
+registered reading, this is evidence that the direct estimators' accuracy on
+this benchmark is substantially rule recognition rather than extrapolation to
+unseen tables---consistent with the identity probes of
+Sec.~\ref{sec:probes}, and a caution for any single-diagram behaviour
+benchmark whose rule space is densely sampled. It does not touch the
+mechanistic estimator, which never consults a training rule. The mechanistic estimator's increment over the five statistics
 remains far larger on every target ($+0.14$ to $+0.84$), so the practical
 order of preference under the matched observation model is clear. All
 increments carry rule-bootstrap $95\%$ CIs over held-out rules with folds
@@ -1013,11 +1031,23 @@ unresolved edge. Design and full numbers are in the released repository.
 statistics over $3000$ uniformly sampled canonical rules give
 Fig.~\ref{fig:landscape}: $7.8\%$ (Wilson $95\%$ CI $[6.9,8.8]\%$) of rules
 satisfy the registered damage-signature criterion (persistent,
-sub-ballistic, sparse-cone damage), versus $3/88$ elementary orbits---a
-radius-two analogue of Li and Packard's map of the elementary rule
-space~\cite{lipackard1990}, drawn in damage coordinates. This is the
-prevalence of a \emph{finite-horizon criterion} under the stated sampling
-distribution, not a validated glider census. On ECA, where literature ground
+sub-ballistic, sparse-cone damage), drawn in damage coordinates in the spirit
+of Li and Packard's map of the elementary rule space~\cite{lipackard1990}.
+This is the prevalence of a \emph{finite-horizon criterion} under the stated
+sampling distribution, not a validated glider census---and the
+\emph{finite-horizon} qualifier does real work, which we quantify because an
+earlier draft did not. The horizon $\lfloor w/2r\rfloor-1$ is $62$ for ECA and
+$30$ for radius two at $w=127$, so comparing prevalences across the two spaces
+compares different experiments; damage survival is monotone decreasing in
+horizon, so the longer elementary horizon kills more marginal rules. Rerunning
+the elementary criterion at the \emph{matched} $T=30$ raises its prevalence
+from $3/88$ ($3.4\%$, the set $\{54,106,110\}$) to $6/88$ ($6.8\%$,
+adding $37$, $45$ and $60$). At matched horizon the cross-space gap therefore
+essentially closes ($6.8\%$ vs $7.8\%$), and the criterion's precision against
+literature class IV falls from $2/3$ to $1/3$. We accordingly do not claim a
+richer complex region at radius two; the honest statement is that this
+criterion's prevalence is horizon-sensitive and that the two spaces look alike
+once the horizons are matched. On ECA, where literature ground
 truth exists, the signature selects $\{54,106,110\}$: both canonical
 class-IV rules (sensitivity $1.0$) with one false positive, rule $106$,
 which the classical schemes list as chaotic~\cite{wolfram1984,lipackard1990}
@@ -1037,11 +1067,21 @@ coordinates---spreading rate (horizontal) versus cone fill
 (vertical)---over $n=3000$ canonical rules sampled uniformly over raw
 encodings, so orbits enter proportionally to orbit size
 (Appendix~\ref{app:methods}); the $800$-rule estimator panel is a subset. Red: rules satisfying the registered criterion---persistent,
-sub-ballistic damage in a sparse cone; they form a band between the ordered
-arm and the chaotic bulk, and the embedded class-IV ECAs $54$ and $110$
-(stars) land in it. The band is \emph{not} an independently validated glider
-region; prevalence and the ECA validation are in
-Sec.~\ref{sec:constructive}.}
+sub-ballistic damage in a sparse cone---with the embedded class-IV ECAs $54$
+and $110$ (stars) inside it. Dotted: contours of constant damage
+\emph{fraction}, along which these two coordinates are related by
+$\text{fill}\approx1.058\,\text{fraction}/\text{rate}$
+(Appendix~\ref{app:methods}). They are drawn because the red region's shape is
+substantially a coordinate effect: its rules span only $1.5\times$ in damage
+fraction against $2.6\times$ for the bulk, so it lies largely \emph{between}
+two contours, and in decorrelated coordinates (rate versus $N/2rT$, which is
+not tied to extent) it does not separate---the tightest box containing all
+$234$ signature rules also contains $732$ ordinary ones. The red set is a
+registered \emph{threshold region}, not a discovered cluster and not a
+validated glider region; prevalence and the ECA validation are in
+Sec.~\ref{sec:constructive}. Note also that a single surviving damaged cell
+has extent $1$ and hence fill $1$, which is why $204$ and $184$ sit at the top
+of the axis (Sec.~\ref{sec:methods}).}
 \label{fig:landscape}
 \end{figure}
 
@@ -1082,16 +1122,19 @@ constructed explicitly and calibrated against replicate reliability.
 The neural results are deliberately scoped. For \emph{this} constrained
 architecture at \emph{this} training budget, direct regression neither reaches
 the reliability benchmark nor dominates five cheap statistics, and the two
-trade places by target; the rev-10 unconstrained control shows this is not
-the constraint's doing: an architecture $354\times$ larger at the same
-budget changes no verdict (Sec.~\ref{sec:frontier}). The network's one demonstrated
-edge---incremental survival information, $+0.32$ over the five-statistic
-base and $+0.08$ over the boosted baseline of record---is real, is exactly
-where texture is least informative, and survives cross-fitting. We do not
-conclude that deep
-networks cannot close the gap. The probes show rule information is accessible
-to the network; whether exploiting it is an architecture, objective, or
-optimization question is open. The rev-9 rule reader and the rev-10
+trade places by target; the unconstrained control shows this is not the
+constraint's doing, since an architecture $354\times$ larger at the same
+budget changes no verdict. The network's one demonstrated edge---incremental
+survival information, $+0.32$ over the five-statistic base and $+0.08$ over
+the boosted baseline of record---is real and survives cross-fitting, but it
+sits next to two findings that bound how much of the network's score is
+generalisation at all: within the intermediate survival band it does not
+outperform the band mean (Sec.~\ref{sec:results-mech}), and a training-set
+lookup in its own bottleneck reproduces its median \rtwo{}
+(Sec.~\ref{sec:stacking}). We do not conclude that deep networks cannot close
+the gap. The probes show rule information is accessible to the network;
+whether exploiting it is an architecture, objective, or optimization question
+is open. The rev-9 rule reader and the rev-10
 degradation-trained control sharpen that question: in the noise band beyond
 ${\sim}3$--$7.5\%$ the strongest estimator is the direct network trained for
 the corruption, the sampled reader merely holds \rtwo{}${\approx}0$, and
@@ -1109,20 +1152,17 @@ build it. In a paper arguing that baselines must be constructed carefully
 before conclusions are drawn about them, that is the uncomfortable gap, and it
 is why the noise-axis verdicts are scoped to the estimators evaluated.
 
-How far does the frontier travel beyond binary deterministic CA? Each axis
-has a named analogue, and we mark what is measured here versus conjectured.
-Observation noise maps to
-measurement noise in equation discovery, where recovery is likewise
-noise-brittle~\cite{brunton2016}: the collapse is measured here; the repair
-ordering (exact, then Bayesian, then corruption-trained learned estimators)
-is established for CA only. Masking maps to missing sensors and partial observation:
-measured here, transfer conjectured. Initial-condition density maps to
-insufficient excitation---the persistency-of-excitation condition of
-classical system identification, of which our under-exercised rule tables
-are the finite-alphabet form: measured here. Label flips map to symmetry
-freedoms, under which equivariant estimators are invariant by construction:
-measured. Known radius maps to known model order or library: its relaxation
-is measured here at a ${\sim}0.12$ median-\rtwo{} cost. A stochastic
+How far does the frontier travel beyond binary deterministic CA? Each axis has
+a named analogue: observation noise to measurement noise in equation
+discovery, where recovery is likewise noise-brittle~\cite{brunton2016};
+masking to missing sensors; initial-condition density to insufficient
+excitation---our under-exercised rule tables are the finite-alphabet form of
+the persistency-of-excitation condition of classical system identification;
+label flips to symmetry freedoms, under which equivariant estimators are
+invariant by construction; and known radius to known model order, whose
+relaxation costs ${\sim}0.12$ median \rtwo{} here. Each \emph{collapse} is
+measured on CA; every \emph{transfer} is conjectured, as is the repair
+ordering (exact, then pseudo-posterior, then corruption-trained). A stochastic
 generator, by contrast, changes the problem in kind, and is where we expect
 this paper's thesis to stop being a near-identity. If the generator is a table
 of probabilities $\pi_k=\Pr[s_{t+1,i}{=}1\mid k]$ rather than bits, a single
