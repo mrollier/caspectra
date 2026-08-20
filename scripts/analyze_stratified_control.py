@@ -46,6 +46,13 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=[f"runs/m4_range2_strat_seed{s}/checkpoint_final.pt" for s in (0, 1, 2)],
     )
+    p.add_argument(
+        "--signature-config",
+        default="configs/m4_range2.yaml",
+        help="Config whose force_holdout_rules is the registered signature-complex set. "
+        "The stratified config empties that field by design, so membership must be read "
+        "from the canonical one or every rule looks ordinary.",
+    )
     p.add_argument("--device", default="mps")
     p.add_argument("--n-boot", type=int, default=10000)
     p.add_argument("--output-dir", default="runs/m4_range2_strat/control")
@@ -85,10 +92,19 @@ def main() -> None:
         cnn_seeds.append(hop.preds["cnn"])
     cnn_seeds = np.stack(cnn_seeds)
 
-    n_complex = int(primary.complex_mask.sum())
+    # Signature membership comes from the canonical config: HeldOutPredictions
+    # derives its own mask from cfg.train.force_holdout_rules, which this control
+    # deliberately empties, so that mask is identically False here.
+    signature = {
+        int(r) for r in ExperimentConfig.from_yaml(args.signature_config).train.force_holdout_rules
+    }
+    complex_mask = np.array([r in signature for r in primary.held], dtype=bool)
+    n_complex = int(complex_mask.sum())
+    n_train_complex = len(signature) - n_complex
     print(
         f"[m10] control panel: {n_held} held-out rules, {n_complex} signature-complex "
-        f"({100 * n_complex / n_held:.1f}%), {len(cnn_seeds)} CNN seeds"
+        f"({100 * n_complex / n_held:.1f}%), {len(cnn_seeds)} CNN seeds; "
+        f"{n_train_complex} of the {len(signature)} signature-complex rules are in training"
     )
 
     rng = np.random.default_rng(0)
@@ -98,6 +114,7 @@ def main() -> None:
         "n_held_out": n_held,
         "n_signature_complex": n_complex,
         "complex_prevalence": round(n_complex / n_held, 4),
+        "n_signature_complex_in_training": n_train_complex,
         "n_cnn_seeds": len(cnn_seeds),
         "radius": primary.radius,
         "per_method_r2": {},
@@ -144,7 +161,7 @@ def main() -> None:
     # signature-complex rules than on the rest, as the canonical decomposition
     # observed? Here both groups are represented in training.
     if 0 < n_complex < n_held:
-        for label, mask in (("complex", primary.complex_mask), ("rest", ~primary.complex_mask)):
+        for label, mask in (("complex", complex_mask), ("rest", ~complex_mask)):
             pt = _r2_point(primary.true[mask], primary.preds["cnn"][mask])
             summary.setdefault("cnn_subgroup", {})[label] = {
                 "n": int(mask.sum()),

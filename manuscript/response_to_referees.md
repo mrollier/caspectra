@@ -784,9 +784,15 @@ now says ~1.4× rather than ~2×, and its guidance line tells the practitioner t
 select on a validation fold. What did not move: the 20% ceiling (selected
 checkpoints reach only 0.18–0.36) and the family-level ordering.
 
-**§3.15 — the stratified-split control.** Run (M10) and reported in Sec. IV F.
-We also disclose the point the report identifies correctly in principle:
-force-holding leaves **zero** signature-complex rules in training.
+**§3.15 — the stratified-split control.** Run (M10) and reported in Sec. IV
+F(iv). We disclose the point the report identifies correctly in principle:
+force-holding leaves **zero** signature-complex rules in training. But the
+control answers the question the other way. With 52 of the 57 signature-complex
+rules moved into training, the CNN's median R² *falls* from 0.859 (enriched) to
+0.778, while the mechanistic estimator is unchanged at 0.992. Under the
+registered rule no target's family gap shrinks by more than 0.07, and two of the
+CNN's widen (survival 0.16, cone fill 0.34), so the family-gap claim stands
+undowngraded. The enrichment was flattering the network, not handicapping it.
 
 **§3.16 — frontier ceilings.** Drawn on both figures and stated in Table V's
 caption. One correction: the report's ceiling table assumes both target and

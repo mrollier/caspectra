@@ -11,6 +11,38 @@ Decision and reporting rules registered numbers-free in EVALUATION_CRITERIA.md
 rev 13 (commit 1cd55b7) **before** any number below. Fourth review
 (`manuscript/reviews/review_opus5_20aug26.md`, major revision).
 
+### M10 — stratified split without force-holding (registered)
+
+The canonical panel force-holds all 57 signature-complex rules, leaving **zero**
+of them in training where a representative split would hold ~7%. The CNN was
+retrained (3 seeds) on a stratified leave-rules-out split with force-holding
+disabled — 52 of the 57 signature-complex rules in training, 5 (3.1%) held out —
+and every family rescored on that panel.
+
+| family | stratified panel | enriched panel |
+|---|---|---|
+| mechanistic | **0.992** | 0.991 |
+| 5 statistics (GBM) | 0.780 | 0.845 |
+| deep CNN | **0.778** (seeds 0.74–0.78) | 0.859 |
+
+Registered rule: downgrade the family-gap claim to the stratified number if any
+target's gap shrinks by more than 0.10 median R² against the post-stratified
+gap. **No downgrade** — the largest shrink over both direct estimators is 0.07
+(GBM cone fill), while two of the CNN's gaps *widen*: survival by 0.16 and cone
+fill by 0.34. Representative training does not close the gap; the enrichment
+was flattering the network, not handicapping it.
+
+Counter-observation, on 5 rules and therefore weak: with 52 complex rules in
+training the CNN still scores −0.81 on the 5 held-out complex rules against 0.78
+on the rest, reversing the direction seen on the enriched panel (0.832 complex
+vs 0.821 random). Artifact: `runs/m4_range2_strat/control/`.
+
+Implementation note worth recording: `HeldOutPredictions.complex_mask` derives
+membership from `cfg.train.force_holdout_rules`, which this control empties by
+design, so it is identically False here. The scorer reads the signature set from
+the canonical config instead — the first run reported "0 signature-complex" and
+was wrong for that reason.
+
 ### M11 — retrieval baseline (registered). The most uncomfortable number.
 
 Nearest-training-rule lookup: no training, no simulation, return the cached

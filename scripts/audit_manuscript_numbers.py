@@ -40,6 +40,7 @@ ROUND6 = REPO / "runs" / "analysis" / "round6_metrics" / "summary.json"
 RETRIEVAL_R2 = REPO / "runs" / "m4_range2" / "retrieval" / "summary.json"
 RETRIEVAL_ECA = REPO / "runs" / "lever_a_local" / "retrieval" / "summary.json"
 GLIDER_T30 = REPO / "runs" / "analysis" / "glider_validation_T30" / "summary_r1.json"
+STRAT = REPO / "runs" / "m4_range2_strat" / "control" / "summary.json"
 MAIN_TEX = REPO / "manuscript" / "main.tex"
 RESULTS = REPO / "RESULTS.md"
 
@@ -402,6 +403,46 @@ def build_rev13_checks() -> list[Check]:
     return checks
 
 
+def build_m10_checks() -> list[Check]:
+    """M10 stratified-split control (rev 13): every number quoted in Sec. IV F(iv)."""
+    checks: list[Check] = []
+    if not STRAT.exists():
+        return checks
+    d = json.loads(STRAT.read_text())
+    per = d["per_method_r2"]
+    checks += [
+        Check("M10 held-out rules", 160, d["n_held_out"]),
+        Check("M10 signature-complex held out", 5, d["n_signature_complex"]),
+        Check("M10 complex prevalence", 0.031, d["complex_prevalence"]),
+        Check("M10 signature-complex in training", 52, d["n_signature_complex_in_training"]),
+        Check("M10 mechanistic median", 0.992, per["mechanistic"]["median"]),
+        Check("M10 gbm median", 0.780, per["gbm"]["median"]),
+        Check("M10 cnn median", 0.778, per["cnn"]["median"]),
+        Check("M10 cnn seed min", 0.74, min(d["cnn_seed_medians"])),
+        Check("M10 cnn seed max", 0.78, max(d["cnn_seed_medians"])),
+    ]
+    sub = d.get("cnn_subgroup", {})
+    if sub:
+        checks += [
+            Check("M10 cnn complex subgroup", -0.81, sub["complex"]["median"]),
+            Check("M10 cnn rest subgroup", 0.78, sub["rest"]["median"]),
+        ]
+    # The registered rule: the family gap must not shrink by >0.10 on any target
+    # relative to the post-stratified gap, or the claim is downgraded.
+    if DECOMP.exists():
+        dec = json.loads(DECOMP.read_text())["methods"]
+        worst = 0.0
+        for direct in ("cnn", "gbm"):
+            for target, strat_gap in d["family_gap"][f"mechanistic_minus_{direct}"].items():
+                ps = (
+                    dec["mechanistic"]["post_stratified"]["per_target_r2"][target]
+                    - dec[direct]["post_stratified"]["per_target_r2"][target]
+                )
+                worst = max(worst, ps - strat_gap)
+        checks.append(Check("M10 largest gap shrink (rule: <0.10)", 0.07, worst))
+    return checks
+
+
 def text_guards() -> list[tuple[str, bool]]:
     """Literal-string guards: the corrected values are present, stale ones gone.
 
@@ -448,6 +489,7 @@ def main() -> int:
         )
     checks += build_rev11_checks()
     checks += build_rev13_checks()
+    checks += build_m10_checks()
     failures = 0
     for check in checks:
         status = "ok " if check.ok else "FAIL"
