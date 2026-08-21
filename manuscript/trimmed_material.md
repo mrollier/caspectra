@@ -205,3 +205,37 @@ and the "conservative for the headline claim" logic retained.
 (merged into the following sentence) and "so the practical order of
 preference under the matched observation model is clear" (restatement; the
 +0.14 to +0.84 increments stay).
+
+## Round-8 caption pass (five mini-essay captions → ≤ half length)
+
+*Moved:* the reduced-budget ceiling arithmetic from the Fig. 2 (identifiability)
+and Fig. 3 (frontier) captions, and the per-panel reliability-recomputation
+note from the Table I caption, into Appendix B (new convention (7) and the
+new "Reduced-budget scoring ceilings" paragraph); the checkpoint-selection
+practitioner advice from the Table IV caption into the Sec. IV F
+seed-variance paragraph; the coordinate-effect quantification (1.058
+relation, 1.5x vs 2.6x, 234/732 box) from the Fig. 4 caption into the App. D
+body; the coupon-collection detail (127 draws vs 32H32≈130) from the Fig. 2
+caption into the Sec. IV E body; the polarity-axis description and the
+eight-posterior-samples detail from the Fig. 3 caption into Sec. IV F(i).
+*Removed as body duplicates:* the Fig. 3 caption's fairness-controls
+cross-reference sentence; the Table IV caption's CI-in-artifact and
+clipping-convention parentheticals (App. B (3) states the convention); the
+Table I dagger note's "3.1% signature-complex" (stated in Sec. IV F(iv));
+"re-simulates under the reference protocol" (Fig. 2 caption; stated in
+Sec. IV E body).
+
+## Round-8 abstract and introduction
+
+*Removed:* from the Introduction's budget-indexed-family exposition, the
+clause "; a parallel cost hierarchy is known on the rule-table
+side~\cite{vispoel2026structure}" (citation survives in the new App. F) and
+"with simulation budget now part of the cost" (stated in App. F). The
+Discussion's stochastic-CA passage lost two mechanism clauses ("with the
+$\varepsilon$ apparatus dropping out…", "…only input-side window overlap
+remains") and "so the determinism axis is also a line through a known
+critical phenomenon" (the directed-percolation fact stays).
+*Added (no new claims):* abstract glosses for "amortization" and
+"exchangeable"; one explicit so-what sentence per Introduction result,
+restating measured facts (0.98/twenty-times, lookup, frontier succession)
+qualitatively with section pointers.

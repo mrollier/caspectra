@@ -148,7 +148,7 @@ TWIN_STEPS = TWIN_WIDTH // 2 - 1  # = 62 rows; the rule is applied 61 times
 FLIP = TWIN_WIDTH // 2
 
 rng = np.random.default_rng(0)
-fig, axes = plt.subplots(3, len(TWIN_RULES), figsize=(7.1, 3.9))
+fig, axes = plt.subplots(3, len(TWIN_RULES), figsize=(7.1, 3.5))
 for j, (rule, regime) in enumerate(TWIN_RULES):
     sim = ECASimulator(rule)
     ic = (rng.random(TWIN_WIDTH) < 0.5).astype(np.uint8)
@@ -220,7 +220,7 @@ axes[0, 0].set_ylabel("run A", fontsize=8)
 axes[1, 0].set_ylabel("run B\n(one cell flipped)", fontsize=8)
 axes[2, 0].set_ylabel("damage\n(A $\\neq$ B)", fontsize=8)
 
-fig.tight_layout(w_pad=1.4)
+fig.tight_layout(w_pad=1.4, h_pad=0.5)
 fig.savefig(FIG / "twin_run.pdf")
 plt.close(fig)
 print("wrote twin_run.pdf")
