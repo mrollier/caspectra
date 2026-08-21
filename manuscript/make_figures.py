@@ -51,7 +51,7 @@ anchors = {  # embedded-ECA (rate, fill), from the S4 run
     "54": (0.225, 0.494),
     "110": (0.214, 0.569),
 }
-fig, ax = plt.subplots(figsize=(5.4, 4.2))
+fig, ax = plt.subplots(figsize=(5.4, 3.8))
 
 # Iso-damage-fraction contours (referee 4, §3.6). fill = E[N/ext] and
 # (w/2rT)*fraction/rate agree up to Jensen, so at fixed damage fraction the two
@@ -148,7 +148,7 @@ TWIN_STEPS = TWIN_WIDTH // 2 - 1  # = 62 rows; the rule is applied 61 times
 FLIP = TWIN_WIDTH // 2
 
 rng = np.random.default_rng(0)
-fig, axes = plt.subplots(3, len(TWIN_RULES), figsize=(7.1, 3.5))
+fig, axes = plt.subplots(3, len(TWIN_RULES), figsize=(7.1, 3.3))
 for j, (rule, regime) in enumerate(TWIN_RULES):
     sim = ECASimulator(rule)
     ic = (rng.random(TWIN_WIDTH) < 0.5).astype(np.uint8)
@@ -235,7 +235,7 @@ EX_WIDTH, EX_RADIUS = 255, 2
 EX_STEPS = EX_WIDTH // (2 * EX_RADIUS) - 1  # = 62
 EX_SEED_WIDTH = 5
 
-fig, ex_axes = plt.subplots(len(EXEMPLAR_RULES), 1, figsize=(5.4, 3.7))
+fig, ex_axes = plt.subplots(len(EXEMPLAR_RULES), 1, figsize=(5.4, 3.3))
 for ax, lbl, rule in zip(ex_axes, "abc", EXEMPLAR_RULES):
     background = quiescent_background(rule, EX_RADIUS)
     ex_rng = np.random.default_rng(0)

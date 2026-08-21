@@ -239,3 +239,29 @@ critical phenomenon" (the directed-percolation fact stays).
 "exchangeable"; one explicit so-what sentence per Introduction result,
 restating measured facts (0.98/twenty-times, lookup, frontier succession)
 qualitatively with section pointers.
+
+## Round-8 claim-drift audit (post-pass corrections)
+
+An adversarial old-vs-new audit of every reworded region was run after the
+presentation pass; it flagged dropped hedges/disclosures and over-strong new
+phrasings, all restored or softened in the same round:
+- restored: abstract "for those rules" scope; intro "simulation budget now
+  part of the cost" and the vispoel2026structure parallel-cost-hierarchy
+  clause; "comparison is in principle handicapped" (IV A); "practical order
+  of preference" (IV C); "should be read as a band … not as a sharp
+  boundary" (IV F); the stack in the label-polarity degradation claim; the
+  Fig. frontier unplotted-fairness-controls disclosure (round-5 mandated);
+  Fig. ident (d) "re-simulates under the reference protocol"; Table IV
+  per-cell-CI availability; Table I dagger "CNN median over"; App. F
+  "two uint64 words"; Discussion stochastic-CA support clauses and
+  "three conditional probabilities … exactly at the corners".
+- softened (new R3 paragraph): "maximally aligned" → "natural inductive
+  bias"; "task-structural, not architectural" → incentive set by the task;
+  retrieval claim split into its two measured variants; binding-constraint
+  diagnosis rephrased to leave the registered open question open.
+- abstract opener now reuses the registered phrasing "not a function of any
+  single observed diagram" instead of the new "no formula reads" claim.
+Two flags were judged intentional/incorrect: the exemplar-figure content is
+the referee-required R1 addition (derived from released validation
+artifacts), and the Gibbs/EM factor-graph characterization already existed
+in the old Discussion.
