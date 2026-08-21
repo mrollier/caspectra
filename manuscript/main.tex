@@ -1123,6 +1123,23 @@ lookup in its own bottleneck reproduces its median \rtwo{}
 (Sec.~\ref{sec:stacking}). We do not conclude that deep networks cannot close
 the gap: the probes show rule information is accessible, and whether
 exploiting it is an architecture, objective, or optimization question is open.
+
+Why a convolutional family marks the neural boundary deserves stating. A
+synchronous CA update \emph{is} a local convolution, so a CNN is the
+maximally aligned inductive bias for this observation model---the formal
+closeness is known~\cite{gilpin2019}, and it is what lets a network read the
+elementary rule off one clean diagram at $99.9\%$~\cite{rollier2024cnn}; the
+constrained network and the $354\times$ larger unconstrained one bracket
+that family from both ends at this budget. The shortcut incentive itself is
+task-structural, not architectural~\cite{geirhos2020shortcut}: it comes from
+an observation that encodes the generator; the retrieval diagnostic
+(Sec.~\ref{sec:stacking}) reproduces the network's score with no trained
+architecture at all, and the probes show the rule information is already
+accessible in the bottleneck, so the binding constraint appears to be the
+objective and the training distribution rather than representational
+capacity. Architecture classes beyond this family are untested here, and
+every neural claim is scoped accordingly (Sec.~\ref{sec:estimators}).
+
 The learned reader and the degradation-trained control sharpen it: beyond
 ${\sim}3$--$7.5\%$ noise the strongest estimator is the direct network
 trained for the corruption (the sampled reader merely holds
