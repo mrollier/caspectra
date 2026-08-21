@@ -153,3 +153,55 @@ disagree exactly where the diagram is uninformative) are unchanged.
 *Survives in:* Appendix C (condensed example).
 
 
+
+---
+
+# Material moved or removed in the round-8 revision (sixth report, 21 Aug 2026)
+
+Presentation-only pass responding to `reviews/review_gemini_21aug26.md`
+(figures, de-jargon, restructure); **no change to any registered number,
+verdict, margin, or disclosure**. The full pre-revision manuscript is
+recoverable at commit `a403c0a` (`git show a403c0a:manuscript/main.tex`).
+
+## Sec. IV G (Cost) + IV H (Descriptive by-products) → Appendix "Cost and phenotype maps"
+
+*Moved, not removed:* the full cost analysis (283 ms / 1.0 ms / 1.4 ms,
+break-even ≈4700 → ≈50, 16-pair 0.924, annealed −2.15 paragraph) and the
+phenotype-map paragraph (Spearman 0.67 vs 0.61, CI [−0.002,+0.102],
+inconclusive verdict verbatim) now live in the new final appendix
+(`app:secondary`). The main text keeps a pointer subsection
+(`sec:constructive`) with the one-sentence cost conclusion and the full
+landscape-prevalence paragraph (7.8 %, Wilson CI, 3/88 → 6/88 horizon
+caveat, refusal to promote the region).
+*Removed in the move:* the clause "a $127$-cell ring fits in two
+\texttt{uint64} words" (wording detail of the bit-packing sketch); the
+label `sec:compute` (its one incoming reference now points to
+`app:secondary`).
+*Relocated:* "the criterion's precision against literature class IV falls
+from $2/3$ to $1/3$" moved from the prevalence paragraph into the
+Appendix D horizon-matching paragraph, where the matched-$T$ rule set it
+refers to is stated.
+
+## Sec. IV F, seed-variance and panel-replication paragraphs
+
+*Removed:* narrative connective tissue only ("That diagnosis was testable,
+so we tested it: …", "which would be selection on the test set", "We
+therefore no longer report … as a property of this estimator family", "in
+its own right", "not as a sharp boundary"). Every number retained
+(0.24–0.62, 0.24–0.33, 0.46–0.64, 0.46–0.56, 0.43–0.55 vs 0.29–0.51,
+2×→1.4×, 0.18–0.36; 0.39–0.81, 0.79/0.70/0.61, 3–7.5 % band,
+masking/density-not-replicated caveat).
+
+## Sec. IV A, panel-decomposition paragraphs
+
+*Removed:* "We disclose that" framing (disclosure itself retained verbatim),
+"Decomposing the panel shows", "so the comparison is in principle
+handicapped. The measured direction agrees with the concern". All numbers
+and the "conservative for the headline claim" logic retained.
+
+## Sec. IV C, stacking/retrieval
+
+*Removed:* "Whether that information is harvestable has a measured answer:"
+(merged into the following sentence) and "so the practical order of
+preference under the matched observation model is clear" (restatement; the
++0.14 to +0.84 increments stay).

@@ -472,28 +472,25 @@ The ``global'' radius-two panel is deliberately \emph{enriched}: all $57$
 the registered damage-signature thresholds of Fig.~\ref{fig:landscape}, not
 a validated behavioural class---are force-held (never trained on), so they
 form $35.6\%$ of the $160$-rule panel against $7.1\%$ of the $800$-rule
-sampling universe. We disclose that signature membership was computed by the
-registered criterion-9 thresholds from the same seed-0 target cache that
-supplies the evaluation labels---an outcome-dependent panel selection,
-disclosed as such; it cannot contaminate the mechanistic estimator, which has
-no trained parameters. Decomposing the panel
-shows the enrichment is \emph{conservative} for the headline claim: on the
-$103$ stratified-random rules alone the mechanistic median is $0.995$
-(signature subpanel $0.982$), and post-stratifying the pooled estimate to the
-universe prevalence gives $0.994$---while the seed-0 CNN moves the other way,
-from $0.876$ enriched to $0.862$ random and $0.865$ post-stratified.
-Reweighting to the representative distribution \emph{widens} the gap between
-the families.
+sampling universe. Signature membership was computed by the registered
+criterion-9 thresholds from the same seed-0 target cache that supplies the
+evaluation labels---an outcome-dependent panel selection, disclosed as such;
+it cannot contaminate the mechanistic estimator, which has no trained
+parameters. The enrichment is \emph{conservative} for the headline claim: on
+the $103$ stratified-random rules alone the mechanistic median is $0.995$
+(signature subpanel $0.982$), post-stratifying the pooled estimate to the
+universe prevalence gives $0.994$, and the seed-0 CNN moves the other way
+($0.876$ enriched, $0.862$ random, $0.865$ post-stratified). Reweighting to
+the representative distribution \emph{widens} the gap between the families.
 
 Force-holding has a second effect that reweighting cannot undo: the
 training split then contains \emph{no} signature-complex rules, where a
-representative one would hold ${\sim}7\%$. The mechanistic estimator is
-invariant to that by construction and the learned ones are not, so the
-comparison is in principle handicapped. The measured direction agrees
-with the concern---the seed-0 CNN scores lower on the complex subpanel
-($0.843$) than on the random one ($0.862$)---but that is an observation, not a
-control, so we ran one (Sec.~\ref{sec:frontier}(iv)); it puts the complex rules
-back into training and still moves the CNN \emph{down}.
+representative one would hold ${\sim}7\%$; the mechanistic estimator is
+invariant to that by construction, the learned ones are not. The seed-0 CNN
+indeed scores lower on the complex subpanel ($0.843$) than on the random one
+($0.862$), but that is an observation, not a control, so we ran one
+(Sec.~\ref{sec:frontier}(iv)): putting the complex rules back into training
+still moves the CNN \emph{down}.
 
 \begin{table*}[t]
 \centering
@@ -649,11 +646,10 @@ nothing. With the boosted baseline of record as base the survival increment
 remains significant but smaller ($+0.09$, CI
 $[+0.02,+0.19]$, $0.80\to0.89$): the $+0.33$ headline is base-specific; the
 base-independent statement is that the network carries survival information
-both bases miss. Whether that information is \emph{harvestable} has a
-measured answer: a deployment-style stack (ridge fit only on training rules,
-applied once to the untouched panel) realizes essentially none of the
-survival increment ($+0.001$ over the CNN alone, n.s.; only spreading rate's
-$+0.02$ still clears the margin). The network \emph{carries} survival information
+both bases miss. A deployment-style stack (ridge fit only on training rules,
+applied once to the untouched panel) realizes essentially none of that
+increment ($+0.001$ over the CNN alone, n.s.; only spreading rate's $+0.02$
+still clears the margin): the network \emph{carries} survival information
 that texture statistics miss---exactly where both direct methods sit farthest
 below the reliability benchmark---but a practitioner cannot yet buy it with a
 linear meta-model.
@@ -674,9 +670,9 @@ this benchmark is substantially rule recognition rather than extrapolation to
 unseen tables---consistent with the identity probes of
 Sec.~\ref{sec:probes}, and a caution for any single-diagram behaviour
 benchmark whose rule space is densely sampled. It does not touch the
-mechanistic estimator, which never consults a training rule. The mechanistic estimator's increment over the five statistics
-remains far larger on every target ($+0.14$ to $+0.84$), so the practical
-order of preference under the matched observation model is clear. All
+mechanistic estimator, which never consults a training rule and whose
+increment over the five statistics
+remains far larger on every target ($+0.14$ to $+0.84$). All
 increments carry rule-bootstrap $95\%$ CIs with folds grouped by rule and
 every transformation fit inside folds (a percentile interval of an increment
 can exceed $1$ when a draw's base \rtwo{} is negative---one more reason to
@@ -886,7 +882,9 @@ sampled reader's point value from below) at every noise cell up to $15\%$;
 at $20\%$ that seed and the reader are comparable ($0.17$ vs $0.12$),
 neither reliable. It pays a robustness tax on clean diagrams
 and does not approach the decoder under masking ($0.48$ vs $0.85$ at
-$40\%$) or extreme density ($0.20$ vs $0.77$). Meanwhile the third
+$40\%$) or extreme density ($0.20$ vs $0.77$).
+
+Meanwhile the third
 registered frontier hypothesis survives the controls: at every cell with per-bit
 table recovery ${\ge}0.95$ the best read-then-simulate estimator remains
 unbeaten---zero violations---and the unconstrained network is no better on
@@ -898,24 +896,20 @@ The matched-regime
 negative result is not an artifact of the anti-shortcut constraint.
 
 \emph{Seed variance was mostly the selection rule} (registered before
-measurement). An earlier seed replication reported a factor-${\sim}2$ spread (band
-$0.24$--$0.62$; seed 1 trained to $0.24$--$0.33$) and attributed it to
-final-epoch weight selection under an oscillating validation curve. That
-diagnosis was testable, so we tested it: the three seeds were retrained with
-the final-epoch rule replaced by \emph{selection of the epoch minimising loss
-on an inner fold of training-rule diagrams} (never the held-out panel, which
-would be selection on the test set), everything else identical, and the noise
-axis rescored. The spread largely collapses. The band becomes $0.46$--$0.64$
-across all three seeds---seed 1, the outlier, moves to $0.46$--$0.56$---and
-the registered stability rule that previously \emph{failed} is now \emph{met}:
-every seed's band-cell median lies inside the seed-0 rule-bootstrap CI at
-every cell from $3\%$ to $15\%$. Clean-cell scores rise in step
-($0.43$--$0.55$ against $0.29$--$0.51$), so part of the ``robustness tax'' was
-also an artifact of stopping at epoch $60$. We therefore no longer report
-${\sim}2\times$ run-to-run variance as a property of this estimator family: at
-this budget \emph{with} checkpoint selection it is nearer $1.4\times$. What
-does not change is the ceiling---at $20\%$ noise the selected checkpoints
-reach only $0.18$--$0.36$---or the family-level ordering.
+measurement). An earlier replication reported a factor-${\sim}2$ spread
+(band $0.24$--$0.62$; seed 1 trained to $0.24$--$0.33$) and attributed it to
+final-epoch weight selection under an oscillating validation curve. Retrained
+with the epoch instead \emph{selected on an inner fold of training-rule
+diagrams} (never the held-out panel), everything else identical, the spread
+largely collapses: the band becomes $0.46$--$0.64$ across all three seeds
+(seed 1 moves to $0.46$--$0.56$), and the registered stability rule that
+previously \emph{failed} is now \emph{met}---every seed's band-cell median
+lies inside the seed-0 rule-bootstrap CI from $3\%$ to $15\%$. Clean-cell
+scores rise in step ($0.43$--$0.55$ against $0.29$--$0.51$), so part of the
+``robustness tax'' was an artifact of stopping at epoch $60$. Run-to-run
+variance at this budget with checkpoint selection is nearer $1.4\times$ than
+$2\times$; what does not change is the ceiling---$0.18$--$0.36$ at $20\%$
+noise---or the family-level ordering.
 
 \emph{(iv) Stratified split without force-holding} (registered before
 measurement). The
@@ -942,17 +936,15 @@ Appendix~\ref{app:methods}, which does not alter its verdict.)
 subsample, we re-simulated the entire noise axis on the \emph{complementary}
 $80$ held-out rules at identical budgets. The family structure replicates:
 read-then-simulate owns the low-noise cells, the degradation-trained network
-is strongest or statistically tied from $3\%$, and at $20\%$ no estimator is
-reliable. No cell winner is re-stated under the registered rule. Two level
-shifts measure panel sensitivity in its own right: the selected-checkpoint
-band reads $0.39$--$0.81$ on the complement against $0.46$--$0.64$ on the
-canonical panel, and the pseudo-posterior's collapse point moves---it holds
-$0.79/0.70/0.61$ at $3/5/7.5\%$ on the complement where it had collapsed by
-$5\%$ on the canonical panel---so the crossover should be read as a band,
-${\sim}3$--$7.5\%$ noise, that depends on which rules are being decoded, not
-as a sharp boundary. The masking and density axes were not replicated on the
-complement panel; their rows in Table~\ref{tab:guidance} rest on the canonical
-panel alone.
+is strongest or statistically tied from $3\%$, at $20\%$ no estimator is
+reliable, and no cell winner is re-stated under the registered rule. Two
+level shifts measure panel sensitivity: the selected-checkpoint band reads
+$0.39$--$0.81$ on the complement against $0.46$--$0.64$ on the canonical
+panel, and the pseudo-posterior holds $0.79/0.70/0.61$ at $3/5/7.5\%$ where
+it had collapsed by $5\%$---so the crossover is a band, ${\sim}3$--$7.5\%$
+noise, that depends on which rules are being decoded. The masking and
+density axes were not replicated on the complement; their rows in
+Table~\ref{tab:guidance} rest on the canonical panel alone.
 
 \emph{Verdicts.} The reader extends beyond the decoder only weakly on
 noise---moving the frontier without restoring identification---and not at all
@@ -1002,69 +994,30 @@ model decides these races.}
 \label{tab:guidance}
 \end{table*}
 
-\subsection{Cost: accuracy versus compute}
-\label{sec:compute}
-
-This subsection and the next are \emph{secondary} analyses; every claim of
-the paper rests on Secs.~\ref{sec:results-mech}--\ref{sec:frontier}. The
-mechanistic estimator pays per query, the network once. Timed on the same
-single CPU core, the mechanistic estimator costs $283$\,ms per diagram at the
-production budget against $1.0$\,ms for a CNN forward pass and $1.4$\,ms for
-the five statistics; with one-time training costs included, break-even is
-$\approx4700$ queries (full timing table in the released repository). That
-$283$\,ms is a first-party single-core Python figure, not an algorithmic
-property: a $127$-cell ring fits in two \texttt{uint64} words, so a bit-packed
-implementation evolving $64$ twin runs per word would plausibly cut two orders
-of magnitude, moving break-even toward $\approx50$ queries---the unmeasured
-number only strengthens the conclusion. The accuracy-versus-budget curve is
-one-sided: even at a $16$-pair budget ($17$\,ms) the mechanistic median
-\rtwo{} is $0.924$, above both direct estimators at any cost. Under the
-matched observation model the mechanistic estimator is the most accurate at
-every budget we measured, so the network's case must rest on
-degraded-observation regimes (Fig.~\ref{fig:ident}) or extreme-throughput
-screening, not on accuracy.
-
-The curve's zero-budget end is anchored by an analytic member (exploratory):
-the annealed approximation~\cite{derridapomeau1986} applied to the
-reconstructed table costs $2.7$\,ms per diagram and fails on every target
-(median held-out \rtwo{} $-2.15$). An asymptotic mean-field approximation
-scored against finite-horizon conditional statistics is expected to fail, but
-the failure is located: the targets measure exactly the quenched correlation
-annealing discards, so the mean-field tier of the rule-table cost
-hierarchy~\cite{vispoel2026structure} does not transfer, and simulation is the
-cheapest usable tier we measure. In the setting the approximation was built
-for---random Boolean networks with redrawn connections---annealed predictions
-track the quenched overlap dynamics closely~\cite{derridaweisbuch1986}; a
-single fixed rule is the opposite limit.
-
-\subsection{Descriptive by-products}
+\subsection{Secondary analyses (pointers)}
 \label{sec:constructive}
 
-\emph{Phenotype maps for non-uniform CA.} Sliding the pretrained
-five-statistic regressor over a composed (two-rule) diagram yields a
-spatially resolved phenotype map with no additional training at deployment,
-in the spirit of the local statistical-complexity filters of computational
-mechanics~\cite{shalizi2006}. Scored against an independent location-resolved
-ground truth, its advantage is \emph{inconclusive} under the registered
-framework (mean Spearman $0.67$ vs $0.61$, $95\%$ CI $[-0.002,+0.102]$); we
-claim nothing further for it, and the design and full numbers are in the
-released repository.
-
-\emph{A damage-signature landscape of the radius-two space.} Over $3000$
-uniformly sampled canonical rules, $7.8\%$ (Wilson $95\%$ CI $[6.9,8.8]\%$)
-meet the registered damage-signature criterion (persistent, sub-ballistic,
-sparse-cone damage)---the prevalence of a \emph{finite-horizon criterion}
-under the stated sampling measure, not a validated glider census. The
-criterion is horizon-sensitive: rerun at the radius-two horizon $T=30$, the
-elementary prevalence rises from $3/88$ to $6/88$, so the two spaces look
-alike once horizons are matched, and the criterion's precision against
-literature class IV falls from $2/3$ to $1/3$. We accordingly do not claim a
-richer complex region at radius two, and we do not promote the $7.8\%$
-region to ``complex'' or ``glider-supporting''---that would require
-long-horizon curated validation we have not done. The landscape itself
-(Fig.~\ref{fig:landscape}), its coordinate caveats, the ECA validation of the
-criterion and a null independent-detector check are in
-Appendix~\ref{app:landscape}.
+Two secondary analyses are summarized here and reported in
+Appendix~\ref{app:secondary}; every claim of the paper rests on
+Secs.~\ref{sec:results-mech}--\ref{sec:frontier}. \emph{Cost:} under the
+matched observation model the mechanistic estimator is the most accurate at
+every budget we measured (median \rtwo{} $0.924$ already at a $16$-pair,
+$17$\,ms budget), so the network's case must rest on degraded-observation
+regimes (Fig.~\ref{fig:ident}) or extreme-throughput screening, not on
+accuracy. \emph{A damage-signature landscape of the radius-two space:} over
+$3000$ uniformly sampled canonical rules, $7.8\%$ (Wilson $95\%$ CI
+$[6.9,8.8]\%$) meet the registered damage-signature criterion (persistent,
+sub-ballistic, sparse-cone damage)---the prevalence of a
+\emph{finite-horizon criterion} under the stated sampling measure, not a
+validated glider census. The criterion is horizon-sensitive: rerun at the
+radius-two horizon $T=30$, the elementary prevalence rises from $3/88$ to
+$6/88$, so the two spaces look alike once horizons are matched. We
+accordingly do not claim a richer complex region at radius two, and we do
+not promote the $7.8\%$ region to ``complex'' or
+``glider-supporting''---that would require long-horizon curated validation
+we have not done. The landscape itself (Fig.~\ref{fig:landscape}), exemplar
+diagrams, its coordinate caveats, the ECA validation of the criterion and a
+null independent-detector check are in Appendix~\ref{app:landscape}.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -1192,7 +1145,7 @@ $127$, radius-aware horizon): the statistics are finite-horizon and
 measure-dependent by construction~\cite{gilman1987,culikyu1988}, and
 Fig.~\ref{fig:ident}(d) exhibits that dependence directly. Within that scope the guidance is
 plain and carries its price tag (Table~\ref{tab:guidance},
-Sec.~\ref{sec:compute}): match the observation model and read the rule; under
+Appendix~\ref{app:secondary}): match the observation model and read the rule; under
 moderate corruption read it \emph{probabilistically}; beyond that, train for
 the corruption you expect; and past $20\%$ noise or $50\%$ masking recommend
 nothing we tested. For the broader program of behaviour-first (phenotype)
@@ -1540,7 +1493,8 @@ cluster. The horizon mechanism behind the
 main-text numbers: $\lfloor w/2r\rfloor-1$ is $62$ for ECA and $30$ for
 radius two at $w=127$, and damage survival is monotone decreasing in horizon,
 so the longer elementary horizon kills more marginal rules; the matched-$T$
-elementary criterion admits $\{37,45,54,60,106,110\}$. At $T=62$, where literature
+elementary criterion admits $\{37,45,54,60,106,110\}$, and its precision
+against literature class~IV falls from $2/3$ to $1/3$. At $T=62$, where literature
 ground truth exists, the signature selects $\{54,106,110\}$: both canonical
 class-IV rules (sensitivity $1.0$) with one false positive, rule $106$,
 listed as chaotic in the classical schemes~\cite{wolfram1984,lipackard1990}
@@ -1599,6 +1553,49 @@ $54$ on ECA, whose ether front advances at light speed; it validates nothing
 either way. A multi-observable detector would in effect rebuild the structure
 filters of computational mechanics~\cite{shalizi2006} and was not built
 here.
+
+\section{Cost and phenotype maps (secondary analyses)}
+\label{app:secondary}
+
+Both analyses here are secondary (Sec.~\ref{sec:constructive}); every claim
+of the paper rests on Secs.~\ref{sec:results-mech}--\ref{sec:frontier}.
+
+\emph{Cost: accuracy versus compute.} The mechanistic estimator pays per
+query, the network once. Timed on the same single CPU core, the mechanistic
+estimator costs $283$\,ms per diagram at the production budget against
+$1.0$\,ms for a CNN forward pass and $1.4$\,ms for the five statistics; with
+one-time training costs included, break-even is $\approx4700$ queries (full
+timing table in the released repository). That $283$\,ms is a first-party
+single-core Python figure, not an algorithmic property: a bit-packed
+implementation evolving $64$ twin runs per machine word would plausibly cut
+two orders of magnitude, moving break-even toward $\approx50$ queries---the
+unmeasured number only strengthens the conclusion. The
+accuracy-versus-budget curve is one-sided: even at the $16$-pair budget
+($17$\,ms) the mechanistic median \rtwo{} is $0.924$, above both direct
+estimators at any cost.
+
+The curve's zero-budget end is anchored by an analytic member (exploratory):
+the annealed approximation~\cite{derridapomeau1986} applied to the
+reconstructed table costs $2.7$\,ms per diagram and fails on every target
+(median held-out \rtwo{} $-2.15$). An asymptotic mean-field approximation
+scored against finite-horizon conditional statistics is expected to fail, but
+the failure is located: the targets measure exactly the quenched correlation
+annealing discards, so the mean-field tier of the rule-table cost
+hierarchy~\cite{vispoel2026structure} does not transfer, and simulation is the
+cheapest usable tier we measure. In the setting the approximation was built
+for---random Boolean networks with redrawn connections---annealed predictions
+track the quenched overlap dynamics closely~\cite{derridaweisbuch1986}; a
+single fixed rule is the opposite limit.
+
+\emph{Phenotype maps for non-uniform CA.} Sliding the pretrained
+five-statistic regressor over a composed (two-rule) diagram yields a
+spatially resolved phenotype map with no additional training at deployment,
+in the spirit of the local statistical-complexity filters of computational
+mechanics~\cite{shalizi2006}. Scored against an independent location-resolved
+ground truth, its advantage is \emph{inconclusive} under the registered
+framework (mean Spearman $0.67$ vs $0.61$, $95\%$ CI $[-0.002,+0.102]$); we
+claim nothing further for it, and the design and full numbers are in the
+released repository.
 
 \bibliographystyle{apsrev4-2}
 \bibliography{refs}
