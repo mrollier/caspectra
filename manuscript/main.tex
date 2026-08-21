@@ -42,7 +42,7 @@ target: for those rules, matching the replicate benchmark follows by
 construction, and the residual failures prove dynamically benign. Reporting
 each estimator's error in units of the target's own Monte-Carlo error,
 reconstruct-and-simulate sits at its reference value while two direct learned
-estimators are $3$--$33$ times the noise floor, and their apparent skill on
+estimators are $3$--$35$ times the noise floor, and their apparent skill on
 damage survival is largely mode assignment rather than resolution within the
 intermediate band. An identifiability frontier maps where rule reading fails:
 a pseudo-posterior decoder extends it to $50\%$ masking, extreme initial
@@ -169,7 +169,7 @@ empirical content is the reconstruction rate, and what needs stating is a
 benchmark that knows the difference between ``as good as re-measuring the
 target'' and ``as good as the truth'' (Sec.~\ref{sec:reliability}).
 \emph{Second}, the two direct estimators we trained fall well short of that
-benchmark, by $3$ to $33$ replicate-noise units, and where they appear closest
+benchmark, by $3$ to $35$ replicate-noise units, and where they appear closest
 ---damage survival---the skill is largely mode assignment rather than
 resolution within the intermediate band. \emph{Third}, the mechanistic route
 is brittle outside its assumptions: exact reconstruction collapses under
@@ -311,7 +311,7 @@ finite-$K$ denominator contributes at most $0.14$ $\rho$-units of standard
 deviation on any target or panel, the finite panel up to ${\sim}0.6$ on the
 most heteroscedastic target--panel pairs, and the mechanistic row of
 Table~\ref{tab:rho} scatters around $\sqrt2$ ($0.7$--$1.8$, every CI covering
-it) by exactly this sampling variability---small against the $1.6$--$31$-unit
+it) by exactly this sampling variability---small against the $1.6$--$34$-unit
 direct-estimator gaps. Unlike \rtwo{}, $\rho$'s reference values do not depend
 on the panel's between-rule variance, it is bounded below by $0$ with no sign
 pathology, and it states directly how many replicate-noise units an estimator
@@ -343,17 +343,20 @@ a non-issue under this protocol (Sec.~\ref{sec:results-mech}).
 single-diagram features (polarity-folded density, temporal activity, zlib
 compression ratio~\cite{zenil2010}, $2\times2$ block entropy, and a
 radius-aware input-entropy
-variance~\cite{wuensche1999}), all exactly or approximately invariant under the
-orbit symmetries. Both a ridge and a gradient-boosted regressor are fit; the
-stronger (the boosted one) is the baseline of record
-(Appendix~\ref{app:methods}).
+variance~\cite{wuensche1999}), all exactly or approximately invariant under
+the orbit symmetries; of a ridge and a gradient-boosted regressor, the
+stronger (boosted) is the baseline of record (Appendix~\ref{app:methods}).
 
 \emph{(iii) Direct convolutional amortizer.} A small CNN ($31{,}524$
 parameters; full layer table in Appendix~\ref{app:methods}) whose $2\times2$
 first-layer kernels cannot span a neighbourhood together with its output cell,
 feeding a $64$-dimensional bottleneck and a linear head; BatchNorm keeps the
 per-patch \texttt{predict\_map} variant local. Trained $60$ epochs at
-$127\,$px; five seeds vary initialization and minibatch order. \emph{All neural
+$127\,$px; five seeds vary initialization and minibatch order. Weights are
+selected at the epoch minimising loss on an inner fold of training-rule
+diagrams, never the held-out panel (a registered protocol upgrade; the frozen
+switch rule and the final-epoch numbers it displaced are in
+Appendix~\ref{app:methods}). \emph{All neural
 claims in this paper are about this architecture under this training budget},
 not about deep networks as a class: we did not run an architecture search, and
 Sec.~\ref{sec:discussion} names the learned system-identification pipelines
@@ -419,25 +422,25 @@ against the $16\times$-larger reference simulation instead of the noisy cache,
 the same predictions rise to the latent ICC ceiling (survival: ECA $0.994$
 against ICC $0.994$; radius two $0.988$ against $0.987$)---the residual was
 the comparison target's noise, not estimator error. The
-direct estimators do not share that rise: rescored against the same reference, the CNN's radius-two median moves by $-0.000$ (from
-$0.859$) and the boosted baseline's by $+0.007$ (from $0.845$)---so their
+direct estimators do not share that rise: rescored against the same reference, the CNN's radius-two median moves by $+0.000$ (from
+$0.876$) and the boosted baseline's by $+0.007$ (from $0.845$)---so their
 shortfall is genuine estimator error; the $1-\mathrm{ICC}$ headroom of a
 perfect latent-mean predictor (Sec.~\ref{sec:reliability}) is nowhere in
 play for the models we trained.
 
 Table~\ref{tab:rho} restates this in replicate-noise units, which changes how
 large the gap looks. The mechanistic estimator sits at
-$\rho=1.0$--$1.8$, its CI covering $\sqrt2$ on every target and panel; the
-direct estimators sit at $\rho=3$--$33$. Two further readings follow.
+$\rho=0.7$--$1.8$, its CI covering $\sqrt2$ on every target and panel; the
+direct estimators sit at $\rho=3$--$35$. Two further readings follow.
 \emph{First}, \rtwo{} flatters the direct estimators most where the target is
-most reliable: the CNN's ECA spreading rate reads $0.956$, which sounds like a
-near miss, and $\rho=27$, which is not. \emph{Second}, on the one target where
+most reliable: the CNN's ECA spreading rate reads $0.979$, which sounds like a
+near miss, and $\rho=20$, which is not. \emph{Second}, on the one target where
 \rtwo{} suggests real skill---damage survival---most of that skill is mode
 assignment. Restricting to rules of \emph{intermediate} survival (in
 $[0.1,0.9]$: $14/18$ ECA orbits, $40/160$ radius-two rules), the mechanistic
 \rtwo{} holds at $0.90$ (ECA) and $0.94$ (radius two), while the boosted
-baseline and the CNN fall to $-0.87$ and $-1.25$ on ECA and to $0.41$ and
-$0.66$ on radius two---worse than predicting the band mean on the elementary
+baseline and the CNN fall to $-0.87$ and $-1.05$ on ECA and to $0.41$ and
+$0.75$ on radius two---worse than predicting the band mean on the elementary
 panel---even though both call the ordered/chaotic mode correctly for nearly every
 rule (boosted baseline $0.89$, CNN $0.94$ of ECA orbits; $0.99$ and $1.00$ on
 radius two). The direct estimators are, on this target, mode classifiers that
@@ -457,7 +460,7 @@ shows the enrichment is \emph{conservative} for the headline claim: on the
 $103$ stratified-random rules alone the mechanistic median is $0.995$
 (signature subpanel $0.982$), and post-stratifying the pooled estimate to the
 universe prevalence gives $0.994$---while the seed-0 CNN moves the other way,
-from $0.859$ enriched to $0.821$ random and $0.830$ post-stratified.
+from $0.876$ enriched to $0.862$ random and $0.865$ post-stratified.
 Reweighting to the representative distribution \emph{widens} the gap between
 the families.
 
@@ -465,11 +468,11 @@ Force-holding has a second effect that reweighting cannot undo: the
 training split then contains \emph{no} signature-complex rules, where a
 representative one would hold ${\sim}7\%$. The mechanistic estimator is
 invariant to that by construction and the learned ones are not, so the
-comparison is in principle handicapped. The measured direction is the
-opposite---the seed-0 CNN scores \emph{higher} on the complex subpanel
-($0.832$) than on the random one ($0.821$)---but that is an observation, not a
+comparison is in principle handicapped. The measured direction agrees
+with the concern---the seed-0 CNN scores lower on the complex subpanel
+($0.843$) than on the random one ($0.862$)---but that is an observation, not a
 control, so we ran one (Sec.~\ref{sec:frontier}(iv)); it puts the complex rules
-back into training and moves the CNN \emph{down}.
+back into training and still moves the CNN \emph{down}.
 
 \begin{table*}[t]
 \centering
@@ -477,11 +480,11 @@ back into training and moves the CNN \emph{down}.
 \begin{tabular}{lccccc}
 task & mechanistic & 5 statistics & deep CNN & replicate agreement & ICC ceiling \\
 \colrule
-ECA global & \textbf{0.999} & 0.927 & $0.852\pm0.015$ & 0.998 & 0.999 \\
-radius-2 enriched panel & \textbf{0.991} & 0.845 & $0.864\pm0.014$ & 0.985 & 0.993 \\
-radius-2 random subpanel & \textbf{0.995} & 0.849 & $0.821^{\ast}$ & 0.988 & 0.994 \\
-radius-2 post-stratified & \textbf{0.994} & 0.849 & $0.830^{\ast}$ & 0.987 & 0.994 \\
-radius-2 complex subpanel & \textbf{0.982} & 0.795 & $0.832\pm0.022$ & 0.979 & 0.990 \\
+ECA global & \textbf{0.999} & 0.927 & $0.847\pm0.006$ & 0.998 & 0.999 \\
+radius-2 enriched panel & \textbf{0.991} & 0.845 & $0.880\pm0.004$ & 0.985 & 0.993 \\
+radius-2 random subpanel & \textbf{0.995} & 0.849 & $0.862^{\ast}$ & 0.988 & 0.994 \\
+radius-2 post-stratified & \textbf{0.994} & 0.849 & $0.865^{\ast}$ & 0.987 & 0.994 \\
+radius-2 complex subpanel & \textbf{0.982} & 0.795 & $0.837\pm0.009$ & 0.979 & 0.990 \\
 radius-2 stratified split$^{\dagger}$ & \textbf{0.992} & 0.780 & 0.778 & --- & --- \\
 \end{tabular}
 \end{ruledtabular}
@@ -494,8 +497,8 @@ the sampling universe) and remains the registered primary; the
 random-subpanel, post-stratified and stratified-split rows give the
 representative view. $^{\dagger}$The Sec.~\ref{sec:frontier}(iv) control:
 retrained without force-holding on its own $160$-rule panel ($3.1\%$
-signature-complex; CNN median over three seeds, range $0.74$--$0.78$);
-reliability benchmarks were not recomputed for that panel. CNN: mean $\pm$ s.d.\
+signature-complex; CNN median over three final-epoch seeds, range
+$0.74$--$0.78$); reliability benchmarks were not recomputed for that panel. CNN: mean $\pm$ s.d.\
 over five training seeds at the fixed registered split;
 $^{\ast}$seed-0 checkpoint, the panel-decomposition artifact of record.
 Reliability columns are recomputed \emph{within each panel}, since ICC depends
@@ -515,16 +518,16 @@ Table~\ref{tab:pertarget}, never alone.}
 target & mechanistic & 5 statistics & deep CNN & replicate agreement & ICC \\
 \colrule
 \multicolumn{6}{l}{\emph{ECA ($18$ held-out orbits)}}\\
-damage survival & 0.985 [0.893, 0.997] & 0.708 [$-0.537$, 0.924] & $0.700\pm0.018$ & 0.987 & 0.994 \\
-damage fraction & 1.000 [0.997, 1.000] & 0.924 [$-0.840$, 0.959] & $0.789\pm0.038$ & 0.998 & 0.999 \\
-spreading rate & 1.000 [0.998, 1.000] & 0.965 [$-0.517$, 0.998] & $0.956\pm0.015$ & 0.999 & 0.9995 \\
-cone fill & 0.999 [0.991, 1.000] & 0.929 [0.849, 0.994] & $0.916\pm0.019$ & 0.998 & 0.999 \\
+damage survival & 0.985 [0.893, 0.997] & 0.708 [$-0.537$, 0.924] & $0.695\pm0.020$ & 0.987 & 0.994 \\
+damage fraction & 1.000 [0.997, 1.000] & 0.924 [$-0.840$, 0.959] & $0.762\pm0.006$ & 0.998 & 0.999 \\
+spreading rate & 1.000 [0.998, 1.000] & 0.965 [$-0.517$, 0.998] & $0.960\pm0.019$ & 0.999 & 0.9995 \\
+cone fill & 0.999 [0.991, 1.000] & 0.929 [0.849, 0.994] & $0.931\pm0.006$ & 0.998 & 0.999 \\
 \colrule
 \multicolumn{6}{l}{\emph{Radius two ($160$ held-out rules; enriched panel)}}\\
-damage survival & 0.977 [0.930, 0.989] & 0.809 [0.554, 0.906] & $0.874\pm0.009$ & 0.974 & 0.987 \\
-damage fraction & 0.997 [0.995, 0.998] & 0.909 [0.878, 0.932] & $0.880\pm0.020$ & 0.997 & 0.998 \\
-spreading rate & 0.997 [0.996, 0.998] & 0.880 [0.839, 0.912] & $0.865\pm0.020$ & 0.997 & 0.998 \\
-cone fill & 0.985 [0.969, 0.992] & 0.596 [0.320, 0.775] & $0.337\pm0.109$ & 0.959 & 0.980 \\
+damage survival & 0.977 [0.930, 0.989] & 0.809 [0.554, 0.906] & $0.887\pm0.003$ & 0.974 & 0.987 \\
+damage fraction & 0.997 [0.995, 0.998] & 0.909 [0.878, 0.932] & $0.891\pm0.006$ & 0.997 & 0.998 \\
+spreading rate & 0.997 [0.996, 0.998] & 0.880 [0.839, 0.912] & $0.875\pm0.007$ & 0.997 & 0.998 \\
+cone fill & 0.985 [0.969, 0.992] & 0.596 [0.320, 0.775] & $0.406\pm0.036$ & 0.959 & 0.980 \\
 \end{tabular}
 \end{ruledtabular}
 \caption{Per-target held-out \rtwo{} on both rule spaces. Brackets:
@@ -547,10 +550,10 @@ least reliable target---and, on radius two, cone fill.}
  & ECA & radius two \\
 target & mech / stats / CNN & mech / stats / CNN \\
 \colrule
-damage survival & \textbf{1.4} / 6.0 / 6.4 & \textbf{1.4} / 4.0 / 3.0 \\
-damage fraction & \textbf{1.2} / 20 / 33 & \textbf{1.4} / 7.2 / 8.7 \\
-spreading rate & \textbf{0.7} / 27 / 27 & \textbf{1.5} / 9.5 / 11 \\
-cone fill & \textbf{1.8} / 13 / 15 & \textbf{1.0} / 5.2 / 6.4 \\
+damage survival & \textbf{1.4} / 6.0 / 6.1 & \textbf{1.4} / 4.0 / 3.0 \\
+damage fraction & \textbf{1.2} / 20 / 35 & \textbf{1.4} / 7.2 / 8.2 \\
+spreading rate & \textbf{0.7} / 27 / 20 & \textbf{1.5} / 9.5 / 10 \\
+cone fill & \textbf{1.8} / 13 / 12 & \textbf{1.0} / 5.2 / 6.0 \\
 \end{tabular}
 \end{ruledtabular}
 \caption{The same results in units of the target's own Monte-Carlo error,
@@ -560,7 +563,7 @@ benchmark and $\rho=1$ the latent ceiling}, for every target and panel. Every
 mechanistic value's rule-bootstrap $95\%$ CI covers $\sqrt2$, as
 Eq.~\eqref{eq:exchangeable} requires; every direct-estimator CI lies far above
 it. The rescaling is not cosmetic: ECA spreading rate reads
-\rtwo{}${=}0.96$ for the CNN, which sounds close, and $\rho=27$, which does
+\rtwo{}${=}0.98$ for the CNN, which sounds close, and $\rho=20$, which does
 not. Rules whose target carries no Monte-Carlo noise (the fully ordered ones,
 $3$ of $18$ on ECA, $1$ of $160$ on radius two) contribute zero to both sums
 and so drop out; the mechanistic estimator's error on them is exactly zero.}
@@ -593,20 +596,19 @@ median coverage $1.0$; over all $4{,}608$ ECA diagrams both are $1.0$.
 The paired comparisons give the network and the
 five-statistic baseline no global ranking. On radius two ($160$ held-out rules,
 adequately powered) the CNN is ahead on damage survival ($\Delta R^2=+0.08$,
-$95\%$ CI $[+0.002,+0.201]$ excluding $0$ but below the $0.10$ superiority
-margin), the baseline is \emph{superior} on cone fill ($\Delta R^2=-0.21$, CI
-$[-0.38,-0.07]$), and fraction and rate are \emph{inconclusive} at
-$\delta=0.05$ (equivalent only at the loose $\delta=0.10$; fraction's CI
-$[-0.09,-0.00]$ weakly favours the baseline). On ECA ($18$ held-out orbits)
-every CNN--baseline contrast is inconclusive except spreading rate (equivalent
-at $\delta=0.05$); that panel is underpowered for tight per-target intervals
-and we do not read a ranking into it. The mechanistic estimator,
-by contrast, meets the registered superiority rule against the baseline on
-survival, rate and cone fill ($\Delta R^2$ up to $+0.39$) and against the CNN
-on fraction, rate and cone fill (up to $+0.60$); the two remaining contrasts
-(fraction vs.\ the baseline, survival vs.\ the CNN) have intervals excluding
-zero in its favour with point differences just below the margin. No comparison
-on any target in either space favours a direct method over it.
+$95\%$ CI $[+0.003,+0.195]$ excluding $0$ but below the $0.10$ superiority
+margin), the baseline is \emph{superior} on cone fill ($\Delta R^2=-0.14$, CI
+$[-0.26,-0.03]$), and fraction and rate are \emph{inconclusive} at
+$\delta=0.05$ (equivalent only at the loose $\delta=0.10$). On ECA ($18$
+held-out orbits) every CNN--baseline contrast is inconclusive; that panel is
+underpowered for tight per-target intervals and we do not read a ranking into
+it. The mechanistic estimator, by contrast, meets the registered superiority
+rule against the baseline on survival, rate and cone fill ($\Delta R^2$ up to
+$+0.39$) and against the CNN on fraction, rate and cone fill (up to $+0.53$);
+the two remaining contrasts (fraction vs.\ the baseline, survival vs.\ the
+CNN) have intervals excluding zero in its favour with point differences just
+below the margin. No comparison on any target in either space favours a
+direct method over it.
 
 \subsection{What the network adds: complementarity, not redundancy}
 \label{sec:stacking}
@@ -619,18 +621,18 @@ held-out rule, the base a repeated-$K$-fold out-of-fold ridge on the five
 statistics (\emph{not} the boosted baseline of record: survival $0.56$
 versus $0.81$), and the CNN predictions never touch held-out labels. The
 answer is target-specific: adding the CNN to the five statistics yields a
-large, significant increment on damage survival ($+0.32$, CI
-$[+0.23,+0.48]$, base $0.56\to0.88$), small significant increments on
+large, significant increment on damage survival ($+0.33$, CI
+$[+0.24,+0.50]$, base $0.56\to0.89$), small significant increments on
 fraction and rate, and none on cone fill; the reverse direction adds
 nothing. With the boosted baseline of record as base the survival increment
-remains significant but smaller ($+0.08$, CI
-$[+0.02,+0.18]$, $0.80\to0.88$): the $+0.32$ headline is base-specific; the
+remains significant but smaller ($+0.09$, CI
+$[+0.02,+0.19]$, $0.80\to0.89$): the $+0.33$ headline is base-specific; the
 base-independent statement is that the network carries survival information
 both bases miss. Whether that information is \emph{harvestable} has a
 measured answer: a deployment-style stack (ridge fit only on training rules,
 applied once to the untouched panel) realizes essentially none of the
-survival increment ($+0.001$ over the CNN alone, n.s.; fraction $+0.02$ and
-rate $+0.03$ do transfer). The network \emph{carries} survival information
+survival increment ($+0.001$ over the CNN alone, n.s.; only spreading rate's
+$+0.02$ still clears the margin). The network \emph{carries} survival information
 that texture statistics miss---exactly where both direct methods sit farthest
 below the reliability benchmark---but a practitioner cannot yet buy it with a
 linear meta-model.
@@ -642,10 +644,10 @@ built the cheapest possible one: for each held-out diagram, return the
 \emph{cached target of the nearest training rule}---no training, no
 simulation, a lookup. In the five-statistic space it reaches median held-out
 \rtwo{} $0.821$ (radius two) and $0.828$ (ECA); in the CNN's own $64$-d
-bottleneck, $0.862$ and $0.881$. Those are not below the trained estimators,
-they are level with them: the radius-two CNN scores $0.864$ and the boosted
-baseline $0.845$, and on ECA retrieval in the bottleneck ($0.881$)
-\emph{exceeds} the network's own regression head ($0.852$). Under the
+bottleneck, $0.864$ and $0.883$. Those are not below the trained estimators,
+they are level with them: the radius-two CNN scores $0.880$ and the boosted
+baseline $0.845$, and on ECA retrieval in the bottleneck ($0.883$)
+\emph{exceeds} the network's own regression head ($0.847$). Under the
 registered reading, this is evidence that the direct estimators' accuracy on
 this benchmark is substantially rule recognition rather than extrapolation to
 unseen tables---consistent with the identity probes of
@@ -669,10 +671,10 @@ representations, in two tasks that answer different questions. \emph{Identity pr
 train and test diagrams disjoint, rule classes shared---within-rule decoding
 across new diagrams; $88$ and $800$ classes, majority baseline $\approx0.011$
 and $0.001$) recover the rule from the CNN's own $64$-d bottleneck at balanced
-accuracy $0.88$ (ECA) and $0.95$ (radius two), versus $0.65$/$0.30$ from the
+accuracy $0.87$ (ECA) and $0.95$ (radius two), versus $0.65$/$0.30$ from the
 five statistics. \emph{Truth-table-bit probes} (leave-rules-out GroupKFold;
 test rules never seen by the probe---out-of-rule transfer of the reading
-mechanism; chance $0.5$) reach $0.78$/$0.61$ from the bottleneck versus
+mechanism; chance $0.5$) reach $0.79$/$0.61$ from the bottleneck versus
 $0.69$/$0.55$ from the statistics. The $2\times2$ first layer therefore does
 \emph{not} prevent rule recovery; we retired that claim. What the probes
 establish is accessibility, not use: they show the information survives into
@@ -748,8 +750,7 @@ decoder rescues under-exercised tables.
 A fourth axis, label-polarity flips, is four flat lines and is drawn only in
 the released grid artifact: the read-then-simulate family is \emph{exactly}
 invariant by construction ($0.99$) while the direct CNN and the stack degrade
-($0.59$). The fairness controls (the degradation-trained CNN, the
-unconstrained \texttt{resnet18}) are scored on the same cells but reported in
+($0.59$). The fairness controls are scored on the same cells but reported in
 Sec.~\ref{sec:frontier}(iii) only. Grid simulations at
 $n_{\mathrm{pairs}}=48$ scored against the $256$-pair production cache, so the
 read-then-simulate ceiling on these panels is $1-(1+256/48)(1-\mathrm{ICC})$:
@@ -902,8 +903,9 @@ estimators is $0.07$ (the boosted baseline's cone fill), and two of the
 network's gaps \emph{widen}---survival by $0.16$ and cone fill by $0.34$.
 Representative training does not close the gap. One counter-observation, resting on
 five rules and correspondingly weak: the CNN still scores $-0.81$ on the five
-held-out complex rules against $0.78$ on the rest, where on the enriched panel
-it had scored \emph{higher} on complex rules than on random ones.
+held-out complex rules against $0.78$ on the rest. (Both sides of this comparison are final-epoch numbers: the control's
+registered rule predates the checkpoint-selection switch of
+Appendix~\ref{app:methods}, which does not alter its verdict.)
 
 \emph{Panel replication.} Because the frontier rests on a fixed $80$-rule
 subsample, we re-simulated the entire noise axis on the \emph{complementary}
@@ -957,12 +959,10 @@ targets, ceiling median $0.953$) and are \emph{not} comparable to the
 matched-regime numbers of Table~\ref{tab:pertarget} (per-cell rule-bootstrap CIs accompany every
 number in the released grid artifact; the bootstrap clipping convention for
 collapsed cells is stated in Appendix~\ref{app:methods}). Each axis was swept singly; joint corruptions were not tested and the
-per-axis recommendations are not established to compose. Where the recommendation is a trained network,
-select its checkpoint on a validation fold rather than taking the final
-epoch---doing so shrinks run-to-run variance at this budget from a factor of
-${\sim}2$ to ${\sim}1.4$ (Sec.~\ref{sec:frontier})---and validate the specific
-trained seed on held-out synthetically corrupted diagrams before relying on
-it. ``Use'' means the named estimator won
+per-axis recommendations are not established to compose. Where the recommendation is a trained network, select its checkpoint on a
+validation fold rather than the final epoch (run-to-run variance shrinks from
+${\sim}2\times$ to ${\sim}1.4\times$; Sec.~\ref{sec:frontier}) and validate
+the trained seed on held-out corrupted diagrams before relying on it. ``Use'' means the named estimator won
 its cells under the registered rules; ``none reliably recommendable'' is a
 claim about these estimators, not all estimators. Do not extrapolate beyond
 the corruption model, architecture, and training distribution
@@ -1083,8 +1083,8 @@ architecture at \emph{this} training budget, direct regression neither reaches
 the reliability benchmark nor dominates five cheap statistics, and the two
 trade places by target; an unconstrained architecture $354\times$ larger at
 the same budget changes no verdict, so this is not the constraint's doing. The
-network's one demonstrated edge---incremental survival information, $+0.32$
-over the five-statistic base and $+0.08$ over the boosted baseline of
+network's one demonstrated edge---incremental survival information, $+0.33$
+over the five-statistic base and $+0.09$ over the boosted baseline of
 record---survives cross-fitting, but sits next to two findings that bound how
 much of its score is generalisation at all: within the intermediate survival band it does not
 outperform the band mean (Sec.~\ref{sec:results-mech}), and a training-set
@@ -1184,12 +1184,10 @@ Python~3.11 on Apple silicon (fp32), PyTorch, scikit-learn pinned at 1.9.0;
 \texttt{pip install -e .} recreates it. Reproduction entry points:
 \texttt{scripts/audit\_manuscript\_numbers.py} re-derives every quoted
 number from the released artifacts (exit code $0$ on agreement);
-\texttt{manuscript/make\_figures.py} regenerates
-Fig.~\ref{fig:landscape} from the released landscape cache, and
+\texttt{manuscript/make\_figures.py},
 \texttt{scripts/build\_identifiability\_diagram.py} and
-\texttt{scripts/build\_frontier\_grid.py} (flags
-\texttt{--write-manuscript-figure} / \texttt{--write-figure}) regenerate
-Figs.~\ref{fig:ident} and~\ref{fig:frontier} by re-running their sweeps.
+\texttt{scripts/build\_frontier\_grid.py} regenerate
+Figs.~\ref{fig:landscape}, \ref{fig:ident} and~\ref{fig:frontier}.
 % TODO(user): mint the archive DOI on acceptance and insert it here.
 
 \appendix
@@ -1213,12 +1211,12 @@ damage-signature criterion; holdout split; paired inference and TOST margins;
 stacking margin; reliability design; mechanistic estimator and completion
 policy; probe design; detector- and map-validation designs; the frontier grid
 design, estimator definitions, verdict rules and three hypotheses (rev.~9);
-the two fairness controls (rev.~10); the four rev.-13 measurements
-answering the fourth review---checkpoint selection for the
-degradation-trained control (M9), the stratified-split control (M10), the
-retrieval baseline (M11) and the horizon-matched signature (M12); and the
-rev.-14 checkpoint-selection run for the matched-regime CNN (M13) answering
-the fifth review, whose switch rule was frozen before training.
+the two fairness controls (rev.~10); the rev.-13 measurements M9--M12
+answering the fourth review (checkpoint selection for the degradation-trained
+control, the stratified-split control, the retrieval baseline, the
+horizon-matched signature); and the rev.-14 matched-regime
+checkpoint-selection run (M13), whose switch rule was frozen before
+training.
 \emph{Post-hoc confirmatory} (added at revision, on data or rules not used to
 tune it): the replicate-agreement correction; the large-simulation reference;
 confusion-matrix reporting; TOST margin sensitivity; the pseudo-posterior on
@@ -1237,9 +1235,9 @@ and the label-noise and unknown-radius axes.
 The three frontier hypotheses (rev.~9) were registered verbatim before
 measurement; their earned verdicts---\emph{confirmed}; \emph{split}, weakly
 confirmed on noise and refuted under masking; and \emph{confirmed with zero
-violations}---are stated in Sec.~\ref{sec:frontier}, as is the one reporting
-item outstanding from rev.~9, the calibration of the posterior's nominal
-$1\sigma$ predictive intervals, completed here.
+violations}---are stated in Sec.~\ref{sec:frontier}, together with the one
+outstanding rev.-9 reporting item, the posterior-interval calibration,
+completed here.
 
 \emph{Correctness audit of the matched regime.} Equation~\eqref{eq:exchangeable}
 makes the matched-regime agreement an identity, so the paired equivalence
@@ -1259,10 +1257,10 @@ $\pm0.013$), with fraction and rate tighter still; on ECA, fraction, rate and
 cone fill pass. The two that do not are resolution-limited rather than
 discrepant---ECA survival's CI ($\pm0.015$ over $18$ rules) exceeds its
 $\pm0.010$ tolerance at a point difference of $+0.0003$, and radius-two cone
-fill ($+0.006$, CI $[-0.009,+0.022]$, tolerance $\pm0.020$) overshoots only on
-the side where the mechanistic estimator beats the replicate. With two of
-eight underpowered comparisons, both failing in the favourable direction, we
-read this as an audit passed, not as evidence of an asymmetry.
+fill ($+0.006$, tolerance $\pm0.020$) overshoots only on the side where the
+mechanistic estimator beats the replicate. With both failures underpowered
+and favourable, we read this as an audit passed, not evidence of an
+asymmetry.
 
 One deviation from the original registration is
 disclosed: an early implementation seeded target streams by panel position
@@ -1349,7 +1347,19 @@ channels $16/32/64/64$; $1\times1$ convolution to a $64$-d bottleneck with
 BatchNorm and no final nonlinearity; global average pool; linear head to $4$
 targets ($31{,}524$ parameters; receptive field $31\times31$ per bottleneck
 position before pooling). AdamW, lr $10^{-3}$, weight decay $10^{-6}$, batch
-$128$, $60$ epochs, no early stopping; targets standardized on training rules.
+$128$, $60$ epochs; targets standardized on training rules. \emph{Checkpoint
+selection (registered switch).} The protocol of record selects the epoch
+minimising loss on a fixed $10\%$ inner fold of training-rule diagrams; the
+original final-epoch convention is retained as a sensitivity. Under the rule
+frozen before training (switch if any per-target five-seed mean rises by more
+than $+0.02$), radius two triggered---cone fill $0.337\to0.406$, seed s.d.\
+$0.109\to0.036$, every other target also up---while ECA alone would not have
+(largest gain $+0.015$; fraction $-0.027$). All matched-regime CNN numbers
+are therefore selected-checkpoint numbers; the frontier's frozen-CNN curves
+remain the final-epoch artifact, with their own selected-checkpoint control
+(Sec.~\ref{sec:frontier}(iii)). The fold removes $10\%$ of training
+diagrams (a protocol change, not an epoch change); final-epoch checkpoints
+are retained in the released run directories.
 Augmentations: cyclic shift, reflection, complement (the exact
 orbit symmetries). Training cost $\approx22$\,min (radius two) and
 $\approx10$\,min (ECA) per seed on the reference machine.
@@ -1364,16 +1374,15 @@ splits the per-target medians (5th--95th percentile) are $0.76$
 $(0.56$--$0.84)$, $0.92$ $(0.90$--$0.93)$, $0.90$ $(0.87$--$0.91)$ and $0.68$
 $(0.55$--$0.75)$---the noisy targets carry substantial split variance.
 
-\emph{Verdicts at other margins.} At $\delta=0.02$ the single equivalence
-verdict (ECA spreading rate, CNN vs.\ baseline) reverts to inconclusive; at
-$\delta=0.10$ radius-two fraction and rate additionally become equivalent; no
-superiority verdict changes at any margin, so the ``no stable ordering''
-conclusion is margin-insensitive.
+\emph{Verdicts at other margins.} No CNN--baseline contrast reaches
+equivalence at $\delta=0.05$ or $0.02$; at $\delta=0.10$ radius-two fraction
+and rate become equivalent; no superiority verdict changes at any margin, so
+the ``no stable ordering'' conclusion is margin-insensitive.
 
 \emph{Panels.} The $800$-rule estimator panel is a subset of the $3000$-rule
-landscape sample (same sampling stream); landscape prevalence is therefore
-computed on the superset and estimator results never touch the extra $2200$
-rules. The reliability panel subsamples $250$ of the $800$ (fixed seed).
+landscape sample (same stream): prevalence is computed on the superset,
+estimator results never touch the extra $2200$ rules, and the reliability
+panel subsamples $250$ of the $800$ (fixed seed).
 
 \section{Decoder algorithms, clean and degraded}
 \label{app:algorithms}
@@ -1432,9 +1441,8 @@ five index bits.
 entry observed $30$ times mapping $28{\to}1$, $2{\to}0$ gets
 $\ell=(56-30)\log(0.95/0.05)\approx77$, certainty; one seen $3$ times
 mapping $2{\to}1$, $1{\to}0$ gets $\ell=\log19\approx2.9$,
-$P(\mathrm{bit}{=}1)\approx0.95$. Sampled tables disagree exactly on the
-entries the diagram cannot pin down, which is what makes the sampled-table
-average and its interval informative.
+$P(\mathrm{bit}{=}1)\approx0.95$. Sampled tables disagree exactly on the entries the diagram cannot pin
+down---what makes the sampled-table average and its interval informative.
 
 \section{The damage-signature landscape}
 \label{app:landscape}
@@ -1464,14 +1472,13 @@ Sec.~\ref{sec:constructive}.}
 
 Figure~\ref{fig:landscape} draws the landscape in damage coordinates, in
 the spirit of Li and Packard's map of the elementary rule
-space~\cite{lipackard1990}; its caption records the central caveat that the
-red region's shape is substantially a coordinate effect---a registered
-threshold region, not a discovered cluster. The horizon mechanism behind the
+space~\cite{lipackard1990}; its caption records the central caveat: the region's shape is substantially
+a coordinate effect, a registered threshold region rather than a discovered
+cluster. The horizon mechanism behind the
 main-text numbers: $\lfloor w/2r\rfloor-1$ is $62$ for ECA and $30$ for
-radius two at $w=127$, damage survival is monotone decreasing in horizon, so
-the native-horizon comparison compares different experiments and the longer
-elementary horizon kills more marginal rules; the matched-$T$ elementary
-criterion admits $\{37,45,54,60,106,110\}$. At $T=62$, where literature
+radius two at $w=127$, and damage survival is monotone decreasing in horizon,
+so the longer elementary horizon kills more marginal rules; the matched-$T$
+elementary criterion admits $\{37,45,54,60,106,110\}$. At $T=62$, where literature
 ground truth exists, the signature selects $\{54,106,110\}$: both canonical
 class-IV rules (sensitivity $1.0$) with one false positive, rule $106$,
 listed as chaotic in the classical schemes~\cite{wolfram1984,lipackard1990}
@@ -1525,9 +1532,9 @@ radius-two application: alive fraction $\ge0.5$, growth rate $0.05$--$0.9$,
 fill $\le0.75$). It performs at or below chance on radius two (balanced
 accuracy $0.39$, precision $0.05$, $231$ applicable rules) and misses rule
 $54$ on ECA, whose ether front advances at light speed; it validates nothing
-in either direction. A multi-observable detector would in effect rebuild the
-structure filters of computational mechanics~\cite{shalizi2006} and was not
-built here.
+either way. A multi-observable detector would in effect rebuild the structure
+filters of computational mechanics~\cite{shalizi2006} and was not built
+here.
 
 \bibliographystyle{apsrev4-2}
 \bibliography{refs}

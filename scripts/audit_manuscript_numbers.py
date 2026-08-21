@@ -37,8 +37,9 @@ DECOMP = REPO / "runs" / "m4_range2" / "panel_decomposition" / "summary.json"
 PERDIAG = REPO / "runs" / "m4_range2" / "per_diagram_audit" / "summary.json"
 DEPLOY = REPO / "runs" / "m4_range2" / "deployment_stack" / "summary.json"
 ROUND6 = REPO / "runs" / "analysis" / "round6_metrics" / "summary.json"
-RETRIEVAL_R2 = REPO / "runs" / "m4_range2" / "retrieval" / "summary.json"
-RETRIEVAL_ECA = REPO / "runs" / "lever_a_local" / "retrieval" / "summary.json"
+ROUND6_SEL = REPO / "runs" / "analysis" / "round6_metrics_sel" / "summary.json"
+RETRIEVAL_R2 = REPO / "runs" / "m4_range2" / "retrieval_sel" / "summary.json"
+RETRIEVAL_ECA = REPO / "runs" / "lever_a_local" / "retrieval_sel" / "summary.json"
 GLIDER_T30 = REPO / "runs" / "analysis" / "glider_validation_T30" / "summary_r1.json"
 STRAT = REPO / "runs" / "m4_range2_strat" / "control" / "summary.json"
 RHOVAR = REPO / "runs" / "analysis" / "rho_variability" / "summary.json"
@@ -46,6 +47,13 @@ FULLTABLE_SEL = REPO / "runs" / "m4_range2" / "full_table_sel" / "summary.json"
 FULLTABLE_SEL_ECA = REPO / "runs" / "lever_a_local" / "full_table_sel" / "summary.json"
 FULLTABLE = REPO / "runs" / "m4_range2" / "full_table" / "summary.json"
 FULLTABLE_ECA = REPO / "runs" / "lever_a_local" / "full_table" / "summary.json"
+DECOMP_SEL = REPO / "runs" / "m4_range2" / "panel_decomposition_sel" / "summary.json"
+STACK_SEL = REPO / "runs" / "m4_range2" / "stacking_sel" / "summary.json"
+STACK_GBM_SEL = REPO / "runs" / "m4_range2" / "stacking_gbm_base_sel" / "summary.json"
+DEPLOY_SEL = REPO / "runs" / "m4_range2" / "deployment_stack_sel" / "summary.json"
+PROBE_R2_SEL = REPO / "runs" / "m4_range2" / "rule_probe_sel" / "summary.json"
+PROBE_ECA_SEL = REPO / "runs" / "lever_a_local" / "rule_probe_sel" / "summary.json"
+RESCORE_SEL = REPO / "runs" / "m4_range2" / "reference_rescore_sel" / "summary.json"
 MAIN_TEX = REPO / "manuscript" / "main.tex"
 RESULTS = REPO / "RESULTS.md"
 
@@ -273,16 +281,19 @@ def build_rev11_checks() -> list[Check]:
 def build_rev13_checks() -> list[Check]:
     """Round-5 review-response numbers (EVALUATION_CRITERIA rev 13)."""
     checks: list[Check] = []
-    if ROUND6.exists():
-        d = json.loads(ROUND6.read_text())
+    if ROUND6_SEL.exists():
+        # M13 (rev 14): the CNN of record is the selected checkpoint, so every
+        # CNN-dependent re-expression is audited against the _sel artifact;
+        # the mech/gbm cells are identical in both artifacts by construction.
+        d = json.loads(ROUND6_SEL.read_text())
         r2, eca = d["radius2"], d["eca"]
         rho2, rhoe = r2["A1_rho"], eca["A1_rho"]
         # Table IV (rho), rounded to one decimal in the manuscript.
         for tgt, mech, gbm, cnn in [
             ("damage_survival", 1.4, 4.0, 3.0),
-            ("damage_fraction", 1.4, 7.2, 8.7),
-            ("spreading_rate", 1.5, 9.5, 11),
-            ("cone_fill", 1.0, 5.2, 6.4),
+            ("damage_fraction", 1.4, 7.2, 8.2),
+            ("spreading_rate", 1.5, 9.5, 10),
+            ("cone_fill", 1.0, 5.2, 6.0),
         ]:
             checks += [
                 Check(f"rho r2 {tgt} mech", mech, rho2["mechanistic"][tgt]["rho"]),
@@ -290,10 +301,10 @@ def build_rev13_checks() -> list[Check]:
                 Check(f"rho r2 {tgt} cnn", cnn, rho2["cnn"][tgt]["rho"]),
             ]
         for tgt, mech, gbm, cnn in [
-            ("damage_survival", 1.4, 6.0, 6.4),
-            ("damage_fraction", 1.2, 20, 33),
-            ("spreading_rate", 0.7, 27, 27),
-            ("cone_fill", 1.8, 13, 15),
+            ("damage_survival", 1.4, 6.0, 6.1),
+            ("damage_fraction", 1.2, 20, 35),
+            ("spreading_rate", 0.7, 27, 20),
+            ("cone_fill", 1.8, 13, 12),
         ]:
             checks += [
                 Check(f"rho eca {tgt} mech", mech, rhoe["mechanistic"][tgt]["rho"]),
@@ -361,8 +372,8 @@ def build_rev13_checks() -> list[Check]:
         ]
         # A5 survival-band stratification.
         for space, blk, mech, gbm, cnn in [
-            ("r2", r2["A5_survival_band"], 0.94, 0.41, 0.66),
-            ("eca", eca["A5_survival_band"], 0.90, -0.87, -1.25),
+            ("r2", r2["A5_survival_band"], 0.94, 0.41, 0.75),
+            ("eca", eca["A5_survival_band"], 0.90, -0.87, -1.05),
         ]:
             b = blk["damage_survival"]
             checks += [
@@ -376,8 +387,8 @@ def build_rev13_checks() -> list[Check]:
         ]
     # M11 retrieval baseline.
     for path, space, stats5, bottleneck in [
-        (RETRIEVAL_R2, "r2", 0.821, 0.862),
-        (RETRIEVAL_ECA, "eca", 0.828, 0.881),
+        (RETRIEVAL_R2, "r2", 0.821, 0.864),
+        (RETRIEVAL_ECA, "eca", 0.828, 0.883),
     ]:
         if path.exists():
             r = json.loads(path.read_text())["retrieval"]
@@ -477,8 +488,8 @@ def build_round7_checks() -> list[Check]:
                 round(d["worst_case_total_sd_of_rho"], 1),
             ),
         ]
-    if ROUND6.exists():
-        d = json.loads(ROUND6.read_text())
+    if ROUND6_SEL.exists():
+        d = json.loads(ROUND6_SEL.read_text())
         eca = d["eca"]["A5_survival_band"]["damage_survival"]
         r2 = d["radius2"]["A5_survival_band"]["damage_survival"]
         checks += [
@@ -487,21 +498,167 @@ def build_round7_checks() -> list[Check]:
             Check("mode accuracy r2 gbm", 0.99, r2["gbm"]["mode_accuracy_full_panel"]),
             Check("mode accuracy r2 cnn", 1.00, r2["cnn"]["mode_accuracy_full_panel"]),
         ]
-    # M13: selection-protocol full tables, once the runs land. The switch rule
-    # (rev 14) compares five-seed per-target means: selection minus final-epoch
-    # must exceed +0.02 on some target to displace the protocol of record.
-    for label, sel_path, fin_path in (
-        ("radius-2", FULLTABLE_SEL, FULLTABLE),
-        ("ECA", FULLTABLE_SEL_ECA, FULLTABLE_ECA),
+    # M13 (rev 14): the switch-rule record and every selection-protocol number
+    # quoted in the manuscript.
+    if FULLTABLE_SEL.exists() and FULLTABLE.exists():
+        sel = json.loads(FULLTABLE_SEL.read_text())
+        fin = json.loads(FULLTABLE.read_text())
+        s, f = sel["cnn_seed_spread"], fin["cnn_seed_spread"]
+        worst_r2 = max(s[tt]["mean"] - f[tt]["mean"] for tt in f)
+        checks += [
+            Check("M13 r2 largest gain (App B: rule >+0.02, triggered)", 0.069, worst_r2),
+            Check("M13 r2 cone fill final-epoch mean", 0.337, f["cone_fill"]["mean"]),
+            Check("M13 r2 cone fill selected mean", 0.406, s["cone_fill"]["mean"]),
+            Check("M13 r2 cone fill final-epoch sd", 0.109, f["cone_fill"]["std"]),
+            Check("M13 r2 cone fill selected sd", 0.036, s["cone_fill"]["std"]),
+            # Table II radius-two CNN column (mean +- sd over five seeds).
+            Check("Table II r2 cnn survival", 0.887, s["damage_survival"]["mean"]),
+            Check("Table II r2 cnn fraction", 0.891, s["damage_fraction"]["mean"]),
+            Check("Table II r2 cnn rate", 0.875, s["spreading_rate"]["mean"]),
+            Check("Table II r2 cnn fill", 0.406, s["cone_fill"]["mean"]),
+        ]
+        pairs = sel["pairs"]
+        checks += [
+            Check(
+                "paired r2 cnn-gbm survival delta",
+                0.08,
+                pairs["cnn_minus_gbm"]["damage_survival"]["delta_r2"],
+            ),
+            Check(
+                "paired r2 cnn-gbm fill delta",
+                -0.14,
+                pairs["cnn_minus_gbm"]["cone_fill"]["delta_r2"],
+            ),
+            Check(
+                "paired r2 mech-cnn max superiority",
+                0.53,
+                max(v["delta_r2"] for v in pairs["mechanistic_minus_cnn"].values()),
+            ),
+            Check(
+                "paired r2 mech-gbm max superiority",
+                0.39,
+                max(v["delta_r2"] for v in pairs["mechanistic_minus_gbm"].values()),
+            ),
+        ]
+    if FULLTABLE_SEL_ECA.exists() and FULLTABLE_ECA.exists():
+        sel = json.loads(FULLTABLE_SEL_ECA.read_text())["cnn_seed_spread"]
+        fin = json.loads(FULLTABLE_ECA.read_text())["cnn_seed_spread"]
+        worst_eca = max(sel[tt]["mean"] - fin[tt]["mean"] for tt in fin)
+        checks += [
+            Check("M13 eca largest gain (App B: below +0.02)", 0.015, worst_eca),
+            Check(
+                "M13 eca fraction delta (App B)",
+                -0.027,
+                sel["damage_fraction"]["mean"] - fin["damage_fraction"]["mean"],
+            ),
+            # Table II ECA CNN column.
+            Check("Table II eca cnn survival", 0.695, sel["damage_survival"]["mean"]),
+            Check("Table II eca cnn fraction", 0.762, sel["damage_fraction"]["mean"]),
+            Check("Table II eca cnn rate", 0.960, sel["spreading_rate"]["mean"]),
+            Check("Table II eca cnn fill", 0.931, sel["cone_fill"]["mean"]),
+        ]
+    # Table I five-seed CNN entries (median over the four targets, per seed),
+    # recomputed from the per-seed prediction pickles of record.
+    import pickle
+
+    def _seed_medians(base: str, complex_only: bool = False) -> list[float]:
+        import numpy as np
+
+        out = []
+        sig: set[int] = set()
+        if complex_only:
+            import yaml
+
+            cfg = yaml.safe_load((REPO / "configs" / "m4_range2.yaml").read_text())
+            sig = {int(r) for r in cfg["train"]["force_holdout_rules"]}
+        for sd in range(5):
+            name = "held_out_preds_np256_mech.pkl" if sd == 0 else "held_out_preds_np256_nomech.pkl"
+            path = REPO / f"{base}{sd}" / name
+            if not path.exists():
+                return []
+            with path.open("rb") as fh:
+                hop = pickle.load(fh)
+            true, pred = hop.true, hop.preds["cnn"]
+            if complex_only:
+                mask = np.array([r in sig for r in hop.held])
+                true, pred = true[mask], pred[mask]
+            ss = ((true - pred) ** 2).sum(0)
+            tot = ((true - true.mean(0)) ** 2).sum(0)
+            out.append(float(np.median(1 - ss / tot)))
+        return out
+
+    import numpy as np
+
+    m_r2 = _seed_medians("runs/m4_range2_sel_seed")
+    m_eca = _seed_medians("runs/lever_a_local_sel_seed")
+    m_cx = _seed_medians("runs/m4_range2_sel_seed", complex_only=True)
+    if m_r2 and m_eca and m_cx:
+        checks += [
+            Check("Table I r2 enriched cnn mean", 0.880, float(np.mean(m_r2))),
+            Check("Table I r2 enriched cnn sd", 0.004, float(np.std(m_r2))),
+            Check("Table I eca global cnn mean", 0.847, float(np.mean(m_eca))),
+            Check("Table I eca global cnn sd", 0.006, float(np.std(m_eca))),
+            Check("Table I r2 complex cnn mean", 0.837, float(np.mean(m_cx))),
+            Check("Table I r2 complex cnn sd", 0.009, float(np.std(m_cx))),
+        ]
+    if DECOMP_SEL.exists():
+        dec = json.loads(DECOMP_SEL.read_text())["methods"]["cnn"]
+        checks += [
+            Check(
+                "decomp sel cnn enriched (prose 0.876)", 0.876, dec["enriched_panel"]["median_r2"]
+            ),
+            Check("Table I r2 random cnn (seed-0)", 0.862, dec["random_subpanel"]["median_r2"]),
+            Check("Table I r2 poststrat cnn (seed-0)", 0.865, dec["post_stratified"]["median_r2"]),
+            Check(
+                "prose complex-vs-random direction", 0.843, dec["signature_subpanel"]["median_r2"]
+            ),
+        ]
+    if STACK_SEL.exists():
+        sv = json.loads(STACK_SEL.read_text())["increments"]["cnn_over_features"]["damage_survival"]
+        checks += [
+            Check("stacking survival increment", 0.33, sv["incremental_r2"]),
+            Check("stacking survival ci low", 0.24, sv["ci95"][0]),
+            Check("stacking survival ci high", 0.50, sv["ci95"][1]),
+            Check("stacking survival base", 0.56, sv["base_model_r2"]),
+            Check("stacking survival stacked", 0.89, sv["stacked_model_r2"]),
+        ]
+    if STACK_GBM_SEL.exists():
+        sv = json.loads(STACK_GBM_SEL.read_text())["increments"]["cnn_over_gbm"]["damage_survival"]
+        checks += [
+            Check("gbm-base survival increment", 0.09, sv["incremental_r2"]),
+            Check("gbm-base survival ci low", 0.02, sv["ci95"][0]),
+            Check("gbm-base survival ci high", 0.19, sv["ci95"][1]),
+        ]
+    if DEPLOY_SEL.exists():
+        dep = json.loads(DEPLOY_SEL.read_text())["stack_over_cnn"]
+        checks += [
+            Check(
+                "deploy survival increment",
+                0.001,
+                dep["damage_survival"]["incremental_r2_over_cnn"],
+            ),
+            Check("deploy rate increment", 0.02, dep["spreading_rate"]["incremental_r2_over_cnn"]),
+        ]
+    for path, space, ident, bits in (
+        (PROBE_ECA_SEL, "eca", 0.87, 0.79),
+        (PROBE_R2_SEL, "r2", 0.95, 0.61),
     ):
-        if sel_path.exists() and fin_path.exists():
-            sel = json.loads(sel_path.read_text())["cnn_seed_spread"]
-            fin = json.loads(fin_path.read_text())["cnn_seed_spread"]
-            worst = max(sel[tt]["mean"] - fin[tt]["mean"] for tt in fin)
-            checks.append(
-                Check(f"M13 {label} largest selection gain (switch at >+0.02)",
-                      round(worst, 2), worst)
-            )
+        if path.exists():
+            src = json.loads(path.read_text())["sources"]["cnn_bottleneck"]
+            checks += [
+                Check(f"probe {space} identity", ident, src["rule_identity_balanced_acc"]),
+                Check(
+                    f"probe {space} table bits",
+                    bits,
+                    src["truth_table_bit_balanced_acc_leave_rules_out"],
+                ),
+            ]
+    if RESCORE_SEL.exists():
+        cnn = json.loads(RESCORE_SEL.read_text())["methods"]["cnn"]
+        checks += [
+            Check("rescore sel cnn shift", 0.000, cnn["median_shift"]),
+            Check("rescore sel cnn from-value", 0.876, cnn["vs_cache"]["median_r2"]),
+        ]
     return checks
 
 

@@ -38,9 +38,49 @@ covering √2) is exactly this scatter — the ECA spreading-rate value 0.7 is
 Sec. IV A now quotes per-estimator ordered/chaotic mode accuracy from the A5
 artifact (was "89–100%"): ECA gbm 0.89 / CNN 0.94; radius-2 gbm 0.99 / CNN 1.00.
 
-### M13 — matched-regime CNN with checkpoint selection (registered)
+### M13 — matched-regime CNN with checkpoint selection (registered). Switch FIRED.
 
-(placeholder — filled after the five-seed runs and full-table scoring)
+Five seeds × {ECA, radius-2}, all else identical to the canonical runs, with
+the final-epoch rule replaced by the rev-13 inner-fold selection (10% of
+training diagrams, selection seed 13). Rev-14 switch rule, frozen before
+training: selection becomes the protocol of record if any per-target
+five-seed mean gains more than +0.02 on either space.
+
+| space | target | final-epoch | selected | delta |
+|---|---|---|---|---|
+| radius-2 | cone fill | 0.337 ± 0.109 | **0.406 ± 0.036** | **+0.069 — TRIGGERS** |
+| radius-2 | survival | 0.874 ± 0.009 | 0.887 ± 0.003 | +0.012 |
+| radius-2 | fraction | 0.880 ± 0.020 | 0.891 ± 0.006 | +0.011 |
+| radius-2 | rate | 0.865 ± 0.020 | 0.875 ± 0.007 | +0.011 |
+| ECA | best (fill) | 0.916 ± 0.019 | 0.931 ± 0.006 | +0.015 — below threshold |
+| ECA | fraction | 0.789 ± 0.038 | 0.762 ± 0.006 | −0.027 |
+
+The either-space rule fires on radius two, so **selection is the CNN of
+record on both spaces**; ECA is switched by the frozen rule, not by choice,
+and the per-space deltas are disclosed in Appendix B. The headline mechanism
+is variance, not mean: seed s.d. collapses on every radius-2 target (fill
+0.109 → 0.036), i.e. final-epoch was a last-epoch lottery.
+
+**Downstream rescoring (rev-14 scope), all as `_sel` artifacts:**
+`full_table_sel` (both spaces), `panel_decomposition_sel`,
+`round6_metrics_sel` (ρ + survival band), `stacking_sel`,
+`stacking_gbm_base_sel`, `deployment_stack_sel`, `retrieval_sel` (both),
+`rule_probe_sel` (both; radius-2 probe re-run at the matched 16-diagram/rule
+protocol after the 32/rule default was caught changing the handcrafted
+control), `reference_rescore_sel`. Final-epoch artifacts all retained.
+
+**No registered verdict changes.** Mechanistic superiority set identical
+(max Δ vs CNN 0.60 → 0.53); "no stable ordering" intact (the single ECA
+equivalence verdict dissolves to inconclusive); survival mode-assignment
+verdict stands — in-band CNN rises to 0.75 on radius two but stays −1.05 on
+ECA; retrieval stays level with the network in its own bottleneck
+(0.864/0.883 vs head 0.880/0.847 — ECA still exceeds); probes essentially
+unchanged (identity 0.87/0.95, bits 0.79/0.61). Direct-estimator ρ range
+becomes 3–35 (ECA fraction worsens under selection); radius-2 cone-fill ρ
+improves 6.4 → 6.0 against mechanistic 1.0. One prose direction flips: the
+seed-0 CNN now scores *lower* on the complex subpanel (0.843) than the
+random one (0.862), agreeing with the covariate-shift concern — the M10
+control (final-epoch on both sides, verdict unaffected) already answered it.
 
 ### Round-6 manuscript restructure (fifth review, length)
 

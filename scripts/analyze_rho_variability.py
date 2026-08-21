@@ -18,6 +18,7 @@ The numerator share is already carried empirically by the manuscript's
 rule-bootstrap CIs; the denominator share is the part the fifth review asked
 to be priced. Rules with sigma_e = 0 drop out of both sums (as in Eq. (2)).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,17 +39,15 @@ def rel_sd(sigma2: np.ndarray, k: int) -> tuple[float, float, float]:
     """(total, numerator-only, denominator-only) relative SD of rho at sqrt(2)."""
     sigma2 = sigma2[sigma2 > 0]
     shape = float((sigma2**2).sum() / sigma2.sum() ** 2)  # sum s^4 / (sum s^2)^2
-    var_num = 2.0 * shape          # Var(N)/E[N]^2 with E[e^2] = 2 s^2
+    var_num = 2.0 * shape  # Var(N)/E[N]^2 with E[e^2] = 2 s^2
     var_den = (2.0 / (k - 1)) * shape
-    tot = 0.5 * float(np.sqrt(var_num + var_den))          # SD(rho)/rho = SD(R)/(2R)
+    tot = 0.5 * float(np.sqrt(var_num + var_den))  # SD(rho)/rho = SD(R)/(2R)
     return tot, 0.5 * float(np.sqrt(var_num)), 0.5 * float(np.sqrt(var_den))
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--output", default=str(REPO / "runs/analysis/rho_variability/summary.json")
-    )
+    ap.add_argument("--output", default=str(REPO / "runs/analysis/rho_variability/summary.json"))
     args = ap.parse_args()
 
     out: dict = {"k_replicates": {}, "per_space": {}}
@@ -70,13 +69,9 @@ def main() -> None:
         out["per_space"][space] = block
 
     worst_den = max(
-        b[t]["denominator_sd_of_rho_at_sqrt2"]
-        for b in out["per_space"].values()
-        for t in b
+        b[t]["denominator_sd_of_rho_at_sqrt2"] for b in out["per_space"].values() for t in b
     )
-    worst_tot = max(
-        b[t]["sd_of_rho_at_sqrt2"] for b in out["per_space"].values() for t in b
-    )
+    worst_tot = max(b[t]["sd_of_rho_at_sqrt2"] for b in out["per_space"].values() for t in b)
     out["worst_case_denominator_sd_of_rho"] = worst_den
     out["worst_case_total_sd_of_rho"] = worst_tot
 

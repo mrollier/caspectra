@@ -904,3 +904,155 @@ machinery dropping out, and its independence approximation becomes much milder
 because outputs really are conditionally independent given inputs. **§3.15's
 leave-one-orbit-out CNN (~15 h)** was also not run; the ECA panel's 18 held-out
 orbits remain the stated limitation.
+
+
+---
+
+# Round-6 response (fifth report, 20 August 2026 — `review_deepseekv4pro_20aug26.md`)
+
+The fifth report recommends major revision on six major comments, a trimming
+list, and eleven minor points. We accepted the length charge and the two
+statistical-wording charges outright, ran the one new experiment the report
+asks for (M13, registered as rev 14 before training), and push back with data
+on two points. Several requested additions were already in the reviewed
+version; we give pointers rather than re-litigate.
+
+## Accepted and acted on
+
+**§1 — "single 127-cell diagram" is ambiguous.** Correct. The abstract now
+reads "$127\times127$ spacetime diagrams of known radius", and Sec. II A
+states "evolved from $t=0$ for $127$ time steps, so an observed diagram is a
+$127\times127$ binary array". The Appendix statement is retained.
+
+**§2 — the "exact" ρ ceilings should be qualified.** Correct in half, and we
+quantified rather than merely softened. The reference values are now stated
+as exact *in expectation* under the additive-noise idealization (abstract,
+Sec. II C, Table III caption), and a registered re-expression (rev 14) prices
+the fluctuation by the delta method: the finite-$K$ denominator the report
+points to contributes at most **0.14 ρ-units** of standard deviation on any
+target or panel; the finite-panel numerator dominates, up to ~0.6 ρ-units on
+the most heteroscedastic target–panel pairs, and is what the rule-bootstrap
+CIs already carry (artifact `runs/analysis/rho_variability/summary.json`,
+wired into the released audit). The mechanistic row's spread around √2
+(0.7–1.8) is exactly this scatter. One half we rebut: the report suggests
+"the numerator and denominator are not strictly independent in all cases".
+They are independent by construction here — the estimator stream, the target
+cache and the reliability replicates use provably disjoint random streams
+(prime seed offsets on per-rule `SeedSequence`s; Appendix A).
+
+**§3 — main CNN results should use the improved checkpoint-selection
+protocol.** We agree this is the report's sharpest hit, and we ran it: M13
+(registered numbers-free as rev 14 before training) retrains the matched-regime
+CNN — five seeds on each space, all else identical — with the rev-13 inner-fold
+selection rule, under a frozen switch rule (selection becomes the protocol of
+record if any per-target five-seed mean improves by more than +0.02).
+The switch fired: on radius two every per-target five-seed mean improves
+under selection (cone fill 0.337 → 0.406, largest gain +0.069 > +0.02; seed
+s.d. 0.109 → 0.036), so the selection protocol is now the CNN of record in
+every matched-regime table, with the final-epoch numbers retained as the
+sensitivity record in Appendix B. ECA alone would not have triggered (largest
+gain +0.015, fraction −0.027); it switches with radius two under the frozen
+either-space rule, not by choice, and the per-space deltas are disclosed.
+Every downstream consumer of the canonical checkpoint was rescored (ρ
+column, paired comparisons, panel decomposition, stacking, retrieval, probes,
+reference rescore; all released as `_sel` artifacts next to the retained
+final-epoch ones). No registered verdict changes: the mechanistic superiority
+set is identical, the intermediate-band survival verdict stands (the CNN
+rises to R² 0.75 in-band on radius two but remains at −1.05 on ECA), and the
+retrieval baseline remains level with the network in its own bottleneck. The
+reviewer's push made the direct baselines stronger — cone fill 0.337 → 0.406
+is a real improvement — and the paper's conclusions survive it with the gap
+restated against the stronger opponent (direct estimators at ρ = 3–35
+against the mechanistic 0.7–1.8).
+
+**§6 — "invariant to panel composition" is not correct.** Agreed and fixed
+exactly as suggested: the text now claims only that ρ's *reference values* do
+not depend on the panel's between-rule variance.
+
+**Trimming.** Adopted at depth: all revision-number tags are out of the main
+body (the registration record lives in Appendix A, which the data-availability
+statement points to); the abstract is rewritten in plain language (~200 words,
+no ICC/√2 symbols before definition); the cost section is compressed to its
+conclusions (full timing table in the released repository); the annealed
+member is one short paragraph; the phenotype maps are one paragraph; the
+landscape figure, its coordinate caveats, the ECA validation and the detector
+null moved to Appendix D, with the main text keeping only the prevalence and
+its horizon caveat; and the two per-target tables are merged. Net: 16 pages
+including the new material this report requested, against 16 before it.
+
+**Minor 1 (abstract density), minor 2 (conditioning in Eq. (1)), minor 3
+("by construction" scoping), minor 6 (mode-assignment numbers).** All
+adopted: the equation now carries "(conditional on exact recovery)" inline;
+the abstract's benchmark-matching claim is scoped to "for those rules"; the
+exact per-estimator mode accuracies are quoted (ECA 0.89/0.94, radius two
+0.99/1.00 for the boosted baseline/CNN).
+
+**Minor 4 (negative-R² clipping consistency).** The convention was stated in
+Appendix B (frontier bootstrap draws alone are clipped to [−1,1], binding
+only in collapsed cells, with no verdict resting on a clipped cell); the
+guidance-table caption now points to it explicitly.
+
+**Minor 9 (calibration collapse prominence).** A sentence now sits in the
+Discussion next to the latent-decoder omission, quoting the collapse (0.58
+coverage at 2% noise, 0.13 at 20%).
+
+## Already in the reviewed version (pointers)
+
+**§4 — noise-decoder misspecification should bound the claims.** This scoping
+is in the reviewed text at every level the report asks for: the abstract
+("those noise-band verdicts bound the estimators evaluated, not the
+read-then-simulate family"), the estimator description (Sec. IV F(i), which
+derives the effective-sample-size mechanism), the guidance-table caption
+("a claim about these estimators, not all estimators"), and the Discussion,
+which names the correctly specified latent-diagram decoder as "the
+uncomfortable gap". We did not build the Gibbs/EM decoder; it remains named
+future work, and we believe the present scoping is exactly the "explicitly
+weaker treatment" the report offers as the alternative.
+
+**Minor 5 (TOST is an audit).** The reviewed main text already reports it
+only as "a correctness audit in Appendix A"; the appendix says it "can only
+fail if the estimator's random stream is not independent of the target cache,
+if reconstruction is not exact where claimed, or if the scoring is biased".
+
+**Minor 7 (known radius).** Stated in the Introduction (the observation-model
+list), measured under relaxation (~0.12 median R² cost, unknown-radius axis),
+and named in the Discussion's model-order analogy.
+
+**Minor 8 ("signature-complex" is not a validated class).** The reviewed text
+defines it as "a criterion label … not a validated behavioural class" at
+first use, and the landscape material repeats the disclaimer.
+
+**Minor 10 (masking/density axes not replicated).** Stated verbatim in
+Sec. IV F ("The masking and density axes were not replicated on the
+complement panel; their rows … rest on the canonical panel alone").
+
+**Future-work list.** All four suggestions are in the Discussion of the
+reviewed version: the latent-diagram decoder, differentiable-simulator /
+joint reader–simulator pipelines, rule-scrubbing and rule-provision causal
+probes, and the λ-stratified sample (Sec. II A names it "the better design
+for a successor study"); Domany–Kinzel is cited as the stochastic testbed.
+
+## Respectfully disagreed, with the reasons
+
+**§5 — make the stratified split primary.** We report the representative view
+more prominently (the M10 stratified-split control is now a row of Table I)
+but keep the enriched panel as the primary, for three reasons. (i) The
+enriched split is the registered evaluation panel; replacing the primary
+after seeing both results would be outcome-dependent presentation of the kind
+the report elsewhere warns against. (ii) The enrichment is measurably
+conservative for the headline claim: post-stratifying to the universe
+prevalence *widens* the family gap (mechanistic 0.994 vs CNN 0.830), and the
+M10 control shows representative training moves the CNN *down* (0.859 →
+0.778) — the enriched panel flatters the direct estimators, so the reported
+gap is an underestimate. (iii) The stratified control rests on three seeds
+and five held-out complex rules; its CIs are the weaker foundation. The
+outcome-dependence of the panel construction is now disclosed in Sec. IV A in
+those words ("an outcome-dependent panel selection, disclosed as such"), with
+the note that it cannot contaminate the mechanistic estimator, which has no
+trained parameters.
+
+**§7-adjacent editorial (secondary analyses "could be removed").** We kept
+one-paragraph versions of the phenotype maps and the landscape in the main
+text rather than deleting them: the landscape defines the signature-complex
+label that the panel construction uses, so it cannot vanish entirely, and
+both are labelled secondary with their evaluations stated at earned strength.
