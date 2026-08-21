@@ -104,7 +104,7 @@ of study is therefore not ``the class of a rule'' but a \emph{protocol
 tuple}---(rule orbit, IC measure, lattice, horizon)---characterized by
 finite-horizon, perturbation-defined statistics. The best-posed of these is
 \emph{damage spreading}: evolve two copies of a configuration that differ in a
-single cell and measure how the difference grows. The construction has a long
+single cell and measure how the difference grows (Fig.~\ref{fig:twin}). The construction has a long
 lineage---Kauffman's damage experiments on Boolean
 networks~\cite{kauffman1969}, the annealed treatment of Derrida and
 Pomeau~\cite{derridapomeau1986}, and its formalization for CA, where the
@@ -222,9 +222,29 @@ bearing---they are what make the rule readable---and
 Sec.~\ref{sec:identifiability} measures what happens when each is relaxed.
 
 \subsection{Damage-response statistics}
+\label{sec:targets}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/twin_run.pdf}
+\caption{The twin-run experiment that defines the targets, drawn for four
+elementary rules (one illustrative pair each; fixed seed, centre cell
+flipped). Top: run~A from a random initial row on a ring of $127$ cells,
+time running downward. Middle: run~B from the same row with one cell flipped
+(marker). Bottom: the damage $A\neq B$, confined to the light cone of the
+flip (dashed). Printed values are the four statistics of \emph{this single
+pair}, computed exactly as in the benchmark; the targets average
+$n_{\mathrm{pairs}}=256$ such pairs per rule. The bracket on the rule-$110$
+panel marks the final-row \emph{extent}; its normalization gives the
+spreading rate, and fill is the damaged density within it. Rule $204$ shows
+the sparse-end degeneracy: a single surviving damaged column has extent $1$
+and hence fill $1$.}
+\label{fig:twin}
+\end{figure*}
+
 The targets are four scalars per rule, estimated from twin runs: draw an
 initial condition, flip one uniformly chosen cell, evolve both copies to the
-horizon, and compare final rows. \emph{Damage survival} is the probability that
+horizon, and compare final rows (Fig.~\ref{fig:twin}). \emph{Damage survival} is the probability that
 any difference remains; conditional on survival, \emph{damage fraction} is the
 fraction of the ring that differs, \emph{spreading rate} is the damage-cone
 extent normalized by $2r$ times the number of steps, and \emph{cone fill} is
@@ -234,7 +254,8 @@ counts endpoints, the light-cone maximum is $(2rT+1)/(2rT)=1.008$ rather than
 $1$, so ``rate $1$'' is light speed up to one cell of extent; the largest rate
 we observe anywhere is $0.816$, so nothing in this paper sits near that
 boundary. And a single surviving damaged cell has extent $1$ and hence fill
-$1$, placing maximally sparse damage at the \emph{top} of the fill axis
+$1$ (rule-$204$ panel of Fig.~\ref{fig:twin}), placing maximally sparse
+damage at the \emph{top} of the fill axis
 alongside a solid cone; this degeneracy affects $0.13\%$ of the sampled
 radius-two rules (and the embedded ordered ECAs $204$ and $184$), which is why
 we report fill beside the spreading rate rather than alone. In the
@@ -1184,10 +1205,11 @@ Python~3.11 on Apple silicon (fp32), PyTorch, scikit-learn pinned at 1.9.0;
 \texttt{pip install -e .} recreates it. Reproduction entry points:
 \texttt{scripts/audit\_manuscript\_numbers.py} re-derives every quoted
 number from the released artifacts (exit code $0$ on agreement);
-\texttt{manuscript/make\_figures.py},
+\texttt{manuscript/make\_figures.py} regenerates
+Figs.~\ref{fig:twin}, \ref{fig:landscape} and~\ref{fig:exemplars};
 \texttt{scripts/build\_identifiability\_diagram.py} and
 \texttt{scripts/build\_frontier\_grid.py} regenerate
-Figs.~\ref{fig:landscape}, \ref{fig:ident} and~\ref{fig:frontier}.
+Figs.~\ref{fig:ident} and~\ref{fig:frontier}.
 % TODO(user): mint the archive DOI on acceptance and insert it here.
 
 \appendix
@@ -1466,8 +1488,24 @@ versus $N/2rT$, not tied to extent) it does not separate---the tightest box
 holding all $234$ signature rules also holds $732$ ordinary ones. It is a
 registered \emph{threshold region}, not a discovered cluster and not a
 validated glider region; prevalence and the ECA validation are in
-Sec.~\ref{sec:constructive}.}
+Sec.~\ref{sec:constructive}. Open circles a--c: the exemplar rules of
+Fig.~\ref{fig:exemplars}.}
 \label{fig:landscape}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/signature_exemplars.pdf}
+\caption{What the signature region contains, where that can be shown
+honestly: localized-seed spacetime diagrams for the three rules---circles
+a--c in Fig.~\ref{fig:landscape}---on which the plotted signature set and
+the localized-seed detector of Appendix~\ref{app:priorwork} agree (the
+detector performs at or below chance over the region as a whole). A
+five-cell random seed on the quiescent background emits persistent
+structures that stay well inside the light cone (dashed): sub-ballistic,
+sparse growth. An illustration for these three rules only---not a glider
+census, and not a promotion of the region to ``complex''.}
+\label{fig:exemplars}
 \end{figure}
 
 Figure~\ref{fig:landscape} draws the landscape in damage coordinates, in
@@ -1486,7 +1524,9 @@ but sitting between the chaotic and complex clusters in our damage
 coordinates (balanced accuracy $0.99$). The localized-seed detector intended
 as an independent check performs at or below chance on radius two (balanced
 accuracy $0.39$; design in Appendix~\ref{app:priorwork}) and validates
-nothing either way.
+nothing either way. Figure~\ref{fig:exemplars} shows the three rules on
+which the two criteria nevertheless agree---the only rules in the region for
+which a picture illustrates rather than overclaims.
 
 \section{Prior work under its assumptions}
 \label{app:priorwork}
