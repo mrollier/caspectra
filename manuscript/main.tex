@@ -792,6 +792,17 @@ intermediate regime and a learned rule-reader beyond it, and we benchmark
 both (registered numbers-free before measurement; per-estimator status in
 Fig.~\ref{fig:frontier}).
 
+\emph{Scope of the noise-axis verdicts, stated first.} The correctly
+specified decoder for bit-flip observation noise marginalizes the latent
+clean diagram---a factor graph with known structure, amenable to Gibbs
+sampling or expectation--maximization on a $127\times127$ binary
+lattice---and we did not build it. The entrywise pseudo-posterior we did
+build is overconfident under noise by construction (the mechanism is priced
+in~(i) below), and the miscalibration is measured, not hypothetical: its
+nominal $1\sigma$ intervals cover $0.58$ at $2\%$ noise and $0.13$ at
+$20\%$. Every noise-band verdict in this section therefore bounds \emph{the
+estimators evaluated}, not the read-then-simulate family.
+
 \emph{(i) The pseudo-posterior decoder}---the probabilistic move of the
 identification programme~\cite{adamatzky1994}, and the name we use for it
 throughout. The model is
@@ -813,9 +824,8 @@ overconfident---the worked example in Appendix~\ref{app:algorithms} reaches
 $\ell\approx77$, a certainty of $1-10^{-33}$---which is the mechanism behind
 the calibration collapse measured below. We built neither the cheap repair (dividing
 counts by an overlap factor, or fitting an overdispersion parameter) nor the
-correct one (marginalizing the latent clean diagram), so the noise-band
-verdicts below bound \emph{the estimators evaluated}, not the
-read-then-simulate family. Simulating tables sampled from it \emph{restores
+correct marginalization stated at the head of this
+section. Simulating tables sampled from it \emph{restores
 identification across the intermediate band}: at $40\%$ masking its median
 \rtwo{} is $0.85$ against the deterministic inverter's $0.24$; at $50\%$,
 $0.59$ against $-0.77$; at IC density $0.1$, $0.77$ against $0.08$; and it is
@@ -1122,14 +1132,11 @@ mechanistic route instead. Whether a larger reader, a differentiable simulator
 in the loop, joint reader--simulator training, or corruption-trained networks
 at scale close that gap is a concrete open problem, next to rule-scrubbing and
 rule-provision interventions to test causality. One
-omission we regard as the most consequential: the correctly specified decoder
-for bit-flip observation noise marginalizes the latent clean diagram---a
-factor graph with known structure, amenable to Gibbs sampling or
-expectation--maximization on a $127\times127$ binary lattice---and we did not
-build it. The price of the approximation we shipped instead is already
-measured: the pseudo-posterior's nominal $1\sigma$ intervals hold their
-coverage across the masking band but collapse to $0.58$ at $2\%$ and $0.13$
-at $20\%$ noise (Sec.~\ref{sec:frontier}). In a paper arguing that baselines must be constructed carefully
+omission we regard as the most consequential: the correctly specified
+latent-diagram decoder for bit-flip noise, which we did not build; its
+absence, and the measured price of the entrywise approximation shipped
+instead, are stated up front where the noise results are reported
+(Sec.~\ref{sec:frontier}). In a paper arguing that baselines must be constructed carefully
 before conclusions are drawn about them, that is the uncomfortable gap, and it
 is why the noise-axis verdicts are scoped to the estimators evaluated.
 
