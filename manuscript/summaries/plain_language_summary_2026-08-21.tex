@@ -1,0 +1,420 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\usepackage{parskip}
+\usepackage[colorlinks=true,linkcolor=blue!60!black,urlcolor=blue!60!black]{hyperref}
+
+\newcommand{\sowhat}[1]{\emph{So what?} #1}
+
+\title{\Large\textbf{A plain-language summary}\\[6pt]
+\large of ``Rule reconstruction from a single spacetime diagram yields
+simulation-limited prediction of the finite-horizon damage response of
+cellular automata''}
+\author{Manuscript authors: Michiel Rollier and Jan M.\ Baetens\\
+\normalsize Department of Data Analysis and Mathematical Modelling, Ghent University}
+\date{Summary prepared 21 August 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\fbox{\parbox{0.965\textwidth}{\textbf{Which version this
+summarizes.} This document describes the manuscript as it stands on
+21~August~2026: the revision responding to the fifth referee report
+(registered protocol revisions 2--14; git branch
+\texttt{review-round7-fixes}, commit \texttt{8bf5b4a}; 16-page manuscript
+prepared for \emph{Chaos}). Every number quoted below appears verbatim in
+that version. If the manuscript is revised again, this summary describes the
+older text.}}
+
+\section*{1. The whole paper in one breath}
+
+We ask whether a neural network that looks at a single picture of a simple
+simulated universe can predict how that universe reacts to a tiny
+disturbance---and we show that, whenever the picture is clean, an
+old-fashioned and fully transparent alternative beats it: read the
+universe's rule straight off the picture, then re-run the disturbance
+experiment yourself. The learned models only start earning their keep once
+the picture is corrupted by noise or missing data, and the paper maps
+exactly where that happens.
+
+\section*{2. Why should anyone care?}
+
+There is a growing scientific practice of training machine-learning models
+to read dynamical properties---chaos, stability, sensitivity to
+perturbation---directly off a single observation of a system, skipping the
+experiments that define those properties. Published comparisons in that
+literature often lack strong classical baselines. This paper builds the
+strongest possible baseline \emph{exactly}, in the cleanest laboratory
+available, works out what ``as good as possible'' even means when the
+correct answers are themselves noisy measurements, and then shows that the
+learned shortcut falls far short of that baseline while looking deceptively
+good on the usual score.
+
+\sowhat{Before trusting a learned shortcut for predicting how a system
+responds to perturbation, check whether the observation already contains the
+system's mechanism. If it does, reading the mechanism out and simulating is
+the baseline to beat---and in this study, across every configuration tested,
+nothing beat it.}
+
+\section*{3. The background you need (five minutes)}
+
+\textbf{Cellular automaton (CA).} A row of 127 cells arranged in a ring,
+each cell either black or white. A fixed local \emph{rule} decides each
+cell's next colour from its current neighbourhood. The paper uses two rule
+families: \emph{elementary} CA, where a cell sees itself and one neighbour
+on each side (256 possible rules, of which 88 are genuinely different once
+mirror-image and colour-swapped versions are identified---each such family
+is called an \emph{orbit}), and \emph{radius-two} CA, where a cell sees two
+neighbours on each side (about four billion possible rules, from which 800
+are sampled). Despite their simplicity, these systems produce everything
+from frozen order to full chaos to intricate interacting structures.
+
+\textbf{Spacetime diagram.} Stack 127 successive rows on top of each other
+and you get a $127\times127$ black-and-white image: the complete visual
+history of one run. This single image is the only input every predictor in
+the paper is allowed to see.
+
+\textbf{Rule versus behaviour.} The field distinguishes the
+\emph{genotype}---the local update rule, a small lookup table---from the
+\emph{phenotype}---the visible behaviour in the diagram. A key subtlety: a
+clean diagram contains, hidden in its pixel-to-pixel transitions, the entire
+rule table. Any method meant to judge \emph{behaviour} can secretly succeed
+by reading the \emph{rule} instead.
+
+\textbf{Damage spreading (the ``butterfly-effect'' probe).} Run the same CA
+twice from the same starting row, but flip a single cell in one copy, and
+watch how the difference between the two runs evolves. Four numbers
+summarize the outcome: \emph{damage survival} (does any difference remain at
+the end?), \emph{damage fraction} (how much of the ring differs?),
+\emph{spreading rate} (how fast does the damaged region grow?), and
+\emph{cone fill} (how densely damaged is that region?). Each number is an
+average over 256 repetitions with random starting rows---so each ``correct
+answer'' is itself a noisy measurement, like a lab value with error bars.
+
+\textbf{The task.} These four statistics are defined by \emph{twin} runs, so
+no formula computes them from one image. The machine-learning proposition
+(``amortization'') is: pay once to train a model, then predict the four
+numbers from a single image, instantly, forever after.
+
+\textbf{The scores.} $R^2$ is the standard accuracy score: $1$ is perfect,
+$0$ means no better than always guessing the average, negative means worse
+than that. Because the correct answers are noisy, even a perfect method
+cannot reach $1$---an issue the paper takes very seriously. It therefore
+also reports $\rho$: the prediction error measured in units of the answer's
+own measurement noise. On that scale, $\rho=\sqrt2\approx1.41$ means ``as
+accurate as re-measuring the answer with a fresh simulation'' and $\rho=1$
+means ``perfect knowledge of the ideal noise-free answer''.
+
+\section*{4. A walk through the paper}
+
+\subsection*{Abstract, opening quotation, and Introduction (\S I)}
+
+\textbf{What it does.} Sets up the question and announces the three results:
+(1) a single clean diagram identifies the exact rule for $100\%$ of
+elementary and $97.5\%$ of radius-two test rules, and re-simulating from the
+recovered rule is then \emph{provably} as good as re-measuring the answer;
+(2) two trained direct predictors fall $3$--$35$ noise units short of that;
+(3) the mechanistic route is brittle---modest noise, heavy masking, or
+extreme starting densities break it, and the paper maps what to use beyond.
+
+\sowhat{The intellectual move is taking an ``obvious'' trick seriously.
+Reading a CA rule out of its diagram is thirty-five-year-old prior art
+(Richards et al.\ 1990; Adamatzky's 1994 monograph)---the paper claims no
+novelty for it. What nobody had measured is what that old fact \emph{does}
+to a modern machine-learning benchmark. Answer: it quietly solves it.}
+
+\subsection*{The benchmark (\S II): rules, targets, and what ``perfect'' means}
+
+\textbf{What it does.} Fixes the observation protocol precisely (ring of
+127 cells, 127 time steps, coin-flip random starting rows, diagrams that are
+complete, noiseless, binary, and of known neighbourhood size), defines the
+four damage statistics with their edge cases, and---the section's real
+content---distinguishes three different ``ceilings'' a predictor can be held
+to. Because each stored answer is one noisy measurement (estimated from
+$K=20$ independent repeat measurements per rule): a predictor of the ideal
+noise-free answer is capped by one ceiling (the ``ICC''), a predictor that
+is itself a fresh noisy simulation is capped by a strictly lower one
+(replicate agreement), and confusing the two misstates a method by more than
+the margins being argued about. The $\rho$ score compresses this into one
+number with fixed reference values ($\sqrt2$ and $1$) for every target.
+
+\sowhat{Without this calibration, ``our model scores $0.88$'' is
+uninterpretable---maybe $0.88$ is nearly perfect, maybe it is far off.
+With it, every score in the paper can be read as a distance from what is
+actually achievable. This reliability machinery is reusable in any study
+whose ground truth comes from simulation.}
+
+\textbf{Limits.} The reference values $\sqrt2$ and $1$ are exact only
+\emph{on average} under an idealized noise model. The paper prices the
+wobble: at most $0.14$ $\rho$-units from estimating noise with $K=20$
+repeats, up to about $0.6$ from the finite rule panel---small against the
+$1.6$--$34$-unit gaps the paper is about.
+
+\subsection*{The three contestants (\S III)}
+
+\textbf{What it does.} Describes the estimators. \emph{(i) Mechanistic:}
+tabulate every pixel transition in the diagram, rebuild the rule table,
+re-run the twin experiment on the rebuilt rule. Fully transparent, no
+training, but it \emph{assumes} the observation model holds. \emph{(ii) Five
+cheap statistics:} five simple hand-picked image summaries (density,
+activity, compressibility, and two entropies) fed to gradient-boosted
+decision trees. \emph{(iii) A small convolutional neural network} (CNN,
+$31{,}524$ parameters) trained on many diagrams, with a first layer designed
+to discourage rule-reading, five training repeats with different random
+seeds, and---new in this version---weights chosen at the best epoch on an
+inner slice of training data rather than simply the last epoch (a registered
+protocol upgrade). The section also fixes the statistical rulebook in
+advance: what counts as one method being ``superior'', ``equivalent'', or
+the comparison being ``inconclusive''.
+
+\sowhat{The contest is honest by construction: verdict rules, margins, and
+test panels were committed to a timestamped repository before the
+measurements they judge.}
+
+\subsection*{Result 1 (\S IV A): rule reconstruction is as good as re-measuring}
+
+\textbf{What it does.} Shows the mechanistic route recovers the exact rule
+for $100\%$ of elementary and $97.5\%$ of radius-two held-out rules, and
+proves that, once the rule is exactly recovered, its predictions and a fresh
+independent measurement of the answer are statistically \emph{the same
+thing}---so hitting the replicate ceiling is arithmetic, not luck. Scored
+against a $16\times$ less noisy reference answer it rises to the top
+ceiling, confirming its residual error was the comparison's noise, not its
+own. The direct estimators do not rise when rescored the same way: their
+shortfall is genuine. In headline numbers: median $R^2$ of $0.991$
+(mechanistic) versus $0.880$ (CNN) and $0.845$ (trees) on the radius-two
+panel---which sounds close until converted to noise units: $\rho$ of
+$0.7$--$1.8$ versus $3$--$35$. Two deflating findings follow. The CNN's
+seemingly excellent elementary-CA spreading-rate score ($R^2\approx0.98$)
+is $\rho=20$: twenty times the noise floor. And on damage survival, most of
+the direct estimators' apparent skill is \emph{mode assignment}: they
+correctly sort rules into ``dies out'' versus ``spreads'' (the CNN gets
+$0.94$ of elementary orbits and $1.00$ of radius-two rules right), but among
+the genuinely uncertain middle rules their $R^2$ collapses (CNN $-1.05$ on
+elementary CA---worse than guessing the group average). They are
+classifiers that had been read as regressors. The section also discloses
+that the radius-two test panel deliberately over-represents interesting
+rules, and shows by decomposition that this works \emph{against} the paper's
+own headline claim, not for it. The $2.5\%$ reconstruction failures are
+examined and shown to be dynamically harmless.
+
+\sowhat{This is the paper's central measurement: under clean observation,
+system identification is simulation-limited---as good as re-running the
+experiment---and the learned shortcuts are not remotely close, even where
+their conventional scores look flattering.}
+
+\subsection*{Result 2 (\S IV B): the two learned methods do not even beat each other}
+
+\textbf{What it does.} Pre-registered paired comparisons show no stable
+ranking between the CNN and the five-statistic trees: the CNN is ahead on
+survival, the trees are superior on cone fill, the rest is inconclusive.
+The mechanistic estimator meets the registered superiority bar against both
+on most targets (differences up to $+0.39$ and $+0.53$) and loses to
+neither on any target in either rule space.
+
+\sowhat{If the expensive learned model and five cheap statistics trade
+places depending on the target, neither has captured the underlying physics;
+the method that read the rule has.}
+
+\subsection*{Result 3 (\S IV C): what the network knows, and the memorisation test}
+
+\textbf{What it does.} Two diagnostics. \emph{Stacking:} does the CNN carry
+information the five statistics miss? Yes, on survival ($R^2$ increment
+$+0.33$ over a simple base, $+0.09$ over the strong base)---but a
+deployment-realistic combination cannot harvest it (increment $+0.001$, not
+significant). \emph{Retrieval:} a lookup that simply returns the answer of
+the most similar \emph{training} rule---no learning, no simulation---matches
+the trained models ($0.864$ and $0.883$ versus the CNN's $0.880$; on
+elementary CA the lookup inside the CNN's own internal representation
+($0.883$) actually beats the CNN's own output ($0.847$)).
+
+\sowhat{Much of the learned models' apparent skill is recognising which
+training rule a diagram resembles---memorisation, not generalisation to
+genuinely new rules. This cheap lookup test is portable to any benchmark
+whose space of systems is densely sampled, and is one of the paper's most
+exportable tools.}
+
+\subsection*{Result 4 (\S IV D): the rule is readable everywhere, including inside the network}
+
+\textbf{What it does.} Linear probes decode the exact rule identity from the
+CNN's internal 64-number summary with $0.87$--$0.95$ accuracy (versus
+near-zero chance), despite the anti-rule-reading first layer; individual
+rule-table bits transfer to never-seen rules at $0.79$/$0.61$.
+
+\sowhat{The information leak the paper warns about is not hypothetical: it
+survives into the network trained to predict behaviour. The probes show the
+information is \emph{present}; whether the network's predictions causally
+\emph{use} it is explicitly left open.}
+
+\subsection*{Result 5 (\S IV E--F): where reading fails, and what wins beyond}
+
+\textbf{What it does.} Deliberately breaks each observation assumption and
+maps the consequences on a grid (the ``identifiability frontier''). Exact
+reconstruction is brittle exactly where you would expect: a deterministic
+rule table has no concept of noise, so a single corrupted pixel transition
+can flip a table entry---at $5\%$ pixel noise the mechanistic score falls
+below zero. It tolerates about $25\%$ missing pixels and fails at extreme
+starting densities. Then comes the repair race between eight registered
+estimators plus two fairness controls: a \emph{probabilistic} rule reader
+(the ``pseudo-posterior decoder''---keep a per-entry probability instead of
+a hard bit, simulate several plausible tables, average) extends the working
+range to $50\%$ masking ($R^2$ $0.85$ at $40\%$ masking versus the exact
+inverter's $0.24$) and rescues extreme densities ($0.77$ versus $0.08$),
+but only helps to about $3\%$ noise, and its confidence statements become
+badly overconfident under noise (nominal $68\%$ intervals actually cover
+$58\%$ at $2\%$ noise and $13\%$ at $20\%$). A learned rule-reading network
+mostly fails---a memorable finding along the way: a table that is $73\%$
+correct produces a \emph{badly wrong} dynamical system, because a rule
+table is not the kind of object where ``mostly right'' helps. The fairness
+controls matter most: retraining the same CNN \emph{on corrupted diagrams}
+makes it the best method in the $3$--$15\%$ noise band ($R^2$
+$0.51$--$0.62$)---so an earlier ``dead zone'' where nothing worked was an
+artifact of testing clean-trained models---while an unconstrained network
+$354\times$ larger changes no verdict, and a control that puts the
+interesting rules back into training still leaves the CNN at $0.778$ versus
+the mechanistic $0.992$. At $20\%$ noise nothing tested is reliable. All of
+this is condensed into a practitioner guidance table: which estimator to use
+in which observation regime, with its price.
+
+\sowhat{This is the transferable product. The matched-regime verdict
+(``just read the rule'') is specific to clean CA diagrams; the
+\emph{frontier}---exact methods first, probabilistic reading under moderate
+corruption, corruption-trained networks beyond, nothing past heavy
+corruption---is the pattern the authors expect to generalize, and each axis
+has a named analogue in real system identification (sensor noise, missing
+sensors, insufficient excitation).}
+
+\subsection*{Secondary analyses (\S IV, final subsections): cost, and honest by-products}
+
+\textbf{What it does.} \emph{Cost:} the mechanistic estimator pays per
+question ($283$\,ms) versus the CNN's $1$\,ms, but training means the CNN
+only breaks even after ${\approx}4700$ questions (plausibly ${\approx}50$
+against an optimized implementation)---and even a bargain-budget mechanistic
+run ($17$\,ms) still beats both learned models on accuracy. A zero-cost
+textbook approximation (the ``annealed'' mean-field theory) fails
+completely ($R^2=-2.15$), for an identified reason: the targets measure
+precisely the correlations that approximation throws away.
+\emph{By-products:} a map of the radius-two rule space in damage coordinates
+($7.8\%$ of rules meet a registered ``interesting damage'' criterion---
+explicitly \emph{not} promoted to a validated census of complex rules), and
+a sliding-window ``behaviour map'' for mixed-rule CA whose advantage is
+statistically inconclusive. Both are reported at exactly the strength their
+evaluation supports.
+
+\sowhat{Speed is the only case left for the learned models in the matched
+regime, and it is weaker than it looks. The by-products show the flip side
+of the paper's discipline: results that did not pan out are reported as
+such rather than dressed up.}
+
+\subsection*{Discussion (\S V)}
+
+\textbf{What it does.} States the claim at its correct scope: a
+single-observation behaviour-prediction benchmark is solved by system
+identification \emph{whenever} the observation pins down the generator
+within a known model class, the inversion is tractable, and the defining
+experiment can be re-run. Benchmark designers who intend to test
+representation learning must break that chain (noise, partial observation,
+unknown model class)---or accept that they are benchmarking identification.
+The authors are careful about reach: they name no published benchmark this
+invalidates, and they name their own most consequential omission---the
+fully correct probabilistic decoder for noisy diagrams was not built, so
+the noise-regime verdicts bound the estimators tested, not the whole
+mechanistic family. The identified next experiment: stochastic CA
+(Domany--Kinzel), where the rule itself is probabilistic, identification
+becomes genuine estimation, and the paper's near-identity argument should
+finally break down.
+
+\sowhat{The discussion converts one clean case study into a design rule for
+a whole literature, while drawing the boundary of its own evidence
+unusually sharply.}
+
+\subsection*{Appendices A--E}
+
+\emph{A: Reproducibility and registration.} The full ledger of which
+analyses were registered before measurement, which were added afterwards,
+and which are exploratory; plus a correctness audit of the central identity
+and one disclosed deviation from the original registration. \emph{B:
+Methods supplement.} Exact data, splits, network architecture, evaluation
+protocol, and the record of the checkpoint-selection switch (the registered
+rule fired: radius-two cone fill rose $0.337\to0.406$ and seed-to-seed
+spread collapsed $0.109\to0.036$). \emph{C: Decoder algorithms.} Pseudocode
+for every rule-reading variant, with a worked example showing why the
+probabilistic decoder becomes overconfident. \emph{D: The damage-signature
+landscape.} The rule-space map with its central caveat spelled out: the
+striking-looking region is substantially a coordinate effect, a registered
+threshold region rather than a discovered cluster; an intended independent
+detector performed at chance and validates nothing. \emph{E: Prior work
+under its assumptions.} A table of thirty-five years of CA identification
+literature, so the boundary of the novelty claim is auditable.
+
+\section*{5. The limits, stated plainly}
+
+\begin{itemize}
+\item \textbf{Everything is protocol-scoped.} All statistics are defined for
+this exact setup: ring of 127 cells, 127 steps, coin-flip starting rows.
+This is deliberate (the asymptotic versions are formally undecidable), but
+it means no claim is about ``the rule'' in the abstract.
+\item \textbf{The neighbourhood size is assumed known} in the main analysis;
+inferring it costs about $0.12$ in median $R^2$.
+\item \textbf{The noise-regime verdicts bound the tested estimators only.}
+The correctly specified probabilistic decoder for noisy diagrams was not
+built; the authors flag this as their most consequential omission.
+\item \textbf{Neural claims are scoped to this architecture and budget.} No
+architecture search was run; the paper explicitly does not conclude that
+deep networks cannot close the gap.
+\item \textbf{The radius-two test panel is enriched} with interesting rules
+selected using the same data that supplies the evaluation labels---
+disclosed, and shown by two controls to be conservative for the headline
+claim, but a design wart nonetheless.
+\item \textbf{Deterministic, binary, one-dimensional CA only.} The
+stochastic case is argued to be the thesis's breaking point---and has not
+been run.
+\item \textbf{The frontier rests on a fixed 80-rule panel}; only the noise
+axis was replicated on a second panel (the qualitative structure held, and
+the crossover moved---it is a band, not a line); corruptions were tested one
+axis at a time.
+\item \textbf{Timings are one machine, one implementation.}
+\end{itemize}
+
+\section*{6. Why the results are valuable anyway}
+
+\textbf{A calibrated negative result.} Most of the paper's value is in what
+it stops people from doing: publishing learned single-observation predictors
+of perturbation response without building the identification baseline. The
+gap is not asserted but measured, in units that make it unmistakable.
+
+\textbf{Reusable measurement machinery.} The three-ceiling reliability
+analysis and the $\rho$ score apply to any benchmark whose ground truth
+comes from noisy simulation---which is most of simulation-based machine
+learning.
+
+\textbf{Two cheap, portable diagnostics.} The mode-assignment check (is the
+regressor secretly a classifier?) and the nearest-training-example lookup
+(is the model secretly memorising?) can be run on any benchmark in an
+afternoon.
+
+\textbf{A practical map.} The frontier and its guidance table tell a
+practitioner which estimator to trust for a given observation quality, with
+measured evidence and explicit refusal to recommend anything where nothing
+worked.
+
+\textbf{A methodological standard.} Decision rules were frozen before
+measurements, every quoted number is re-derived from released artifacts by
+an audit script, negative and inconclusive results are reported at face
+value, and each claim is labelled registered, post-hoc, or exploratory. The
+paper practises the benchmark hygiene it preaches.
+
+\vspace{6pt}
+\noindent\rule{\textwidth}{0.4pt}
+\vspace{2pt}
+
+\noindent\small This summary accompanies the repository copy of the
+manuscript. It simplifies wording but adds no claims; where it paraphrases,
+the manuscript's own hedges apply. Source of record:
+\texttt{manuscript/main.tex} at commit \texttt{8bf5b4a}.
+
+\end{document}
