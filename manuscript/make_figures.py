@@ -236,7 +236,7 @@ EX_SEED_WIDTH = 5
 
 # Full text width: at \columnwidth the 255-cell strips print at ~5 pt and the
 # structures the figure exists to show are not resolvable.
-fig, ex_axes = plt.subplots(len(EXEMPLAR_RULES), 1, figsize=(7.1, 3.4))
+fig, ex_axes = plt.subplots(len(EXEMPLAR_RULES), 1, figsize=(7.1, 3.0))
 for ax, lbl, rule in zip(ex_axes, "abc", EXEMPLAR_RULES):
     background = quiescent_background(rule, EX_RADIUS)
     ex_rng = np.random.default_rng(0)

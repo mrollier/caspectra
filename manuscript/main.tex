@@ -626,17 +626,9 @@ it. The rescaling is not cosmetic: ECA spreading rate reads
 \rtwo{}${=}0.98$ for the CNN, which sounds close, and $\rho=20$, which does
 not. CNN columns are the seed-$0$ checkpoint throughout, as in
 Table~\ref{tab:headline}. Rules whose target carries no Monte-Carlo noise
-leave the denominator but not the numerator: the mechanistic estimator's
-error on them is exactly zero, so they drop out of its ratio, while a direct
-estimator's error there is charged against a zero noise unit. They are
-target-specific ($3/2/2/9$ of $18$ for survival/fraction/rate/fill on ECA,
-$1$ of $160$ throughout at radius two) and include additive and fill-pinned
-rules, not only the fully ordered ones. This binds on ECA cone fill, where
-such rules carry $0.85$ (statistics) and $0.48$ (CNN) of the numerator---
-excluding them from both sums gives $\rho$ $4.8$ and $9.0$ against the $13$
-and $12$ tabulated---and stays under $7\%$ of the numerator on the other
-ECA targets and under $10\%$ at radius two, so the reported ranges and every
-verdict stand.}
+leave the denominator but not the numerator, which inflates $\rho$ for the
+direct estimators wherever such rules are common---materially only on ECA
+cone fill, and without moving any verdict (Appendix~\ref{app:methods}).}
 \label{tab:rho}
 \end{table}
 
@@ -1398,6 +1390,22 @@ that is a property of the panel, not of the target; the post-stratified row
 of Table~\ref{tab:headline} reweights its two strata to the universe
 prevalence; the correction is small (no ICC moves by more than $0.010$).
 
+\emph{$\rho$ and noiseless rules.} Pooling the two sums of
+Eq.~\eqref{eq:rho} makes the reference values exact but treats rules with
+$\hat\sigma_e=0$ asymmetrically: they leave the denominator while an
+estimator with nonzero error there still charges the numerator. The
+mechanistic estimator is exact on them and its ratio is unaffected; the
+direct estimators are not. Such rules are target-specific ($3/2/2/9$ of $18$
+for survival/fraction/rate/fill on ECA, $1$ of $160$ at radius two) and are
+not only the fully ordered ones: additive rule $150$ is deterministic on
+survival, and seven rules of intermediate survival are pinned at fill $1$ by
+the sparse-end degeneracy of Sec.~\ref{sec:targets}. The effect binds in one
+cell: on ECA cone fill they carry $0.85$ (five statistics) and $0.48$ (CNN)
+of the numerator, and masking them from both sums gives $\rho=4.8$ and
+$9.0$ against the tabulated $13$ and $12$. Elsewhere their share is below
+$7\%$ on ECA and $10\%$ at radius two, so no reported range or verdict
+moves.
+
 \emph{Reduced-budget scoring ceilings.} The identifiability and frontier
 estimators simulate at a reduced Monte-Carlo budget but are scored against
 the production target cache at $n_{\mathrm{pairs}}=256$, so a
@@ -1580,11 +1588,10 @@ filter, not validation: the detector runs at or below chance over the region
 five-cell random seed on the quiescent background emits persistent,
 non-space-filling structures whose total extent grows
 sub-ballistically---inside the light cone (dashed), though a single front
-may travel near light speed, as in panel~(b). The printed rate and fill are each rule's
-\emph{twin-run} damage coordinates, its position in
-Fig.~\ref{fig:landscape}, not measurements of the seeded run drawn here. An
-illustration for these three rules only---not a glider census, and not a
-promotion of the region to ``complex''.}
+may travel near light speed, as in panel~(b). Printed rate and fill are each
+rule's \emph{twin-run} damage coordinates---its position in
+Fig.~\ref{fig:landscape}---not measurements of the run drawn here. Not a
+glider census, and not a promotion of the region to ``complex''.}
 \label{fig:exemplars}
 \end{figure*}
 
