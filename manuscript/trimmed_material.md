@@ -158,9 +158,19 @@ disagree exactly where the diagram is uninformative) are unchanged.
 
 # Material moved or removed in the round-8 revision (sixth report, 21 Aug 2026)
 
-Presentation-only pass responding to `reviews/review_gemini_21aug26.md`
+Presentation pass responding to `reviews/review_gemini_21aug26.md`
 (figures, de-jargon, restructure); **no change to any registered number,
-verdict, margin, or disclosure**. The full pre-revision manuscript is
+verdict, margin, or disclosure**.
+
+**The paper grew, 16 pp to 18 pp, and this file should not be read as a
+record of condensation.** The two referee-required figures, the exemplar
+figure, and the required-action text (R3 neural boundary, R4 decoder scope)
+add more than the trims below remove. What the pass did achieve is
+*density*: the main text ends one page earlier (p. 12, was p. 13) because
+the cost and by-product analyses moved to Appendix F, the longest captions
+were roughly halved with their content relocated rather than dropped, and
+the longest paragraphs were split. Volume moved to the back of the book and
+to two pictures the previous round demanded; it was not deleted. The full pre-revision manuscript is
 recoverable at the round-8 merge base `65d5a81`
 (`git show 65d5a81:manuscript/main.tex`).
 
@@ -266,3 +276,55 @@ Two flags were judged intentional/incorrect: the exemplar-figure content is
 the referee-required R1 addition (derived from released validation
 artifacts), and the Gibbs/EM factor-graph characterization already existed
 in the old Discussion.
+
+## Round-8 simulated re-review panel (fixes applied in the same round)
+
+A five-reviewer re-review panel (EIC, methodology, domain, cross-disciplinary
+perspective, devil's advocate) plus editorial synthesis was run on the
+revised manuscript; verdict Minor Revision, with unanimous agreement that no
+registered claim had drifted. Two CRITICAL and several MAJOR findings were
+verified against the artifacts and fixed here:
+
+- **Two ceilings collapsed into one (CRITICAL).** The caption diet had
+  deleted the sentence saying a direct estimator predicting the latent mean
+  keeps the ICC ceiling (0.993), leaving both frontier captions asserting
+  the reduced-budget ceiling for curves that do not share it. Restored to
+  both captions, explicitly per family.
+- **Exemplar licensing overclaim (CRITICAL).** "The only rules in the region
+  for which a picture illustrates rather than overclaims" asserted evidential
+  status from agreement with a detector the paper calls anti-informative.
+  Replaced with a neutral statement plus the disclosures it needed: the
+  detector's balanced accuracy 0.39, the 231-rule applicability denominator,
+  the replicate instability of rule 345313848 at the criterion boundary
+  (previously only a code comment), and the fact that the three exemplars sit
+  in one corner of the region.
+- **Spreading-rate ceiling corrected.** The stated light-cone maximum
+  (2rT+1)/(2rT) = 1.008 is unattainable: the final row follows T−1 rule
+  applications, so rate ≤ (2r(T−1)+1)/(2rT) = 0.992 (ECA) and 0.975
+  (radius two). Verified directly — ECA rules 90 and 150 measure 0.99194,
+  rule 150 inside the 18-rule held-out panel — which also falsifies "the
+  largest rate we observe anywhere is 0.816" (that is the radius-two
+  maximum). Corrected in Sec. II B, Appendix B and the landscape axis label.
+  A monotone normalisation shared by targets and predictions, so no result
+  moves.
+- **ρ zero-noise caption corrected.** Rules with σ̂_e = 0 leave the
+  denominator but not the numerator, so the caption's "drop out" held only
+  for the mechanistic estimator. Verified per target (ECA 3/2/2/9 of 18;
+  radius two 1 of 160) and per share: on ECA cone fill those rules carry
+  0.85 (statistics) and 0.48 (CNN) of the numerator, and excluding them
+  gives ρ 4.8 and 9.0 against the tabulated 13 and 12. Reported ranges and
+  verdicts unaffected (< 7 % elsewhere on ECA, < 10 % at radius two).
+- **Seed-0 provenance** marked on the ρ table, and the introduction's
+  R²-vs-ρ illustration now carries the five-seed mean (0.960 ± 0.019) and
+  the bimodality of the elementary rate panel.
+- **Neural-boundary paragraph calibrated:** "is a local convolution" → a
+  shift-equivariant neighbourhood map composed with a pointwise lookup;
+  "bracket that family" → sample its capacity axis, with the CA-shaped
+  member (full-neighbourhood first-layer kernel) named as excluded by
+  design; the probe evidence split into the identity probe (0.87–0.95, seen
+  rules) and out-of-rule bit transfer (0.79 / 0.61).
+- **Figure production:** extent bracket moved below the panel in black
+  (unreadable over the inferno background at print size); exemplar figure
+  promoted to full text width; landscape figure regenerated without its
+  clipped in-figure title, with a descriptive y-axis gloss replacing
+  "low = gliders", and with the exemplar and star labels separated.

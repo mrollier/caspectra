@@ -18,7 +18,6 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.patheffects as pe  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
@@ -125,7 +124,9 @@ ax.set_xlim(-0.02, 0.88)
 ax.set_ylim(-0.02, 1.08)
 # Axis glosses stay DESCRIPTIVE: an in-figure "low = gliders" would assert
 # exactly the promotion the registered criterion refuses (Sec. IV G, App. D).
-ax.set_xlabel("spreading rate  (0 = frozen; light speed = 1.008 here)", fontsize=9)
+# Attainable maximum, not the naive light-cone bound: the final row follows
+# T-1 rule applications, so rate <= (2r(T-1)+1)/(2rT) = 0.975 at r=2, T=30.
+ax.set_xlabel("spreading rate  (0 = frozen; attainable maximum 0.975 here)", fontsize=9)
 # Two lines: a single-line gloss is longer than the axis and gets clipped.
 ax.set_ylabel("cone fill\n(low = sparse damage; 1 = solid cone or single cell)", fontsize=9)
 # No in-figure title: the REVTeX caption carries it, and the internal one
@@ -188,26 +189,28 @@ for j, (rule, regime) in enumerate(TWIN_RULES):
         frac = float(final.mean())
         rate = extent / (2.0 * TWIN_STEPS)
         fill = float(final.sum() / extent)
-        axes[2, j].set_xlabel(f"fraction {frac:.2f}  rate {rate:.2g}  fill {fill:.2f}", fontsize=6)
-        if rule == 110:  # extent bracket over the final rows (referee R1)
-            y = TWIN_STEPS - 5
-            stroke = [pe.withStroke(linewidth=1.6, foreground="black")]
-            axes[2, j].plot([pos.min(), pos.max()], [y, y], color="w", lw=0.9, path_effects=stroke)
+        axes[2, j].set_xlabel(
+            f"fraction {frac:.2f}  rate {rate:.2g}  fill {fill:.2f}", fontsize=7, labelpad=14
+        )
+        if rule == 110:
+            # Extent bracket BELOW the panel in black: drawn inside, over the
+            # inferno background, it is unreadable at column scale in print.
+            y = TWIN_STEPS + 2.5
+            axes[2, j].plot(
+                [pos.min(), pos.max()], [y, y], color="k", lw=1.0, clip_on=False, zorder=7
+            )
             for x in (pos.min(), pos.max()):
-                axes[2, j].plot(
-                    [x, x], [y, TWIN_STEPS - 1.5], color="w", lw=0.9, path_effects=stroke
-                )
+                axes[2, j].plot([x, x], [y - 2.5, y], color="k", lw=1.0, clip_on=False, zorder=7)
             axes[2, j].annotate(
                 "extent",
-                ((pos.min() + pos.max()) / 2, y - 3),
+                ((pos.min() + pos.max()) / 2, y + 1.5),
                 ha="center",
-                va="bottom",
-                fontsize=6,
-                color="w",
-                path_effects=stroke,
+                va="top",
+                fontsize=7,
+                annotation_clip=False,
             )
     else:
-        axes[2, j].set_xlabel("no damage at the horizon", fontsize=6)
+        axes[2, j].set_xlabel("no damage at the horizon", fontsize=7, labelpad=14)
 
 for ax in axes.ravel():
     ax.set_xticks([])
@@ -231,7 +234,9 @@ EX_WIDTH, EX_RADIUS = 255, 2
 EX_STEPS = EX_WIDTH // (2 * EX_RADIUS) - 1  # = 62
 EX_SEED_WIDTH = 5
 
-fig, ex_axes = plt.subplots(len(EXEMPLAR_RULES), 1, figsize=(5.4, 3.3))
+# Full text width: at \columnwidth the 255-cell strips print at ~5 pt and the
+# structures the figure exists to show are not resolvable.
+fig, ex_axes = plt.subplots(len(EXEMPLAR_RULES), 1, figsize=(7.1, 3.4))
 for ax, lbl, rule in zip(ex_axes, "abc", EXEMPLAR_RULES):
     background = quiescent_background(rule, EX_RADIUS)
     ex_rng = np.random.default_rng(0)

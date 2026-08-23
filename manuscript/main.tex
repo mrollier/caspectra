@@ -279,11 +279,13 @@ any difference remains; conditional on survival, \emph{damage fraction} is the
 fraction of the ring that differs, \emph{spreading rate} is the damage-cone
 extent normalized by $2r$ times the number of steps, and \emph{cone fill} is
 the density of differing cells within the cone (exact formulas in
-Appendix~\ref{app:methods}). Two conventions deserve stating. Because extent
-counts endpoints, the light-cone maximum is $(2rT+1)/(2rT)=1.008$ rather than
-$1$, so ``rate $1$'' is light speed up to one cell of extent; the largest rate
-we observe anywhere is $0.816$, so nothing in this paper sits near that
-boundary. And a single surviving damaged cell has extent $1$ and hence fill
+Appendix~\ref{app:methods}). Two conventions deserve stating. The final row
+is reached after $T-1$ applications of the rule, so the attainable maximum
+is $\bigl(2r(T-1)+1\bigr)/(2rT)=0.992$ on the elementary panels and $0.975$
+at radius two, not $1$: ``rate $1$'' is light speed up to the endpoint
+convention. The additive elementary rules $90$ and $150$ sit \emph{at} that
+maximum, $0.992$, rule $150$ inside the held-out panel; on the radius-two
+panels the largest rate observed is $0.816$. And a single surviving damaged cell has extent $1$ and hence fill
 $1$ (rule-$204$ panel of Fig.~\ref{fig:twin}), placing maximally sparse
 damage at the \emph{top} of the fill axis
 alongside a solid cone; this degeneracy affects $0.13\%$ of the sampled
@@ -491,8 +493,14 @@ large the gap looks. The mechanistic estimator sits at
 $\rho=0.7$--$1.8$, its CI covering $\sqrt2$ on every target and panel; the
 direct estimators sit at $\rho=3$--$35$. Two further readings follow.
 \emph{First}, \rtwo{} flatters the direct estimators most where the target is
-most reliable: the CNN's ECA spreading rate reads $0.979$, which sounds like a
-near miss, and $\rho=20$, which is not. \emph{Second}, on the one target where
+most reliable: the CNN's ECA spreading rate reads $0.979$ at the seed-$0$
+checkpoint (five-seed mean $0.960\pm0.019$, Table~\ref{tab:pertarget}),
+which sounds like a
+near miss, and $\rho=20$, which is not. That elementary rate panel is also
+strongly bimodal---two of eighteen held-out rules above $0.9$, thirteen
+below $0.02$---so the same cell illustrates the mode-assignment reading
+below; the radius-two rate cell carries the lesson on a fuller panel
+($0.875$, $\rho=10$). \emph{Second}, on the one target where
 \rtwo{} suggests real skill---damage survival---most of that skill is mode
 assignment. Restricting to rules of \emph{intermediate} survival (in
 $[0.1,0.9]$: $14/18$ ECA orbits, $40/160$ radius-two rules), the mechanistic
@@ -616,9 +624,19 @@ mechanistic value's rule-bootstrap $95\%$ CI covers $\sqrt2$, as
 Eq.~\eqref{eq:exchangeable} requires; every direct-estimator CI lies far above
 it. The rescaling is not cosmetic: ECA spreading rate reads
 \rtwo{}${=}0.98$ for the CNN, which sounds close, and $\rho=20$, which does
-not. Rules whose target carries no Monte-Carlo noise (the fully ordered ones,
-$3$ of $18$ on ECA, $1$ of $160$ on radius two) contribute zero to both sums
-and so drop out; the mechanistic estimator's error on them is exactly zero.}
+not. CNN columns are the seed-$0$ checkpoint throughout, as in
+Table~\ref{tab:headline}. Rules whose target carries no Monte-Carlo noise
+leave the denominator but not the numerator: the mechanistic estimator's
+error on them is exactly zero, so they drop out of its ratio, while a direct
+estimator's error there is charged against a zero noise unit. They are
+target-specific ($3/2/2/9$ of $18$ for survival/fraction/rate/fill on ECA,
+$1$ of $160$ throughout at radius two) and include additive and fill-pinned
+rules, not only the fully ordered ones. This binds on ECA cone fill, where
+such rules carry $0.85$ (statistics) and $0.48$ (CNN) of the numerator---
+excluding them from both sums gives $\rho$ $4.8$ and $9.0$ against the $13$
+and $12$ tabulated---and stays under $7\%$ of the numerator on the other
+ECA targets and under $10\%$ at radius two, so the reported ranges and every
+verdict stand.}
 \label{tab:rho}
 \end{table}
 
@@ -753,9 +771,11 @@ retraining; axes that change the input geometry omit the CNN, as noted).
 \centering
 \includegraphics[width=\columnwidth]{figures/identifiability.pdf}
 \caption{Identifiability of the local rule at radius two ($80$ held-out
-rules; median held-out \rtwo{}; the estimator simulates at
-$n_{\mathrm{pairs}}=64$, so every curve is bounded by the reduced-budget
-ceiling of Appendix~\ref{app:methods}---median $0.963$, \emph{not} $1$).
+rules; median held-out \rtwo{}). The two families carry \emph{different}
+ceilings, neither of them $1$: the resimulating estimators run at
+$n_{\mathrm{pairs}}=64$ and are bounded by the reduced-budget ceiling of
+Appendix~\ref{app:methods} (median $0.963$), while the frozen CNN and the
+five statistics predict the latent mean and keep the ICC ceiling ($0.993$).
 (a) Observed rows: the median table is identified from $4$ rows; the CNN,
 trained at fixed geometry, is omitted on this axis. (b) Bit-flip noise:
 exact reconstruction (dotted) collapses immediately; the mechanistic
@@ -794,12 +814,14 @@ for the reader. \emph{Noise} (left): of the eight registered estimators, all
 but the sampled reader collapse by $5$--$7.5\%$ on this panel.
 \emph{Masking} (centre): the pseudo-posterior extends the deterministic
 inverter's tolerance from ${\sim}25\%$ to $50\%$. \emph{Density} (right): the
-decoder rescues under-exercised tables. The fairness controls of
+decoder rescues under-exercised tables. Grid simulations run at
+$n_{\mathrm{pairs}}=48$, so the read-then-simulate curves must be read
+against the reduced-budget ceiling of Appendix~\ref{app:methods} (median
+$0.953$) and the direct estimators against the $0.993$ ICC ceiling---never
+against $1$. The fairness controls of
 Sec.~\ref{sec:frontier}(iii)---including the degradation-trained CNN that
 wins the mid-noise band---are scored on these same cells but are \emph{not}
 drawn here. Grid simulations run at
-$n_{\mathrm{pairs}}=48$, so curves must be read against the reduced-budget
-ceilings of Appendix~\ref{app:methods} (median $0.953$), not against $1$.
 The grid design, estimator definitions and verdict rules were registered
 numbers-free before measurement; the posterior on these axes is post-hoc
 confirmatory, the reader and the label axis exploratory.}
@@ -1116,19 +1138,31 @@ the gap: the probes show rule information is accessible, and whether
 exploiting it is an architecture, objective, or optimization question is open.
 
 Why a convolutional family marks the neural boundary deserves stating. A
-synchronous CA update \emph{is} a local convolution---CA and convolutional
-networks are formally close~\cite{gilpin2019}---so convolution is the
-natural inductive bias for this observation model, and it is what lets a
-network read the elementary rule off one clean diagram at
-$99.9\%$~\cite{rollier2024cnn}; the constrained network and the $354\times$
-larger unconstrained one bracket that family from both ends at this budget.
+synchronous CA update is a shift-equivariant map of a bounded
+neighbourhood---a convolution composed with a pointwise lookup, the
+construction that makes CA and convolutional networks formally
+close~\cite{gilpin2019}---so convolution is the
+natural inductive bias for this observation model, and a network of this
+family reads the elementary rule off one clean diagram at
+$99.9\%$~\cite{rollier2024cnn}. Our constrained network and the $354\times$
+larger unconstrained one sample that family's capacity axis at one training
+budget rather than bracketing it: the member closest to the mechanism---a
+first-layer kernel spanning the whole $(2r{+}1)$-cell neighbourhood, able to
+tabulate directly---is excluded by design, since the $2\times2$ kernels are
+the anti-shortcut constraint itself.
 The shortcut \emph{incentive}, moreover, is set by the task rather than by
 the backbone~\cite{geirhos2020shortcut}: the observation encodes the
 generator, a nearest-neighbour lookup in the raw five-statistic space
 already sits level with the trained estimators and, run inside the
 network's own bottleneck, reproduces its score (Sec.~\ref{sec:stacking}),
-and the probes show the rule information is accessible there---so
-representational capacity is unlikely to be what binds, leaving the
+and the probes recover rule identity from that bottleneck at
+$0.87$--$0.95$ (Sec.~\ref{sec:probes}). The probe evidence is weaker in the
+regime the benchmark scores: table bits transfer to \emph{unseen} rules at
+only $0.79$ (ECA) and $0.61$ (radius two), and the dedicated rule-reader
+recovers $0.73$ of held-out bits and never a full table. So accessibility is
+established for familiar rules and only partial for new ones, which is
+consistent with an objective-and-training-distribution constraint rather
+than a capacity one, and leaves the
 architecture--objective--optimization question above open. Architecture
 classes beyond this family---attention-based sequence models over rows or
 cells, graph networks over the neighbourhood relation---are untested here,
@@ -1390,8 +1424,11 @@ $\mathrm{ext}(d)=\max_i p_i-\min_i p_i+1$; a single damaged cell has
 $\mathrm{ext}=1$ and no wrap can occur under the horizon cap. Conditioning on
 survival makes $d$ nonempty, so both conditional denominators are strictly
 positive. Two consequences deserve stating.
-\emph{(i)} Because extent counts endpoints, $\mathrm{ext}\le 2rT+1$ and so
-$\text{rate}\le 1+1/(2rT)=1.008$; the maximum observed anywhere in this paper
+\emph{(i)} The final row is reached after $T-1$ rule applications, so
+counting endpoints gives $\mathrm{ext}\le 2r(T-1)+1$ and
+$\text{rate}\le 1-1/(2rT)$: $0.992$ for the elementary panels ($r=1$,
+$T=62$) and $0.975$ at radius two ($r=2$, $T=30$). The additive rules $90$
+and $150$ attain it; the maximum observed on the radius-two panels
 is $0.816$. \emph{(ii)} The three conditional targets are not algebraically
 independent: up to Jensen, $\text{fill}\approx\bigl(w/2rT\bigr)\cdot
 \text{fraction}/\text{rate}$, with $w/2rT=1.058$ at $r=2$ and $1.024$ at
@@ -1530,14 +1567,16 @@ Fig.~\ref{fig:exemplars}.}
 \label{fig:landscape}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{figures/signature_exemplars.pdf}
-\caption{What the signature region contains, where that can be shown
-honestly: localized-seed spacetime diagrams for the three rules---circles
-a--c in Fig.~\ref{fig:landscape}---on which the plotted signature set and
-the localized-seed detector of Appendix~\ref{app:priorwork} agree (the
-detector performs at or below chance over the region as a whole). A
+\includegraphics[width=\textwidth]{figures/signature_exemplars.pdf}
+\caption{What rules in the signature region look like: localized-seed
+spacetime diagrams for three of them---circles a--c in
+Fig.~\ref{fig:landscape}---selected as rules the localized-seed detector of
+Appendix~\ref{app:priorwork} also fires on. That agreement is a convenience
+filter, not validation: the detector runs at or below chance over the region
+(balanced accuracy $0.39$), and these three occupy one corner of it
+(Appendix~\ref{app:landscape}). A
 five-cell random seed on the quiescent background emits persistent,
 non-space-filling structures whose total extent grows
 sub-ballistically---inside the light cone (dashed), though a single front
@@ -1547,7 +1586,7 @@ Fig.~\ref{fig:landscape}, not measurements of the seeded run drawn here. An
 illustration for these three rules only---not a glider census, and not a
 promotion of the region to ``complex''.}
 \label{fig:exemplars}
-\end{figure}
+\end{figure*}
 
 Figure~\ref{fig:landscape} draws the landscape in damage coordinates, in
 the spirit of Li and Packard's map of the elementary rule
@@ -1571,9 +1610,17 @@ but sitting between the chaotic and complex clusters in our damage
 coordinates (balanced accuracy $0.99$). The localized-seed detector intended
 as an independent check performs at or below chance on radius two (balanced
 accuracy $0.39$; design in Appendix~\ref{app:priorwork}) and validates
-nothing either way. Figure~\ref{fig:exemplars} shows the three rules on
-which the two criteria nevertheless agree---the only rules in the region for
-which a picture illustrates rather than overclaims.
+nothing either way. Figure~\ref{fig:exemplars} draws three rules from the
+region, chosen as those the detector also fires on---a convenience filter,
+not evidence: at balanced accuracy $0.39$ that agreement carries no
+validation weight, the test applies only to the $231$ sampled rules with a
+quiescent background, and the co-flagged set is replicate-dependent at the
+criterion boundary (a fourth rule, $345313848$, is inside the registered
+rate window in the validation replicate and outside it at $0.288$ in the
+landscape replicate). The three sit in one corner of the region (rate
+$0.19$--$0.23$, fill $0.54$--$0.58$); its sparse-fill lower half is not
+illustrated. The figure shows what such rules look like; it establishes
+nothing about the region.
 
 \section{Prior work under its assumptions}
 \label{app:priorwork}
