@@ -155,14 +155,15 @@ reliability, and maps where the readability ends.
 One structural
 consequence deserves stating up front. Because the targets are
 simulation-defined, identification reproduces the target's own measurement
-procedure: at the target's Monte-Carlo budget it attains the
-independent-replicate benchmark \emph{by construction}, and at a larger
-budget it climbs to the latent ceiling---a \emph{budget-indexed family} of
-estimators, not a point (the $1-\mathrm{ICC}$ gap between those two
-benchmarks, Sec.~\ref{sec:reliability}, is the entire noisy-score headroom
-any direct estimator holds over the family's matched-budget member; a
+procedure. At the target's Monte-Carlo budget it therefore attains the
+independent-replicate benchmark \emph{by construction}; at a larger
+budget it climbs toward the latent ceiling. Identification is thus a
+\emph{budget-indexed family} of estimators, not a point, and the
+$1-\mathrm{ICC}$ gap between those two benchmarks
+(Sec.~\ref{sec:reliability}) is the entire noisy-score headroom
+any direct estimator holds over the family's matched-budget member. A
 parallel cost hierarchy is known on the rule-table
-side~\cite{vispoel2026structure}).
+side~\cite{vispoel2026structure}.
 Wherever the rule is exactly recoverable, direct amortization can therefore
 win only on cost, with simulation budget now part of the cost, or on
 robustness to observation degradation. What remains
@@ -258,8 +259,11 @@ elementary rules (one illustrative pair each; fixed seed, centre cell
 flipped). Top: run~A from a random initial row on a ring of $127$ cells,
 time running downward. Middle: run~B from the same row with one cell flipped
 (marker). Bottom: the damage $A\neq B$, confined to the light cone of the
-flip (dashed). Printed values are the four statistics of \emph{this single
-pair}, computed exactly as in the benchmark; the targets average
+flip (dashed). Printed values are the three conditional statistics of
+\emph{this single pair}, computed exactly as in the benchmark; survival is
+the binary event itself, so it is reported per panel in words (rule $0$
+erases its random initial row in one step, leaving no damage at the
+horizon). The targets average
 $n_{\mathrm{pairs}}=256$ such pairs per rule. The bracket on the rule-$110$
 panel marks the final-row \emph{extent}; its normalization gives the
 spreading rate, and fill is the damaged density within it. Rule $204$ shows
@@ -350,16 +354,23 @@ by its own Monte-Carlo variance, and the two ceilings above become constants
 \emph{in expectation} under the additive-noise idealization: an exactly
 identified rule resimulated at matched budget gives $\rho=\sqrt2$ by
 Eq.~\eqref{eq:exchangeable}, and a perfect predictor of the latent mean gives
-$\rho=1$. The observed ratio still fluctuates---the numerator over the finite
-panel, the denominator because each $\hat\sigma_e$ rests on $K=20$ replicates
-(the two are independent by the seeding design of Appendix~\ref{app:repro}).
-A delta-method account prices both sources at the $\sqrt2$ reference: the
+$\rho=1$.
+
+Those reference values are exact only in expectation; the observed ratio
+fluctuates, its numerator over the finite
+panel and its denominator because each $\hat\sigma_e$ rests on $K=20$
+replicates (the two are independent by the seeding design of
+Appendix~\ref{app:repro}). A delta-method account prices both sources at the
+$\sqrt2$ reference. The
 finite-$K$ denominator contributes at most $0.14$ $\rho$-units of standard
-deviation on any target or panel, the finite panel up to ${\sim}0.6$ on the
-most heteroscedastic target--panel pairs, and the mechanistic row of
+deviation on any target or panel; the finite panel contributes up to
+${\sim}0.6$ on the
+most heteroscedastic target--panel pairs. The mechanistic row of
 Table~\ref{tab:rho} scatters around $\sqrt2$ ($0.7$--$1.8$, every CI covering
 it) by exactly this sampling variability---small against the $1.6$--$34$-unit
-direct-estimator gaps. Unlike \rtwo{}, $\rho$'s reference values do not depend
+direct-estimator gaps.
+
+Unlike \rtwo{}, $\rho$'s reference values do not depend
 on the panel's between-rule variance, it is bounded below by $0$ with no sign
 pathology, and it states directly how many replicate-noise units an estimator
 is off. We keep \rtwo{} as the primary column for comparability with the
@@ -777,8 +788,7 @@ entry.
 \includegraphics[width=\textwidth]{figures/identifiability_v2.pdf}
 \caption{The estimator race across the identifiability frontier (radius two,
 canonical $80$-rule panel; median held-out \rtwo{}; curves leaving the
-bottom of a panel are negative; the noise axis is replicated on the
-complementary $80$ rules in Sec.~\ref{sec:frontier}). Solid/dashed pairs share
+bottom of a panel are negative). Solid/dashed pairs share
 a colour: $\varepsilon$ supplied/self-estimated for the decoder, MAP/sampled
 for the reader. \emph{Noise} (left): of the eight registered estimators, all
 but the sampled reader collapse by $5$--$7.5\%$ on this panel.
@@ -947,7 +957,10 @@ disabled---$52$ of the $57$ signature-complex rules now in training, $5$
 ($3.1\%$) in the held-out panel---and rescored every family on it. The
 objection is removed and no verdict moves: mechanistic median \rtwo{} $0.992$,
 boosted baseline $0.780$, CNN $0.778$ ($0.74$--$0.78$ across seeds), against
-$0.991$, $0.845$ and $0.859$ on the enriched panel. The registered rule
+$0.991$, $0.845$ and $0.859$ on the enriched panel (the CNN's final-epoch
+number there; Table~\ref{tab:headline}'s $0.880$ is the selected-checkpoint
+protocol of record, and both sides of this control predate the switch, as
+noted below). The registered rule
 downgrades the family-gap claim to the stratified number if any target's gap
 shrinks by more than $0.10$ median \rtwo{}; the largest shrink over both direct
 estimators is $0.07$ (the boosted baseline's cone fill), and two of the
@@ -1117,8 +1130,16 @@ network's own bottleneck, reproduces its score (Sec.~\ref{sec:stacking}),
 and the probes show the rule information is accessible there---so
 representational capacity is unlikely to be what binds, leaving the
 architecture--objective--optimization question above open. Architecture
-classes beyond this family are untested here, and every neural claim is
-scoped accordingly (Sec.~\ref{sec:estimators}).
+classes beyond this family---attention-based sequence models over rows or
+cells, graph networks over the neighbourhood relation---are untested here,
+and the same reasoning applies to them: a global receptive field makes
+matching a diagram to a familiar generator easier rather than harder, so we
+would expect the substitution of recognition for estimation to sharpen, not
+to be bypassed, while whether the added capacity resolves the intermediate
+survival band is precisely what is unmeasured. That is a conjecture from the
+diagnostics above, not a result, and every neural claim in this paper stays
+scoped to the architectures and budgets tested
+(Sec.~\ref{sec:estimators}).
 
 The learned reader and the degradation-trained control sharpen it: beyond
 ${\sim}3$--$7.5\%$ noise the strongest estimator is the direct network
@@ -1517,9 +1538,12 @@ honestly: localized-seed spacetime diagrams for the three rules---circles
 a--c in Fig.~\ref{fig:landscape}---on which the plotted signature set and
 the localized-seed detector of Appendix~\ref{app:priorwork} agree (the
 detector performs at or below chance over the region as a whole). A
-five-cell random seed on the quiescent background emits persistent, sparse
-structures whose total extent grows sub-ballistically---inside the light
-cone (dashed), though a single front may travel near light speed. An
+five-cell random seed on the quiescent background emits persistent,
+non-space-filling structures whose total extent grows
+sub-ballistically---inside the light cone (dashed), though a single front
+may travel near light speed. The printed rate and fill are each rule's
+\emph{twin-run} damage coordinates, its position in
+Fig.~\ref{fig:landscape}, not measurements of the seeded run drawn here. An
 illustration for these three rules only---not a glider census, and not a
 promotion of the region to ``complex''.}
 \label{fig:exemplars}
@@ -1588,7 +1612,8 @@ baseline.}
 \label{tab:priorwork}
 \end{table}
 
-\emph{Detector.} The localized-seed detector evolves a single seeded cell on a
+\emph{Detector.} The localized-seed detector evolves a five-cell random seed
+block on a
 quiescent background (ring $255$ confirmation) and flags persistent, localized,
 sub-ballistic, non-space-filling structures (thresholds fixed in code before
 radius-two application: alive fraction $\ge0.5$, growth rate $0.05$--$0.9$,

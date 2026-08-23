@@ -161,7 +161,8 @@ disagree exactly where the diagram is uninformative) are unchanged.
 Presentation-only pass responding to `reviews/review_gemini_21aug26.md`
 (figures, de-jargon, restructure); **no change to any registered number,
 verdict, margin, or disclosure**. The full pre-revision manuscript is
-recoverable at commit `a403c0a` (`git show a403c0a:manuscript/main.tex`).
+recoverable at the round-8 merge base `65d5a81`
+(`git show 65d5a81:manuscript/main.tex`).
 
 ## Sec. IV G (Cost) + IV H (Descriptive by-products) → Appendix "Cost and phenotype maps"
 

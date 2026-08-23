@@ -96,7 +96,7 @@ ax.scatter([], [], marker="*", s=150, c="gold", edgecolor="k", label="embedded E
 # 204 and 184 both sit at fill = 1.0 (a single surviving damaged cell has
 # extent 1, so fill is 1 by construction -- the sparse-end degeneracy noted in
 # Sec. II B); offset their labels so they do not collide.
-offsets = {"204": (4, -10), "184": (4, 4)}
+offsets = {"204": (4, -10), "184": (4, 4), "110": (-9, 10), "54": (6, -10)}
 for name, (r, f) in anchors.items():
     ax.scatter([r], [f], marker="*", s=150, c="gold", edgecolor="k", zorder=5)
     ax.annotate(
@@ -109,7 +109,7 @@ for name, (r, f) in anchors.items():
 # Mark the three detector-agreement exemplars (rendered in the companion
 # exemplar figure) so they are locatable inside the signature region.
 rules_arr = d["rules"]
-exemplar_offsets = {"a": (-11, -2), "b": (-11, 3), "c": (3, 6)}  # dodge star labels
+exemplar_offsets = {"a": (-12, -5), "b": (-13, 1), "c": (7, 0)}  # dodge star labels
 for lbl, rule in zip("abc", EXEMPLAR_RULES):
     (i,) = np.flatnonzero(rules_arr == rule)
     ax.scatter(
@@ -125,12 +125,16 @@ for lbl, rule in zip("abc", EXEMPLAR_RULES):
     )
 ax.set_xlim(-0.02, 0.88)
 ax.set_ylim(-0.02, 1.08)
-ax.set_xlabel("spreading rate  (0 = frozen; light speed = 1.008 here)")
-ax.set_ylabel("cone fill  (low = gliders; 1 = solid cone OR single cell)")
-ax.set_title("Range-2 damage-signature landscape (stars: embedded ECAs)")
+# Axis glosses stay DESCRIPTIVE: an in-figure "low = gliders" would assert
+# exactly the promotion the registered criterion refuses (Sec. IV G, App. D).
+ax.set_xlabel("spreading rate  (0 = frozen; light speed = 1.008 here)", fontsize=9)
+# Two lines: a single-line gloss is longer than the axis and gets clipped.
+ax.set_ylabel("cone fill\n(low = sparse damage; 1 = solid cone or single cell)", fontsize=9)
+# No in-figure title: the REVTeX caption carries it, and the internal one
+# clipped at the canvas edge.
 ax.legend(fontsize=7, loc="upper right", framealpha=0.9)
 fig.tight_layout()
-fig.savefig(FIG / "landscape.pdf")
+fig.savefig(FIG / "landscape.pdf", bbox_inches="tight")
 plt.close(fig)
 print("wrote landscape.pdf")
 
