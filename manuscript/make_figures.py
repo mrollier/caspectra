@@ -112,9 +112,7 @@ rules_arr = d["rules"]
 exemplar_offsets = {"a": (-12, -5), "b": (-13, 1), "c": (7, 0)}  # dodge star labels
 for lbl, rule in zip("abc", EXEMPLAR_RULES):
     (i,) = np.flatnonzero(rules_arr == rule)
-    ax.scatter(
-        [t[i, RATE]], [t[i, FILL]], s=70, facecolor="none", edgecolor="k", lw=1.0, zorder=6
-    )
+    ax.scatter([t[i, RATE]], [t[i, FILL]], s=70, facecolor="none", edgecolor="k", lw=1.0, zorder=6)
     ax.annotate(
         lbl,
         (t[i, RATE], t[i, FILL]),
@@ -180,9 +178,7 @@ for j, (rule, regime) in enumerate(TWIN_RULES):
     # TWIN_STEPS - 1 = 61 cells (speed 1 for ECAs).
     tmax = TWIN_STEPS - 1
     for sgn in (-1, 1):
-        axes[2, j].plot(
-            [FLIP, FLIP + sgn * tmax], [0, tmax], color="w", lw=0.7, ls="--", alpha=0.9
-        )
+        axes[2, j].plot([FLIP, FLIP + sgn * tmax], [0, tmax], color="w", lw=0.7, ls="--", alpha=0.9)
 
     # The four statistics of THIS pair, final-row quantities as in dynamics.py.
     final = damage[-1]
@@ -192,15 +188,11 @@ for j, (rule, regime) in enumerate(TWIN_RULES):
         frac = float(final.mean())
         rate = extent / (2.0 * TWIN_STEPS)
         fill = float(final.sum() / extent)
-        axes[2, j].set_xlabel(
-            f"fraction {frac:.2f}  rate {rate:.2g}  fill {fill:.2f}", fontsize=6
-        )
+        axes[2, j].set_xlabel(f"fraction {frac:.2f}  rate {rate:.2g}  fill {fill:.2f}", fontsize=6)
         if rule == 110:  # extent bracket over the final rows (referee R1)
             y = TWIN_STEPS - 5
             stroke = [pe.withStroke(linewidth=1.6, foreground="black")]
-            axes[2, j].plot(
-                [pos.min(), pos.max()], [y, y], color="w", lw=0.9, path_effects=stroke
-            )
+            axes[2, j].plot([pos.min(), pos.max()], [y, y], color="w", lw=0.9, path_effects=stroke)
             for x in (pos.min(), pos.max()):
                 axes[2, j].plot(
                     [x, x], [y, TWIN_STEPS - 1.5], color="w", lw=0.9, path_effects=stroke
