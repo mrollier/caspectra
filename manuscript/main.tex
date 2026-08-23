@@ -28,11 +28,11 @@ Ghent University, Ghent, Belgium}
 \date{\today}
 
 \begin{abstract}
-Whether and how far a one-cell difference between two runs of a cellular
-automaton (CA) spreads is defined by \emph{twin} simulations: these
-damage-response statistics are not a function of any single observed
-diagram. That
-makes them a natural target for amortization---train a model once, then
+Damage-response statistics of a cellular automaton (CA) measure whether and
+how far a one-cell difference between two runs spreads. Because they are
+defined by \emph{twin} simulations, they are not a function of any single
+observed diagram---which makes them a natural target for
+amortization: train a model once, then
 predict per observation at almost no cost. We benchmark that proposition
 under pre-committed decision rules, over the $88$ elementary-CA orbits and
 $800$ sampled radius-two rules, for complete, noiseless, binary
@@ -420,8 +420,8 @@ not about deep networks as a class: we did not run an architecture search, and
 Sec.~\ref{sec:discussion} names the learned system-identification pipelines
 that remain untested. The ``anti-shortcut'' first layer is an architectural
 intent only---Sec.~\ref{sec:probes} shows the rule remains decodable from the
-trained bottleneck. Two registered controls bound what the
-constraint and the clean training cost: an unconstrained \texttt{resnet18}
+trained bottleneck. Two registered controls bound what the architectural
+constraint costs and what clean-only training costs: an unconstrained \texttt{resnet18}
 at the same budget, and the same CNN retrained with the rule-reader's
 degradation augmentation (Sec.~\ref{sec:frontier}).
 
@@ -1541,7 +1541,7 @@ detector performs at or below chance over the region as a whole). A
 five-cell random seed on the quiescent background emits persistent,
 non-space-filling structures whose total extent grows
 sub-ballistically---inside the light cone (dashed), though a single front
-may travel near light speed. The printed rate and fill are each rule's
+may travel near light speed, as in panel~(b). The printed rate and fill are each rule's
 \emph{twin-run} damage coordinates, its position in
 Fig.~\ref{fig:landscape}, not measurements of the seeded run drawn here. An
 illustration for these three rules only---not a glider census, and not a
